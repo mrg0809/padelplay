@@ -8,6 +8,24 @@ export default route(function () {
     routes,
   });
 
+// Middleware para proteger rutas
+Router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Si no hay token, redirigir al login
+      next('/');
+    } else {
+      // Si hay token, permitir acceso
+      next();
+    }
+  } else {
+    // Si no requiere autenticación, continuar
+    next();
+  }
+});
+
+
   return Router;
 });
 
