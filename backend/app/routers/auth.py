@@ -1,8 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from app.services.user_service import create_user
 from app.services.auth_service import authenticate_user
 
 router = APIRouter()
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 @router.post("/register")
 async def register(email: str, password: str):
@@ -13,9 +18,9 @@ async def register(email: str, password: str):
         raise e
 
 @router.post("/login")
-async def login(email: str, password: str):
+async def login(data: LoginRequest):
     try:
-        token = authenticate_user(email=email, password=password)
+        token = authenticate_user(email=data.email, password=data.password)
         return token
     except HTTPException as e:
         raise e
