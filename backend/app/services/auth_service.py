@@ -21,18 +21,18 @@ def authenticate_user(email: str, password: str):
             raise HTTPException(status_code=404, detail="User profile not found")
 
         user_type = profile_response.data["user_type"]
-        print(user_type)
 
         # Crea un token JWT
         token = create_access_token({"sub": user_id, "email": user_data.email, "user_type": user_type})
         return {"access_token": token, "token_type": "bearer"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    
     except gotrue.errors.AuthApiError as e:
-        # Manejo de error específico de Supabase
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed: Invalid credentials")
+    
+    except HTTPException:
+        # Re-levantar excepciones esperadas
+        raise
+    
     except Exception as e:
-        # Manejo de cualquier otro error
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        # Manejar cualquier otro error inesperado
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
