@@ -20,6 +20,10 @@ const routes = [
     component: () => import("pages/DashboardPlayer.vue"),
     meta: { requiresAuth: true },
   },
+  { path: "/inicio", component: () => import("pages/Home.vue") },
+  { path: "/torneos", component: () => import("pages/Torneos.vue") },
+  { path: "/asociaciones", component: () => import("pages/Asociaciones.vue") },
+  { path: "/perfil", component: () => import("pages/Perfil.vue") },
   // Otras rutas...
   { path: "/:catchAll(.*)", redirect: "/" },
 ];
