@@ -28,7 +28,7 @@
       <div class="divider"></div>
       <div class="home">
         <div class="options">
-          <div v-for="option in options" :key="option.name" class="option-card">
+          <div v-for="option in options" :key="option.name" class="option-card"> 
             <img :src="option.image_url" alt="Option Image" class="option-image" />
             <q-icon :name="option.icon" size="lg" class="option-icon" />
             <h3>{{ option.name }}</h3>

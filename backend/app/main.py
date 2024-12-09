@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth
+from app.routers import auth, courts
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -13,6 +13,7 @@ app.add_middleware(
 )
 # Registrar routers
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+app.include_router(courts.router)
 
 @app.get("/")
 async def root():
