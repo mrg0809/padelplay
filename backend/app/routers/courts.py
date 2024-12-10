@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.db.connection import supabase
 from app.utils.supabase_utils import handle_supabase_response
 from pydantic import BaseModel, Field
 from typing import Optional
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/courts", tags=["Courts"])
 
@@ -21,8 +22,8 @@ def create_court(court: CourtCreate):
         # Inserta el registro en la tabla de Supabase
         response = supabase.table("courts").insert(court.dict()).execute()
         
-        if response.error:
-            raise HTTPException(status_code=400, detail=response.error.message)
+        if not response.data:  # Si no se insertaron datos
+            raise HTTPException(status_code=400, detail="Failed to create court")
 
         return response.data[0]  # Retorna la información del registro creado
 
@@ -30,7 +31,10 @@ def create_court(court: CourtCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/")
-def get_all_courts_endpoint():
+def get_club_courts(current_user: dict = Depends(get_current_user)):
+    club_id = current_user.get("club_id")
+    if not club_id:
+        raise HTTPException(status_code=403, detail="User is not associated with a club")
     response = supabase.table("courts").select("*").execute()
     return handle_supabase_response(response)
 

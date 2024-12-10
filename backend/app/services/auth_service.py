@@ -14,16 +14,26 @@ def authenticate_user(email: str, password: str):
         user_data = response.user  # Accede al objeto `user`
         user_id = user_data.id
 
-        # Obtén el perfil del usuario de la tabla `profiles`
-        profile_response = supabase.from_("profiles").select("user_type").eq("id", user_id).single().execute()
+        # Obtén el perfil del usuario de la tabla `profiles`, incluyendo `user_type` y `club_id`
+        profile_response = supabase.from_("profiles") \
+            .select("user_type, club_id") \
+            .eq("id", user_id) \
+            .single() \
+            .execute()
 
         if profile_response.data is None:  # Revisa si no hay datos en la respuesta
             raise HTTPException(status_code=404, detail="User profile not found")
 
         user_type = profile_response.data["user_type"]
+        club_id = profile_response.data.get("club_id")  # Puede ser None si no aplica
 
         # Crea un token JWT
-        token = create_access_token({"sub": user_id, "email": user_data.email, "user_type": user_type})
+        token = create_access_token({
+            "sub": user_id,
+            "email": user_data.email,
+            "user_type": user_type,
+            "club_id": club_id  # Incluye `club_id` en el token
+        })
         return {"access_token": token, "token_type": "bearer"}
 
     except gotrue.errors.AuthApiError as e:

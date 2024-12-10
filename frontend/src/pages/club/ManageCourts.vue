@@ -22,7 +22,7 @@
           <q-item-section>
             <q-item-label>{{ court.name }}</q-item-label>
             <q-item-label caption>
-              Precio: ${{ court.price }} | Modalidad: {{ court.modality }}
+              Precio por hora: ${{ court.price_per_hour }} | Modalidad: {{ court.modality }}
             </q-item-label>
           </q-item-section>
           <q-item-section side>
@@ -54,11 +54,24 @@
             dense
           />
           <q-input
-            v-model.number="form.price"
+            v-model.number="form.price_per_hour"
             label="Precio por hora"
             outlined
             dense
             type="number"
+          />
+          <q-input
+            v-model.number="form.price_per_hour_and_half"
+            label="Precio por hora y media"
+            outlined
+            dense
+            type="number"
+          />
+          <q-toggle
+            v-model="form.is_indoor"
+            label="¿Es indoor?"
+            dense
+            color="primary"
           />
         </q-card-section>
 
@@ -72,21 +85,25 @@
 </template>
 
 <script>
-import api from "../../api"; // Ruta al cliente de Axios
+import { getUserFromToken } from 'src/api';
+import api from "../../api";
 
 export default {
   data() {
     return {
-      courts: [], // Lista de canchas
+      courts: [],
       isDialogOpen: false,
       dialogTitle: "Agregar Cancha",
       form: {
         id: null,
         name: "",
         modality: "",
-        price: null,
+        price_per_hour: null,
+        price_per_hour_and_half: null,
+        is_indoor: false,
+        club_id: null,
       },
-      modalities: ["Por hora", "Hora y media"], // Opciones para modalidad
+      modalities: ["Por hora", "Hora y media"],
     };
   },
   methods: {
@@ -115,11 +132,12 @@ export default {
           await api.put(`/courts/${this.form.id}`, this.form);
         } else {
           // Agregar nueva cancha
-          const response = await api.post("/courts", this.form);
-          this.courts.push(response.data); // Agregar a la lista
+          await api.post("/courts", this.form);
         }
         this.isDialogOpen = false;
-        this.fetchCourts(); // Refrescar la lista
+
+        // Refrescar la lista completa desde el backend
+        await this.fetchCourts();
       } catch (error) {
         console.error("Error al guardar la cancha:", error);
       }
@@ -133,15 +151,23 @@ export default {
       }
     },
     resetForm() {
+      const user = getUserFromToken()
       this.form = {
         id: null,
         name: "",
         modality: "",
-        price: null,
+        price_per_hour: null,
+        price_per_hour_and_half: null,
+        is_indoor: false,
+        club_id: user ? user.club_id : null, // Asigna el club_id del token
       };
     },
   },
   mounted() {
+    const user = getUserFromToken();
+    if (user) {
+      this.form.club_id = user.club_id;
+    }
     this.fetchCourts();
   },
 };
