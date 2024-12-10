@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.db.connection import supabase
+from app.utils.supabase_utils import handle_supabase_response
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -31,9 +32,7 @@ def create_court(court: CourtCreate):
 @router.get("/")
 def get_all_courts_endpoint():
     response = supabase.table("courts").select("*").execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return response.data
+    return handle_supabase_response(response)
 
 @router.get("/{court_id}")
 def get_court_by_id_endpoint(court_id: str):
