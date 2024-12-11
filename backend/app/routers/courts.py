@@ -19,14 +19,10 @@ class CourtCreate(BaseModel):
 @router.post("/")
 def create_court(court: CourtCreate):
     try:
-        # Inserta el registro en la tabla de Supabase
-        response = supabase.table("courts").insert(court.dict()).execute()
-        
+        response = supabase.table("courts").insert(court.dict()).execute()       
         if not response.data:  # Si no se insertaron datos
             raise HTTPException(status_code=400, detail="Failed to create court")
-
         return response.data[0]  # Retorna la información del registro creado
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -48,13 +44,13 @@ def get_court_by_id_endpoint(court_id: str):
 @router.put("/{court_id}")
 def update_court_endpoint(court_id: str, updates: dict):
     response = supabase.table("courts").update(updates).eq("id", court_id).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
-    return response.data
-
+    if response.data is None:
+        raise HTTPException(status_code=400, detail="Failed to update court")
+    return handle_supabase_response(response)
+    
 @router.delete("/{court_id}")
 def delete_court_endpoint(court_id: str):
     response = supabase.table("courts").delete().eq("id", court_id).execute()
-    if response.error:
-        raise HTTPException(status_code=400, detail=response.error.message)
+    if response.data is None:
+        raise HTTPException(status_code=400, detail="Failed to delete court")
     return {"message": "Court deleted successfully"}

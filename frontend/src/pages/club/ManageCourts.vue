@@ -26,7 +26,7 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn flat icon="delete" color="red" @click.stop="deleteCourt(court.id)" />
+            <q-btn flat icon="delete" color="red" @click.stop="confirmDelete(court.id)" />
           </q-item-section>
         </q-item>
       </q-list>
@@ -81,7 +81,24 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="isDeleteDialogOpen">
+      <q-card>
+        <q-card-section class="text-h6">
+          Confirmar eliminación
+        </q-card-section>
+
+        <q-card-section>
+          ¿Estás seguro de que deseas eliminar esta cancha? Esta acción no se puede deshacer.
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="primary" v-close-popup />
+          <q-btn flat label="Eliminar" color="negative" @click="deleteCourt" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
+  
 </template>
 
 <script>
@@ -93,6 +110,7 @@ export default {
     return {
       courts: [],
       isDialogOpen: false,
+      isDeleteDialogOpen: false,
       dialogTitle: "Agregar Cancha",
       form: {
         id: null,
@@ -129,7 +147,14 @@ export default {
       try {
         if (this.form.id) {
           // Editar cancha
-          await api.put(`/courts/${this.form.id}`, this.form);
+          const payload = {
+            name: this.form.name,
+            price_per_hour: this.form.price_per_hour,
+            price_per_hour_and_half: this.form.price_per_hour_and_half,
+            is_indoor: this.form.is_indoor,
+            is_active: this.form.is_active,
+          };
+          await api.put(`/courts/${this.form.id}`, payload);
         } else {
           // Agregar nueva cancha
           await api.post("/courts", this.form);
@@ -142,10 +167,15 @@ export default {
         console.error("Error al guardar la cancha:", error);
       }
     },
-    async deleteCourt(id) {
+    confirmDelete(courtId) {
+      this.courtToDelete = courtId; // Guarda el ID de la cancha
+      this.isDeleteDialogOpen = true; // Abre el diálogo
+    },
+    async deleteCourt() {
       try {
-        await api.delete(`/courts/${id}`);
-        this.courts = this.courts.filter((court) => court.id !== id);
+        await api.delete(`/courts/${this.courtToDelete}`);
+        this.courts = this.courts.filter((court) => court.id !== this.courtToDelete);
+        this.isDeleteDialogOpen = false; // Cierra el diálogo
       } catch (error) {
         console.error("Error al eliminar la cancha:", error);
       }

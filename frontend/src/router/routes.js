@@ -25,6 +25,11 @@ const routes = [
     component: () => import("src/pages/club/ManageCourts.vue"),
     meta: { requiresAuth: true },
   },
+  { 
+    path: "/club/perfil", 
+    component: () => import("src/pages/club/EditClubInfo.vue"),
+    meta: { requiresAuth: true },
+  },
   { path: "/inicio", component: () => import("pages/Home.vue") },
   { path: "/torneos", component: () => import("pages/Torneos.vue") },
   { path: "/asociaciones", component: () => import("pages/Asociaciones.vue") },
