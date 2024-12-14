@@ -30,6 +30,16 @@ const routes = [
     component: () => import("src/pages/club/EditClubInfo.vue"),
     meta: { requiresAuth: true },
   },
+  { 
+    path: "/club/admin", 
+    component: () => import("src/pages/club/ManageClub.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/horarios", 
+    component: () => import("src/pages/club/ManageSchedules.vue"),
+    meta: { requiresAuth: true },
+  },
   { path: "/inicio", component: () => import("pages/Home.vue") },
   { path: "/torneos", component: () => import("pages/Torneos.vue") },
   { path: "/asociaciones", component: () => import("pages/Asociaciones.vue") },

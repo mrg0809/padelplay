@@ -70,25 +70,25 @@
         clubName: "Club PadelPlay", // Reemplaza con el nombre real del club desde la API o store
         options: [
           {
-            name: "Administrar reservas",
-            description: "Gestiona las reservas de tus canchas",
+            name: "Horarios",
+            description: "Gestiona tus horarios",
             icon: "event",
             image_url: "/src/assets/menu/campopadel.jpg",
-            route: "reservas",
+            route: "horarios",
           },
           {
-            name: "Administrar tu club",
+            name: "Canchas",
             description: "Configura tus canchas y horarios",
             icon: "sports_tennis",
             image_url: "/src/assets/menu/campopadel.jpg",
-            route: "admin",
+            route: "canchas",
           },
           {
-            name: "Crear torneos",
-            description: "Organiza torneos y eventos",
-            icon: "emoji_events",
+            name: "Estadisticas",
+            description: "Revisa las estadísticas mas relevantes de tu club",
+            icon: "insights",
             image_url: "/src/assets/menu/campopadel.jpg",
-            route: "torneos",
+            route: "stats",
           },
         ],
         tabs: [
