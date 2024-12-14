@@ -9,10 +9,17 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+
 @router.post("/register")
-async def register(email: str, password: str):
+async def register(request: RegisterRequest):
     try:
-        await create_user(email=email, password=password)
+        await create_user(full_name=request.full_name,
+                          email=request.email,
+                          password=request.password)
         return {"message": "User registered successfully"}
     except HTTPException as e:
         raise e

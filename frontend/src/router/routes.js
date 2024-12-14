@@ -1,5 +1,6 @@
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
+  { path: "/signup", component: () => import("pages/RegisterPage.vue")},
   { 
     path: "/dashboard/superuser", 
     component: () => import("pages/DashboardSuperuser.vue"),
@@ -38,6 +39,11 @@ const routes = [
   { 
     path: "/club/horarios", 
     component: () => import("src/pages/club/ManageSchedules.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/player/reservas", 
+    component: () => import("src/pages/club/ListClubs.vue"),
     meta: { requiresAuth: true },
   },
   { path: "/inicio", component: () => import("pages/Home.vue") },

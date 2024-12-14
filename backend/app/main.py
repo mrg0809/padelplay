@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth, courts, clubs
+from app.routers import auth, courts, clubs, reservations
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
@@ -17,6 +17,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(clubs.router)
 app.include_router(courts.router)
+app.include_router(reservations.router, prefix="/reservations", tags=["Reservations"])
 
 @app.get("/")
 async def root():

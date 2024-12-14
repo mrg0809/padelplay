@@ -2,10 +2,10 @@ from app.db.connection import supabase
 from fastapi import Depends, HTTPException
 
 #CREACION DE USUARIO PLAYER
-async def create_user(email: str, password: str):
+async def create_user(full_name: str, email: str, password: str):
     try:
         # Crear un nuevo usuario en Supabase
-        response = supabase.auth.sign_up({"email": email, "password": password})
+        response = supabase.auth.sign_up({"full_name": full_name, "email": email, "password": password})
 
         if response.user is None:
             raise HTTPException(status_code=400, detail="User creation failed")
@@ -16,7 +16,7 @@ async def create_user(email: str, password: str):
         supabase.table("profiles").insert(
             {
                 "id": user_id,         # ID del usuario
-                "full_name": '',  # Nombre completo del usuario
+                "full_name": full_name,  # Nombre completo del usuario
                 "user_type": "player",  # Por defecto 'player'
                 "created_by": user_id,  # El propio usuario es el creador inicial
             }
