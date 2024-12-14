@@ -50,56 +50,60 @@ def save_schedules(data: dict, current_user: dict = Depends(get_current_user)):
         apply_to_all = data.get("apply_to_all", True)
         schedules = data.get("schedules", [])
 
-        # Si se selecciona aplicar a todas las canchas
         if apply_to_all:
-            # Elimina horarios específicos existentes
-            supabase.from_("schedules").delete().eq("club_id", club_id).neq("court_id", None).execute()
+            # Obtener todas las canchas del club
+            courts_response = supabase.from_("courts").select("id").eq("club_id", club_id).execute()
+            courts = courts_response.data if courts_response.data else []
+            print(f"Canchas obtenidas: {courts}")  # Log para verificar los datos de canchas
 
-            # Elimina horarios generales previos
-            supabase.from_("schedules").delete().eq("club_id", club_id).eq("court_id", None).execute()
+            if not courts:
+                raise HTTPException(status_code=400, detail="No hay canchas disponibles para este club.")
 
-            # Inserta nuevos horarios generales
-            for schedule in schedules:
-                supabase.from_("schedules").insert({
-                    "club_id": club_id,
-                    "court_id": None,
-                    "day_of_week": schedule["day_of_week"],
-                    "opening_time": schedule["opening_time"],
-                    "closing_time": schedule["closing_time"],
-                }).execute()
-        else:
-            # Elimina horarios generales
-            supabase.from_("schedules").delete().eq("club_id", club_id).eq("court_id", None).execute()
+            # Eliminar horarios específicos existentes
+            delete_response = supabase.rpc("delete_schedules_not_null", {"p_club_id": club_id}).execute()
+            print(f"Respuesta de eliminación de horarios específicos: {delete_response}")  # Log de eliminación
 
-            # Inserta o actualiza horarios específicos
-            for schedule in schedules:
-                court_id = schedule.get("court_id")
-                existing_schedule = supabase.from_("schedules").select("*").match({
-                    "club_id": club_id,
-                    "court_id": court_id,
-                    "day_of_week": schedule["day_of_week"],
-                }).execute()
-
-                if existing_schedule.data:
-                    # Actualizar horario
-                    supabase.from_("schedules").update({
-                        "opening_time": schedule["opening_time"],
-                        "closing_time": schedule["closing_time"],
-                    }).eq("id", existing_schedule.data[0]["id"]).execute()
-                else:
-                    # Crear horario
-                    supabase.from_("schedules").insert({
+            # Inserta horarios para cada cancha
+            for court in courts:
+                for schedule in schedules:
+                    insert_response = supabase.from_("schedules").insert({
                         "club_id": club_id,
-                        "court_id": court_id,
+                        "court_id": court["id"],
                         "day_of_week": schedule["day_of_week"],
                         "opening_time": schedule["opening_time"],
                         "closing_time": schedule["closing_time"],
                     }).execute()
+                    print(f"Insertando horario para cancha {court['id']}: {insert_response}")  # Log de inserción
+
+        else:
+            # Eliminar horarios generales previos para la cancha seleccionada
+            selected_court_id = data.get("court_id")
+            if not selected_court_id:
+                raise HTTPException(status_code=400, detail="Court ID es obligatorio para aplicar cambios individuales.")
+
+            delete_response = supabase.from_("schedules").delete().eq("club_id", club_id).eq("court_id", selected_court_id).execute()
+            print(f"Respuesta de eliminación de horarios para cancha {selected_court_id}: {delete_response}")
+
+            # Inserta o actualiza horarios para la cancha seleccionada
+            for schedule in schedules:
+                insert_response = supabase.from_("schedules").insert({
+                    "club_id": club_id,
+                    "court_id": selected_court_id,
+                    "day_of_week": schedule["day_of_week"],
+                    "opening_time": schedule["opening_time"],
+                    "closing_time": schedule["closing_time"],
+                }).execute()
+                print(f"Insertando horario para cancha {selected_court_id}: {insert_response}")
 
         return {"message": "Horarios guardados exitosamente."}
 
     except Exception as e:
+        print(f"Error en save_schedules: {e}")  # Log detallado del error
         raise HTTPException(status_code=500, detail=f"Error al guardar horarios: {str(e)}")
+
+
+
+
 
 
 @router.get("/schedules")

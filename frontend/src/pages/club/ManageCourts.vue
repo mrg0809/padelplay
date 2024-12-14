@@ -3,7 +3,7 @@
     <q-header class="bg-primary text-white">
       <q-toolbar>
         <q-toolbar-title>Administrar Canchas</q-toolbar-title>
-        <q-btn flat round icon="add" @click="openCourtDialog" label="Agregar cancha" />
+        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
       </q-toolbar>
     </q-header>
 
@@ -22,7 +22,7 @@
           <q-item-section>
             <q-item-label>{{ court.name }}</q-item-label>
             <q-item-label caption>
-              Precio por hora: ${{ court.price_per_hour }} | Modalidad: {{ court.modality }}
+              PRECIOS: 1 hora: ${{ court.price_per_hour }} | 1 1/2 hora - ${{ court.price_per_hour_and_half }} | 2 horas - ${{ court.price_per_two_hour }}
             </q-item-label>
           </q-item-section>
           <q-item-section side>
@@ -30,6 +30,9 @@
           </q-item-section>
         </q-item>
       </q-list>
+      <div class="row justify-center q-mt-md">
+        <q-btn glossy rounded color="deep-orange" icon="add" @click="openCourtDialog" label="AGREGAR CANCHA" />
+      </div>
     </q-page-container>
 
     <!-- Diálogo para agregar/editar cancha -->
@@ -46,13 +49,6 @@
             outlined
             dense
           />
-          <q-select
-            v-model="form.modality"
-            label="Modalidad"
-            :options="modalities"
-            outlined
-            dense
-          />
           <q-input
             v-model.number="form.price_per_hour"
             label="Precio por hora"
@@ -63,6 +59,13 @@
           <q-input
             v-model.number="form.price_per_hour_and_half"
             label="Precio por hora y media"
+            outlined
+            dense
+            type="number"
+          />
+          <q-input
+            v-model.number="form.price_per_two_hour"
+            label="Precio por dos horas"
             outlined
             dense
             type="number"
@@ -115,13 +118,12 @@ export default {
       form: {
         id: null,
         name: "",
-        modality: "",
         price_per_hour: null,
         price_per_hour_and_half: null,
+        price_per_two_hour: null,
         is_indoor: false,
         club_id: null,
       },
-      modalities: ["Por hora", "Hora y media"],
     };
   },
   methods: {
@@ -185,13 +187,16 @@ export default {
       this.form = {
         id: null,
         name: "",
-        modality: "",
         price_per_hour: null,
         price_per_hour_and_half: null,
+        price_per_two_hour:null,
         is_indoor: false,
         club_id: user ? user.club_id : null, // Asigna el club_id del token
       };
     },
+    goBack() {
+        this.$router.back();
+      },
   },
   mounted() {
     const user = getUserFromToken();
