@@ -115,7 +115,7 @@
         this.$router.push(`/player/${route}`);
       },  
       onTabChange(tabName) {
-        this.$router.push(`/${tabName}`);
+        this.$router.push(`/player/${tabName}`);
       },
       onNotifications() {
         console.log("Notificaciones abiertas");
