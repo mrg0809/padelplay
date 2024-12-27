@@ -59,12 +59,14 @@
   
   <script>
   import { ref, onMounted, watch } from "vue";
+  import { useRouter } from "vue-router";
   import { supabase } from "../../services/supabase";
   import { useQuasar } from "quasar";
   
   export default {
     setup() {
       const clubs = ref([]);
+      const router = useRouter();
       const searchQuery = ref("");
       const searching = ref(false);
       const $q = useQuasar();
@@ -72,17 +74,25 @@
   
       onMounted(async () => {
         try {
-          userLocation = await getUserLocation();
-          console.log("User Location:", userLocation);
-          await searchClubs(searchQuery.value);
+            const userLocation = await getUserLocation(); // Obtener la ubicación del usuario
+            console.log("User Location:", userLocation);
+            await searchClubs("", userLocation); // Carga inicial con geolocalización
         } catch (error) {
-          $q.notify({
+            console.error("Geolocation error:", error.message);
+            $q.notify({
             type: "negative",
-            message: "Error al obtener la ubicación. Asegúrate de que la ubicación esté habilitada en tu navegador.",
-          });
-          await searchClubs(searchQuery.value);
+            message: "No se pudo obtener tu ubicación.",
+            });
+            await searchClubs(""); // Carga inicial sin geolocalización
         }
-      });
+        });
+
+// Buscar al escribir
+watch(searchQuery, (newQuery) => {
+  if (newQuery && newQuery.trim() !== "") {
+    searchClubs(newQuery); // Solo búsqueda por texto
+  }
+});
   
       const getUserLocation = () => {
         return new Promise((resolve, reject) => {
@@ -106,56 +116,64 @@
         });
       };
   
-      const searchClubs = async (query) => {
-        searching.value = true;
-  
-        try {
-          let response;
-          if (query) {
-            response = await supabase
-              .from("clubs")
-              .select("id, name, address, logo_url")
-              .ilike("name", `%${query}%`);
-          } else if (userLocation) {
-            const { latitude, longitude } = userLocation;
-  
-            response = await supabase.rpc("calculate_distance", {
-              lat: latitude,
-              lng: longitude,
-            });
-          }
-  
-          if (response.error) throw response.error;
-  
-          clubs.value = response.data;
-        } catch (error) {
-          console.error("Error fetching clubs:", error.message);
-          $q.notify({
-            type: "negative",
-            message: "Error al buscar clubes: " + error.message,
+      const searchClubs = async (query, userLocation = null) => {
+      try {
+        if (query.trim()) {
+          // Buscar por nombre
+          const { data, error } = await supabase
+            .from("clubs")
+            .select("id, name, address, logo_url")
+            .ilike("name", `%${query}%`);
+          if (error) throw error;
+          clubs.value = data.map((club) => ({
+            id: club.id,
+            name: club.name,
+            address: club.address,
+            logo_url: club.logo_url,
+          }));
+        } else if (userLocation) {
+          // Buscar por geolocalización
+          const { latitude, longitude } = userLocation;
+          const { data, error } = await supabase.rpc("calculate_distance", {
+            lat: latitude,
+            lng: longitude,
           });
-        } finally {
-          searching.value = false;
+          if (error) throw error;
+          clubs.value = data.map((club) => ({
+            id: club.club_id,
+            name: club.name,
+            address: club.address,
+            logo_url: club.logo_url,
+            distance: club.distance,
+          }));
+        } else {
+          clubs.value = [];
         }
-      };
+      } catch (error) {
+        console.error("Error fetching clubs:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al buscar clubes: " + error.message,
+        });
+      }
+    };
+
+    const viewClubDetails = (clubId) => {
+      console.log("Navigating to Club:", clubId);
+      router.push(`/club/${clubId}`); // Navegar usando router.push
+    };
+
+    return {
+      clubs,
+      searchQuery,
+      searching,
+      searchClubs,
+      viewClubDetails, // Exportar para su uso en el template
+    };
+  },
+
+
   
-      const viewClubDetails = (clubId) => {
-        console.log("Navigating to Club:", clubId);
-        this.$router.push(`/clubs/${clubId}/reservations`);
-      };
-  
-      watch(searchQuery, (newQuery) => {
-        searchClubs(newQuery);
-      });
-  
-      return {
-        clubs,
-        searchQuery,
-        searching,
-        searchClubs,
-        viewClubDetails,
-      };
-    },
     methods: {
       goBack() {
         this.$router.back();
