@@ -53,7 +53,7 @@ const routes = [
   },
   { 
     path: "/player/reservas", 
-    component: () => import("src/pages/club/ListClubs.vue"),
+    component: () => import("src/pages/player/ListClubs.vue"),
     meta: { requiresAuth: true },
   },
   { path: "/inicio", component: () => import("pages/Home.vue") },
