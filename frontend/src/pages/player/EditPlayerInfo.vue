@@ -73,7 +73,7 @@
         },
       };
     },
-    methods: {
+    methods: {  
       async fetchPlayerInfo() {
         try {
           const response = await api.get("/players/");

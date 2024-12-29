@@ -1,32 +1,47 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="bg-primary text-white">
-        <q-toolbar>
-          <q-btn flat round dense icon="arrow_back" @click="goBack" />
-          <q-toolbar-title>{{ clubDetails?.name || "Detalles del Club" }}</q-toolbar-title>
-        </q-toolbar>
-      </q-header>
-  
-      <q-page-container>
-        <q-page class="q-pa-md">
-          <div v-if="loading" class="text-center">
-            <q-spinner-dots color="primary" size="lg" />
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="bg-primary text-white">
+      <q-toolbar>
+        <q-toolbar-title>{{ clubDetails?.name || "Detalles del Club" }}</q-toolbar-title>
+        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
+      </q-toolbar>
+    </q-header>
+
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <div v-if="loading" class="text-center">
+          <q-spinner-dots color="primary" size="lg" />
+        </div>
+        <div v-else>
+          <!-- Información del club -->
+          <div class="q-mb-md text-center">
+            <img
+              v-if="clubDetails?.logo_url"
+              :src="clubDetails.logo_url"
+              alt="Club Logo"
+              class="q-mb-md"
+              style="max-width: 200px; border-radius: 8px;"
+            />
           </div>
-          <div v-else>
-            <div class="q-mb-md text-center">
-              <img
-                v-if="clubDetails?.logo_url"
-                :src="clubDetails.logo_url"
-                alt="Club Logo"
-                class="q-mb-md"
-                style="max-width: 200px; border-radius: 8px;"
-              />
-              <p><strong>Dirección:</strong> {{ clubDetails?.address || "No disponible" }}</p>
-              <p v-if="clubDetails?.city"><strong>Ciudad:</strong> {{ clubDetails.city }}</p>
-              <p v-if="clubDetails?.state"><strong>Estado:</strong> {{ clubDetails.state }}</p>
-              <p v-if="clubDetails?.country"><strong>País:</strong> {{ clubDetails.country }}</p>
-            </div>
-  
+
+          <!-- Pestañas del Club -->
+          <q-tabs v-model="selectedTab" align="justify" class="text-white">
+            <q-tab name="info" label="Info" icon="info" />
+            <q-tab name="reservations" label="Reservas" icon="event" />
+            <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
+            <q-tab name="wall" label="Muro" icon="chat" />
+          </q-tabs>
+
+          <q-separator />
+
+          <!-- Contenido de las pestañas -->
+          <!-- Pestaña Info -->
+          <div v-if="selectedTab === 'info'">
+            <p><strong>Dirección:</strong> {{ clubDetails?.address || "No disponible" }}</p>
+            <p v-if="clubDetails?.city"><strong>Ciudad:</strong> {{ clubDetails.city }}</p>
+            <p v-if="clubDetails?.state"><strong>Estado:</strong> {{ clubDetails.state }}</p>
+            <p v-if="clubDetails?.country"><strong>País:</strong> {{ clubDetails.country }}</p>
+
             <q-btn
               v-if="coordinates"
               label="Cómo llegar"
@@ -36,106 +51,413 @@
               @click="openMaps(coordinates)"
             />
           </div>
-        </q-page>
-      </q-page-container>
-    </q-layout>
-  </template>
-  
-  <script>
-  import { ref, onMounted } from "vue";
-  import { supabase } from "../../services/supabase";
-  import { useRoute } from "vue-router";
-  import { useQuasar } from "quasar";
-  
-  export default {
-    setup() {
-      const route = useRoute();
-      const $q = useQuasar();
-      const clubDetails = ref(null);
-      const coordinates = ref(null);
-      const loading = ref(false);
-  
-      const clubId = route.params.clubId;
-  
-      onMounted(async () => {
-        if (!clubId) {
-          console.error("Club ID is undefined");
-          return;
+          <!-- Pestaña reservas -->
+          <div v-if="selectedTab === 'reservations'">
+            <!-- Muestra fechas -->
+            <div class="q-mt-lg days-container">
+              <q-btn flat icon="arrow_back" @click="previousWeek" />
+              <div class="days-scroll">
+                <q-btn
+                  v-for="(day, index) in days"
+                  :key="index"
+                  :outline="selectedDay !== day.date"
+                  color="primary"
+                  class="day-button"
+                  @click="selectDay(day.date)"
+                >
+                  <div>{{ day.label }}</div>
+                  <div class="month-label">{{ day.month }}</div>
+                </q-btn>
+              </div>
+              <q-btn flat icon="arrow_forward" @click="nextWeek" />
+            </div>
+            <!-- Muestra horarios disponibles -->
+            <div class="available-times q-mt-lg">
+              <div v-if="loadingTimes" class="text-center">
+                <q-spinner-dots color="primary" size="lg" />
+              </div>
+              <div v-else class="time-grid">
+                <q-btn
+                  v-for="time in consolidatedTimes"
+                  :key="time"
+                  :label="time"
+                  :color="time === selectedTime ? 'green' : 'primary'"
+                  class="time-slot"
+                  @click="selectTime(time)"
+                />
+              </div>
+            </div>
+            <!-- Canchas disponibles y selección de tiempo -->
+            <div v-if="selectedTime" class="q-mt-lg">
+              <h5>Canchas disponibles para {{ selectedTime }}:</h5>
+              <div v-if="loadingCourts" class="text-center">
+                <q-spinner-dots color="primary" size="lg" />
+              </div>
+              <div v-else>
+                <q-list bordered separator>
+                  <q-expansion-item
+                    v-for="court in availableCourts"
+                    :key="court.id"
+                    expand-separator
+                    :label="court.name"
+                    :caption="`${court.is_indoor ? 'Techada' : 'Aire libre'}`" 
+                    class="court-expansion-item"
+                  >
+                    <q-card class="court-card">
+                      <q-card-section class="row q-gutter-sm justify-center">
+                        <q-btn
+                          v-for="option in timeOptions"
+                          :key="option.duration"
+                          color="primary"
+                          @click="selectDuration(court, option)"
+                          class="time-option-btn" 
+                        >
+                          <div class="time-option-label">
+                            <span>${{ getCourtPrice(court, option.duration) }}</span>
+                            <br>
+                            <span class="duration">{{ option.duration }} min</span>
+                          </div>
+                        </q-btn>
+                      </q-card-section>
+                    </q-card>
+                  </q-expansion-item>
+                </q-list>
+              </div>
+            </div>
+          </div>
+          <!-- Seccion Torneos -->
+          <div v-if="selectedTab === 'tournaments'">
+            <h4 class="text-center">Torneos</h4>
+            <p>Aquí se mostrarán los torneos disponibles en el club.</p>
+          </div>
+
+          <div v-if="selectedTab === 'wall'">
+            <h4 class="text-center">Muro del Club</h4>
+            <p>Aquí se mostrarán las publicaciones del club.</p>
+          </div>
+        </div>
+      </q-page>
+    </q-page-container>
+  </q-layout>
+</template>
+
+<script>
+import { ref, onMounted } from "vue";
+import { supabase } from "../../services/supabase";
+import { useRoute } from "vue-router";
+import { useQuasar } from "quasar";
+import api from "../../api";
+
+export default {
+  setup() {
+    const route = useRoute();
+    const $q = useQuasar();
+    const clubDetails = ref(null);
+    const coordinates = ref(null);
+    const loading = ref(false);
+    const days = ref([]);
+    const selectedDay = ref("");
+    const availableTimes = ref([]);
+    const consolidatedTimes = ref([]);
+    const selectedTime = ref(null);
+    const loadingTimes = ref(false);
+    const currentDate = ref(new Date());
+    const selectedTab = ref("info");
+    const availableCourts = ref([]);
+    const selectedCourt = ref(null);
+    const selectedDuration = ref(null);
+    const timeOptions = ref([
+      { label: "60 minutos", duration: 60 },
+      { label: "90 minutos", duration: 90 },
+      { label: "120 minutos", duration: 120 },
+    ]);
+    const loadingCourts = ref(false);
+
+    const clubId = route.params.clubId;
+
+    onMounted(async () => {
+      if (!clubId) {
+        console.error("Club ID is undefined");
+        return;
+      }
+
+      try {
+        loading.value = true;
+        const { data, error } = await supabase
+          .from("clubs")
+          .select("*, geolocation, latitude, longitude, city, state, country")
+          .eq("id", clubId)
+          .single();
+
+        if (error) {
+          throw error;
         }
-  
-        try {
-          loading.value = true;
-          const { data, error } = await supabase
-            .from("clubs")
-            .select("*, geolocation, latitude, longitude, city, state, country")
-            .eq("id", clubId)
-            .single();
-  
-          if (error) {
-            throw error;
-          }
-  
-          clubDetails.value = data;
-  
-          // Extraer coordenadas de geolocation o lat/lng
-          if (data?.geolocation?.coordinates) {
-            coordinates.value = {
-              lat: data.geolocation.coordinates[1],
-              lng: data.geolocation.coordinates[0],
-            };
-          } else if (data.latitude && data.longitude) {
-            coordinates.value = {
-              lat: data.latitude,
-              lng: data.longitude,
-            };
-          } else {
-            console.error("No valid coordinates available");
-          }
-        } catch (error) {
-          console.error("Error al obtener detalles del club:", error.message);
-          $q.notify({
-            type: "negative",
-            message: "Error al cargar detalles del club.",
-          });
-        } finally {
-          loading.value = false;
+
+        clubDetails.value = data;
+
+        if (data?.geolocation?.coordinates) {
+          coordinates.value = {
+            lat: data.geolocation.coordinates[1],
+            lng: data.geolocation.coordinates[0],
+          };
+        } else if (data.latitude && data.longitude) {
+          coordinates.value = {
+            lat: data.latitude,
+            lng: data.longitude,
+          };
+        } else {
+          console.error("No valid coordinates available");
         }
-      });
-  
-      const openMaps = ({ lat, lng }) => {
-        if (!lat || !lng) {
-          console.error("Invalid coordinates:", { lat, lng });
-          return;
+
+        generateDays();
+
+        fetchAvailableTimes();
+      } catch (error) {
+        console.error("Error al obtener detalles del club:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al cargar detalles del club.",
+        });
+      } finally {
+        loading.value = false;
+      }
+    });
+
+    const generateDays = () => {
+      days.value = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(currentDate.value);
+        date.setDate(currentDate.value.getDate() + i);
+        days.value.push({
+          date: date.toISOString().split("T")[0],
+          label: date.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" }),
+          month: date.toLocaleDateString("es-ES", { month: "short" }).toUpperCase(),
+        });
+      }
+      selectedDay.value = days.value[0].date;
+    };
+
+    const previousWeek = () => {
+      currentDate.value.setDate(currentDate.value.getDate() - 7);
+      generateDays();
+      fetchAvailableTimes();
+    };
+
+    const nextWeek = () => {
+      currentDate.value.setDate(currentDate.value.getDate() + 7);
+      generateDays();
+      fetchAvailableTimes();
+    };
+
+    const fetchAvailableTimes = async () => {
+      if (!clubId || !selectedDay.value) return;
+
+      try {
+        loadingTimes.value = true;
+        const response = await api.get(`/reservations/available-times`, {
+          params: {
+            club_id: clubId,
+            date: selectedDay.value,
+          },
+        });
+
+        const rawAvailableTimes = response.data.available_times;
+
+        // Consolidar horarios únicos independientemente de la cancha
+        let allTimes = Object.values(rawAvailableTimes).flat();
+        allTimes = [...new Set(allTimes)].sort(); // Eliminar duplicados y ordenar
+
+        // Filtrar horarios pasados si el día seleccionado es hoy
+        const now = new Date();
+        const selectedDate = new Date(selectedDay.value);
+
+        if (
+          selectedDate.toDateString() === now.toDateString() // Si el día seleccionado es hoy
+        ) {
+          const currentTime = now.toTimeString().slice(0, 5); // Obtener la hora actual en formato HH:MM
+          allTimes = allTimes.filter((time) => time > currentTime); // Filtrar horarios pasados
         }
-        const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-        window.open(mapsUrl, "_blank");
-      };
-  
-      return {
-        clubDetails,
-        coordinates,
-        loading,
-        openMaps,
-      };
+
+        consolidatedTimes.value = allTimes;
+      } catch (error) {
+        console.error("Error al obtener horarios disponibles:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al cargar horarios disponibles.",
+        });
+      } finally {
+        loadingTimes.value = false;
+      }
+    };
+
+
+    const fetchAvailableCourts = async () => {
+      if (!clubId || !selectedDay.value || !selectedTime.value) return;
+
+      try {
+        loadingCourts.value = true;
+        const response = await api.get(`/reservations/available-courts`, {
+          params: {
+            club_id: clubId,
+            date: selectedDay.value,
+            time: selectedTime.value,
+          },
+        });
+        availableCourts.value = response.data.available_courts;
+      } catch (error) {
+        console.error("Error al obtener canchas disponibles:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al cargar canchas disponibles.",
+        });
+      } finally {
+        loadingCourts.value = false;
+      }
+    };
+
+
+    const selectDay = (day) => {
+      selectedDay.value = day;
+      fetchAvailableTimes();
+    };
+
+    const selectTime = (time) => {
+      selectedTime.value = time;
+      fetchAvailableCourts();
+    };
+
+
+    const selectCourt = (court) => {
+      selectedCourt.value = court;
+    };
+
+    const selectDuration = (option) => {
+      selectedDuration.value = option.duration;
+    };
+
+
+    const openMaps = ({ lat, lng }) => {
+      if (!lat || !lng) {
+        console.error("Invalid coordinates:", { lat, lng });
+        return;
+      }
+      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      window.open(mapsUrl, "_blank");
+    };
+
+    return {
+      clubDetails,
+      coordinates,
+      loading,
+      openMaps,
+      days,
+      selectedDay,
+      availableTimes,
+      consolidatedTimes,
+      selectedTime,
+      availableCourts,
+      selectedCourt,
+      selectedDuration,
+      timeOptions,
+      loadingTimes,
+      loadingCourts,
+      selectDay,
+      selectTime,
+      selectCourt,
+      selectDuration,
+      previousWeek,
+      nextWeek,
+      selectedTab,
+    };
+  },
+  methods: {
+    goBack() {
+      this.$router.back();
     },
-    methods: {
-      goBack() {
-        this.$router.back();
-      },
+    getCourtPrice(court, duration) {
+      if (duration === 60) {
+        return court.price_per_hour || 0;
+      } else if (duration === 90) {
+        return court.price_per_hour_and_half || 0;
+      } else if (duration === 120) {
+        return court.price_per_two_hour || 0;
+      }
+      return 0;
     },
-  };
-  </script>
-  
-  
-  
-  <style scoped>
-  .club-logo {
-    max-width: 150px;
-    border-radius: 8px;
-    margin-bottom: 16px;
-  }
-  .content {
-    text-align: center;
-  }
-  </style>
-  
+  },
+};
+</script>
+
+<style scoped>
+.club-logo {
+  max-width: 150px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.court-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.available-times {
+  margin-top: 16px;
+}
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 8px;
+  justify-content: center;
+}
+.time-slot {
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 6px;
+  height: 40px;
+}
+.day-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.month-label {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+.days-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.days-scroll {
+  display: flex;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.days-scroll::-webkit-scrollbar {
+  display: none;
+}
+.q-list {
+  margin-top: 16px;
+}
+.q-expansion-item {
+  background-color: #333;
+  color: #fff;
+}
+.court-expansion-item {
+  background-color: #222; 
+  color: #fff; 
+}
+.court-card {
+  background-color: #222; 
+  padding: 10px; 
+  border-radius: 5px; 
+}
+.time-option-btn {
+  width: 88px; 
+  margin: 3px; 
+}
+</style>
