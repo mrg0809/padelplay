@@ -1,0 +1,105 @@
+<template>
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="bg-primary text-white">
+      <q-toolbar>
+        <q-toolbar-title>Confirmar Reserva</q-toolbar-title>
+        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
+      </q-toolbar>
+    </q-header>
+
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <q-card class="bg-dark text-white">
+          <q-card-section>
+            <h3 class="text-primary">Resumen de Reserva</h3>
+          </q-card-section>
+          <q-card-section>
+            <p><strong>Club:</strong> {{ reservationDetails.clubName }}</p>
+            <p><strong>Cancha:</strong> {{ reservationDetails.courtName }}</p>
+            <p><strong>Fecha:</strong> {{ reservationDetails.date }}</p>
+            <p><strong>Horario:</strong> {{ reservationDetails.time }}</p>
+            <p><strong>Duración:</strong> {{ reservationDetails.duration }} minutos</p>
+            <p><strong>Precio:</strong> ${{ reservationDetails.price.toFixed(2) }}</p>
+            <p><strong>Comisión:</strong> ${{ commission.toFixed(2) }}</p>
+            <p><strong>Total a Pagar:</strong> ${{ total.toFixed(2) }}</p>
+          </q-card-section>
+
+          <q-card-actions align="right">
+            <q-btn label="Confirmar y Pagar" color="green" @click="confirmReservation" />
+          </q-card-actions>
+        </q-card>
+      </q-page>
+    </q-page-container>
+  </q-layout>
+</template>
+
+<script>
+import { ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useQuasar } from "quasar";
+
+export default {
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const $q = useQuasar();
+
+    const reservationDetails = ref({
+      clubId: route.query.clubId || "",
+      clubName: route.query.clubName || "Club no especificado",
+      courtId: route.query.courtId || "",
+      courtName: route.query.courtName || "Cancha no especificada",
+      date: route.query.date || "Fecha no especificada",
+      time: route.query.time || "Hora no especificada",
+      duration: route.query.duration || 0,
+      price: parseFloat(route.query.price) || 0,
+    });
+
+    const commission = ref(5); // Ejemplo de comisión fija
+    const total = ref(reservationDetails.value.price + commission.value);
+
+    const confirmReservation = () => {
+      $q.notify({
+        type: "positive",
+        message: "Reserva confirmada. Redirigiendo al pago...",
+      });
+
+      // Simulación del proceso de pago
+      setTimeout(() => {
+        router.push("/success"); // Redirige a una página de éxito
+      }, 1500);
+    };
+
+    const goBack = () => {
+      router.back();
+    };
+
+    return {
+      reservationDetails,
+      commission,
+      total,
+      confirmReservation,
+      goBack,
+    };
+  },
+};
+</script>
+
+<style scoped>
+.q-card {
+  max-width: 400px;
+  margin: auto;
+  background-color: #333; /* Fondo oscuro para contrastar */
+  color: #fff; /* Texto blanco para visibilidad */
+  border-radius: 8px; /* Bordes redondeados */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Sombra para destacar */
+}
+
+.text-primary {
+  color: #4caf50; /* Verde primario */
+}
+
+.q-card-section {
+  padding: 16px;
+}
+</style>

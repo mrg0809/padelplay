@@ -109,7 +109,7 @@
                           v-for="option in timeOptions"
                           :key="option.duration"
                           color="primary"
-                          @click="selectDuration(court, option)"
+                          @click="selectDuration(option, court)"
                           class="time-option-btn" 
                         >
                           <div class="time-option-label">
@@ -144,13 +144,14 @@
 <script>
 import { ref, onMounted } from "vue";
 import { supabase } from "../../services/supabase";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import api from "../../api";
 
 export default {
   setup() {
     const route = useRoute();
+    const router = useRouter();
     const $q = useQuasar();
     const clubDetails = ref(null);
     const coordinates = ref(null);
@@ -174,6 +175,18 @@ export default {
     const loadingCourts = ref(false);
 
     const clubId = route.params.clubId;
+
+    const getCourtPrice = (court, duration) => {
+      if (!court) return 0;
+      if (duration === 60) {
+        return court.price_per_hour || 0;
+      } else if (duration === 90) {
+        return court.price_per_hour_and_half || 0;
+      } else if (duration === 120) {
+        return court.price_per_two_hour || 0;
+      }
+      return 0;
+    };
 
     onMounted(async () => {
       if (!clubId) {
@@ -331,8 +344,34 @@ export default {
       selectedCourt.value = court;
     };
 
-    const selectDuration = (option) => {
+    const selectDuration = (option, court) => {
+      if (!court || !selectedDay.value || !selectedTime.value) {
+        console.error("Datos incompletos para la reserva");
+        $q.notify({
+          type: "negative",
+          message: "No se pudo completar la reserva. Por favor, verifica los datos.",
+        });
+        return;
+      }
+
+      selectedCourt.value = court;
       selectedDuration.value = option.duration;
+
+      const reservationDetails = {
+        clubId: clubDetails.value?.id || "ID de club no especificado",
+        clubName: clubDetails.value?.name || "Nombre de club no especificado",
+        courtId: court.id || "ID de cancha no especificado",
+        courtName: court.name || "Nombre de cancha no especificado",
+        date: selectedDay.value || "Fecha no especificada",
+        time: selectedTime.value || "Hora no especificada",
+        duration: selectedDuration.value || 0,
+        price: getCourtPrice(court, option.duration) || 0,
+      };
+
+      router.push({
+        name: "CheckoutPage",
+        query: reservationDetails,
+      });
     };
 
 
@@ -368,21 +407,12 @@ export default {
       previousWeek,
       nextWeek,
       selectedTab,
+      getCourtPrice,
     };
   },
   methods: {
     goBack() {
       this.$router.back();
-    },
-    getCourtPrice(court, duration) {
-      if (duration === 60) {
-        return court.price_per_hour || 0;
-      } else if (duration === 90) {
-        return court.price_per_hour_and_half || 0;
-      } else if (duration === 120) {
-        return court.price_per_two_hour || 0;
-      }
-      return 0;
     },
   },
 };

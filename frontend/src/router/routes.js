@@ -1,5 +1,10 @@
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
+  {
+    path: "/checkout",
+    name: "CheckoutPage",
+    component: () => import("src/pages/CheckoutPage.vue"),
+  },
   { path: "/signup", component: () => import("pages/RegisterPage.vue")},
   { 
     path: "/dashboard/superuser", 
