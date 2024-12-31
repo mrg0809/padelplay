@@ -16,6 +16,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
         reservation_date = data["reservation_date"]
         start_time = data["start_time"]
         end_time = data["end_time"]
+        total_price = data["total_price"]
 
         # Verificar disponibilidad
         overlapping_reservations = supabase.from_("reservations").select("*").match({
@@ -39,6 +40,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             "start_time": start_time,
             "end_time": end_time,
             "status": "active",
+            "total_price": total_price,
         }).execute()
 
         return {"message": "Reserva creada exitosamente.", "data": response.data}

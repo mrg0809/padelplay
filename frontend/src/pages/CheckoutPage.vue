@@ -37,6 +37,7 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
+import api from "../api";
 
 export default {
   setup() {
@@ -55,19 +56,49 @@ export default {
       price: parseFloat(route.query.price) || 0,
     });
 
-    const commission = ref(5); // Ejemplo de comisión fija
+    const commission = ref(20); // Ejemplo de comisión fija
     const total = ref(reservationDetails.value.price + commission.value);
 
-    const confirmReservation = () => {
-      $q.notify({
-        type: "positive",
-        message: "Reserva confirmada. Redirigiendo al pago...",
-      });
+    const confirmReservation = async () => {
+      try {
+        $q.loading.show();
 
-      // Simulación del proceso de pago
-      setTimeout(() => {
-        router.push("/success"); // Redirige a una página de éxito
-      }, 1500);
+        const reservationData = {
+          court_id: reservationDetails.value.courtId,
+          reservation_date: reservationDetails.value.date,
+          start_time: reservationDetails.value.time,
+          end_time: calculateEndTime(reservationDetails.value.time, reservationDetails.value.duration),
+          total_price: parseFloat(reservationDetails.value.price),
+        };
+
+        const response = await api.post("/reservations", reservationData);
+
+        $q.notify({
+          type: "positive",
+          message: response.data.message || "Reserva confirmada exitosamente.",
+        });
+
+        router.push("/success");
+      } catch (error) {
+        console.error("Error al confirmar la reserva:", error);
+        $q.notify({
+          type: "negative",
+          message: error.response?.data?.detail || "Error al confirmar la reserva.",
+        });
+      } finally {
+        $q.loading.hide();
+      }
+    };
+
+    const calculateEndTime = (startTime, duration) => {
+      const [hours, minutes] = startTime.split(":").map(Number);
+      const totalMinutes = hours * 60 + minutes + Number(duration);
+      const endHours = Math.floor(totalMinutes / 60);
+      console.log(endHours)
+      const endMinutes = totalMinutes % 60;
+      console.log(endMinutes)
+      console.log(`${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`);
+      return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
     };
 
     const goBack = () => {

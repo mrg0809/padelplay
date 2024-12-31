@@ -42,14 +42,62 @@
             <p v-if="clubDetails?.state"><strong>Estado:</strong> {{ clubDetails.state }}</p>
             <p v-if="clubDetails?.country"><strong>País:</strong> {{ clubDetails.country }}</p>
 
-            <q-btn
-              v-if="coordinates"
-              label="Cómo llegar"
-              color="primary"
-              class="full-width q-mt-md"
-              icon="navigation"
-              @click="openMaps(coordinates)"
-            />
+            <div id="map" style="height: 200px;" v-if="coordinates"></div>
+            
+            <div v-if="clubDetails">
+              <div class="q-mt-md text-center">
+                <q-btn
+                  v-if="coordinates"
+                  flat
+                  round
+                  icon="mdi-google-maps"
+                  color="primary"
+                  class="q-my-md"
+                  size="xl"
+                  @click="openMaps(coordinates)"
+                />
+                <q-btn
+                  v-if="clubDetails.facebook_url"
+                  flat
+                  round
+                  icon="mdi-facebook"
+                  color="primary"
+                  class="q-mx-sm"
+                  size="xl"
+                  @click="openSocialLink(clubDetails.facebook_url)"
+                />
+                <q-btn
+                  v-if="clubDetails.instagram_url"
+                  flat
+                  round
+                  icon="mdi-instagram"
+                  color="purple"
+                  class="q-mx-sm"
+                  size="xl"
+                  @click="openSocialLink(clubDetails.instagram_url)"
+                />
+                <q-btn
+                  v-if="clubDetails.tiktok_url"
+                  flat
+                  round
+                  icon="mdi-tiktok"
+                  color="black"
+                  class="q-mx-sm"
+                  size="xl"
+                  @click="openSocialLink(clubDetails.tiktok_url)"
+                />
+                <q-btn
+                  v-if="clubDetails.whatsapp_number"
+                  flat
+                  round
+                  icon="mdi-whatsapp"
+                  color="green"
+                  class="q-mx-sm"
+                  size="xl"
+                  @click="openWhatsApp(clubDetails.whatsapp_number)"
+                />
+              </div>
+            </div>
           </div>
           <!-- Pestaña reservas -->
           <div v-if="selectedTab === 'reservations'">
@@ -142,11 +190,13 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { supabase } from "../../services/supabase";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import api from "../../api";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 export default {
   setup() {
@@ -188,6 +238,17 @@ export default {
       return 0;
     };
 
+    watch(selectedTab, (newTab) => {
+      if (newTab === "info" && coordinates.value) {
+        setTimeout(() => {
+          const mapElement = document.getElementById("map");
+          if (mapElement && !mapElement._leaflet_id) {
+            initMap(coordinates.value);
+          }
+        }, 100); // Espera a que el contenedor del mapa esté completamente renderizado
+      }
+    });
+
     onMounted(async () => {
       if (!clubId) {
         console.error("Club ID is undefined");
@@ -223,8 +284,17 @@ export default {
         }
 
         generateDays();
-
         fetchAvailableTimes();
+
+        if (selectedTab.value === "info" && coordinates.value) {
+          setTimeout(() => {
+            const mapElement = document.getElementById("map");
+            if (mapElement && !mapElement._leaflet_id) {
+              initMap(coordinates.value);
+            }
+          }, 100); // Espera a que el contenedor esté completamente renderizado
+        }
+        
       } catch (error) {
         console.error("Error al obtener detalles del club:", error.message);
         $q.notify({
@@ -251,6 +321,20 @@ export default {
     };
 
     const previousWeek = () => {
+      const today = new Date();
+      const firstVisibleDay = new Date(currentDate.value);
+
+      // Asegurarse de que no se retroceda más allá del día actual
+      if (
+        firstVisibleDay.getFullYear() === today.getFullYear() &&
+        firstVisibleDay.getMonth() === today.getMonth() &&
+        firstVisibleDay.getDate() === today.getDate()
+      ) {
+        console.log("No se pueden seleccionar días anteriores al día actual.");
+        return;
+      }
+
+      // Retrocede una semana
       currentDate.value.setDate(currentDate.value.getDate() - 7);
       generateDays();
       fetchAvailableTimes();
@@ -278,17 +362,43 @@ export default {
 
         // Consolidar horarios únicos independientemente de la cancha
         let allTimes = Object.values(rawAvailableTimes).flat();
-        allTimes = [...new Set(allTimes)].sort(); // Eliminar duplicados y ordenar
+
+        // Redondear todos los horarios al intervalo más cercano de 30 minutos
+        const roundToNearest30 = (time) => {
+          const [hour, minute] = time.split(":").map(Number);
+          const roundedMinute = minute < 15 ? 0 : minute < 45 ? 30 : 0;
+          const roundedHour = minute >= 45 ? hour + 1 : hour;
+          return `${String(roundedHour).padStart(2, "0")}:${String(roundedMinute).padStart(2, "0")}`;
+        };
+
+        allTimes = allTimes.map(roundToNearest30);
+
+        // Eliminar duplicados y ordenar
+        allTimes = [...new Set(allTimes)].sort();
 
         // Filtrar horarios pasados si el día seleccionado es hoy
         const now = new Date();
-        const selectedDate = new Date(selectedDay.value);
+        const selectedDate = new Date(`${selectedDay.value}T00:00:00`); // Forzar zona horaria local
 
         if (
-          selectedDate.toDateString() === now.toDateString() // Si el día seleccionado es hoy
+          selectedDate.getFullYear() === now.getFullYear() &&
+          selectedDate.getMonth() === now.getMonth() &&
+          selectedDate.getDate() === now.getDate()
         ) {
-          const currentTime = now.toTimeString().slice(0, 5); // Obtener la hora actual en formato HH:MM
-          allTimes = allTimes.filter((time) => time > currentTime); // Filtrar horarios pasados
+          const currentMinutes = now.getMinutes();
+          const currentHour = now.getHours();
+
+          // Redondear hacia el siguiente intervalo de 30 minutos
+          let roundedHour = currentHour;
+          let roundedMinutes = currentMinutes < 30 ? 30 : 0;
+
+          if (currentMinutes >= 30) {
+            roundedHour += 1;
+          }
+
+          const currentTimeRounded = `${String(roundedHour).padStart(2, "0")}:${String(roundedMinutes).padStart(2, "0")}`;
+
+          allTimes = allTimes.filter((time) => time >= currentTimeRounded);
         }
 
         consolidatedTimes.value = allTimes;
@@ -301,6 +411,23 @@ export default {
       } finally {
         loadingTimes.value = false;
       }
+    };
+
+    const initMap = ({ lat, lng }) => {
+      const mapElement = document.getElementById("map");
+      if (!mapElement || mapElement._leaflet_id) {
+        return; // Si el mapa ya está inicializado, no lo reinicialices
+      }
+
+      const map = L.map("map").setView([lat, lng], 15);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      L.marker([lat, lng]).addTo(map)
+        .bindPopup(clubDetails.value.name)
+        .openPopup();
     };
 
 
@@ -384,6 +511,19 @@ export default {
       window.open(mapsUrl, "_blank");
     };
 
+    const openSocialLink = (url) => {
+      if (url) {
+        window.open(url, "_blank");
+      }
+    };
+
+    const openWhatsApp = (number) => {
+      if (number) {
+        const whatsappUrl = `https://wa.me/${number}`;
+        window.open(whatsappUrl, "_blank");
+      }
+    };
+
     return {
       clubDetails,
       coordinates,
@@ -408,6 +548,8 @@ export default {
       nextWeek,
       selectedTab,
       getCourtPrice,
+      openSocialLink,
+      openWhatsApp,
     };
   },
   methods: {
