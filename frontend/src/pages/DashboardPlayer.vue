@@ -92,7 +92,7 @@
         options: [
           {
             name: "Reserva una cancha",
-            description: "Si ya sabes con quién vas a jugar",
+            description: "Encuentra tu club favorito",
             icon: "event_seat",
             image_url: "/src/assets/menu/campopadel.jpg",
             route: "reservas",
@@ -110,8 +110,8 @@
             image_url: "/src/assets/menu/cuadrotorneo.jpg",
           },
           {
-            name: "Partidos",
-            description: "Encuentra jugadores de tu nivel",
+            name: "Estadisticas",
+            description: "Analiza la estadisticas de tus juegos",
             icon: "sports_tennis",
             image_url: "/src/assets/menu/partidopadel.jpg",
           },

@@ -90,7 +90,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
 
 
 
-# Obtener reservas
+# Obtener reservas de jugador
 @router.get("/")
 def get_reservations(current_user: dict = Depends(get_current_user)):
     try:
@@ -269,3 +269,5 @@ def get_available_courts(club_id: str, date: str, time: str):
         return {"available_courts": available_courts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener canchas disponibles: {str(e)}")
+    
+

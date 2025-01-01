@@ -6,7 +6,7 @@
           <!-- Saludo -->
           <div class="greeting">
             <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
-            Hola 
+            {{ clubName }}
           </div>
           <!-- Iconos de la derecha -->
           <div class="header-icons">
@@ -67,7 +67,7 @@
   export default {
     data() {
       return {
-        clubName: "Club PadelPlay", // Reemplaza con el nombre real del club desde la API o store
+        clubName: "Club PadelPlay", // Reemplazar
         options: [
           {
             name: "Administrar reservas",

@@ -46,6 +46,16 @@ const routes = [
     component: () => import("src/pages/club/ManageSchedules.vue"),
     meta: { requiresAuth: true },
   },
+  { 
+    path: "/club/inicio", 
+    component: () => import("src/pages/DashboardClub.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/reservas", 
+    component: () => import("src/pages/club/ManageReserves.vue"),
+    meta: { requiresAuth: true },
+  },
   {
     path: "/club/:clubId",
     name: "ClubDetails",

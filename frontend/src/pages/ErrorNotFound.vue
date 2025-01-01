@@ -2,7 +2,7 @@
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-toolbar-title>¡Oops! Página no encontrada</q-toolbar-title>
+        <q-toolbar-title>¡Oops! Función no encontrada</q-toolbar-title>
       </q-toolbar>
     </q-header>
 
@@ -14,9 +14,9 @@
         </div>
 
         <!-- Mensaje -->
-        <h1 class="q-mt-md">¡Oops! Esta página aún no está disponible</h1>
+        <h1 class="q-mt-md">¡Oops! Esta función aún no está disponible</h1>
         <p class="q-mb-md">
-          Parece que esta pelota de pádel ha roto algo... pero no te preocupes, ¡pronto estará listo!
+          Parece que esta pelota de padel ha roto algo... pero no te preocupes, ¡pronto estará listo!
         </p>
 
         <!-- Botón para regresar -->
@@ -37,7 +37,36 @@ export default {
   name: "PageNotFound",
   methods: {
     goHome() {
-      this.$router.push("/player/inicio");
+      const token = localStorage.getItem("token"); // Obtener el token del almacenamiento local
+
+      if (!token) {
+        // Si no hay token, redirigir al login
+        this.$router.push("/login");
+        return;
+      }
+
+      try {
+        // Decodificar el token usando atob
+        const base64Url = token.split(".")[1]; // Extraer el payload
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(atob(base64));
+        const userType = payload.user_type; // Asegúrate de que 'user_type' esté en el token
+
+        // Redirigir según el tipo de usuario
+        if (userType === "superuser") {
+          this.$router.push("/dashboard/superuser");
+        } else if (userType === "admin") {
+          this.$router.push("/dashboard/admin");
+        } else if (userType === "club") {
+          this.$router.push("/dashboard/club");
+        } else {
+          this.$router.push("/dashboard/player");
+        }
+      } catch (error) {
+        console.error("Error al decodificar el token:", error);
+        // Si algo falla, redirigir al login
+        this.$router.push("/");
+      }
     },
   },
 };
