@@ -35,11 +35,27 @@
               <p>{{ option.description }}</p>
             </div>
           </div>
-          <h2>Tus favoritos:</h2>
-          <div class="clubs">
-            <div v-for="club in clubs" :key="club.name" class="club-card">
-              <img :src="club.image_url" alt="Club Image" />
-              <p>{{ club.name }}</p>
+          <h2>Mis Eventos:</h2>
+          <div class="events-carousel">
+            <div
+              v-for="match in matches"
+              :key="match.id"
+              class="event-card"
+              @click="navigateToMatch(match.id)"
+            >
+              <!-- Ícono dinámico según el tipo de evento -->
+              <q-icon
+                :name="match.tournament_id ? 'mdi-trophy' : 'mdi-tennis'"
+                class="event-icon"
+                :color="match.tournament_id ? 'orange' : 'yellow'"
+                size="48px"
+              />
+              <div class="event-info">
+                <p class="event-date">{{ formatDate(match.match_date) }}</p>
+                <p class="event-time">{{ match.match_time }}</p>
+                <p class="event-club">{{ match.club_name }}</p>
+                <p class="event-court">{{ match.court_name }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -67,6 +83,8 @@
   </template>
   
   <script>
+  import api from "../api";
+
   export default {
     name: "DashboardPlayer",
     data() {
@@ -77,7 +95,7 @@
             description: "Si ya sabes con quién vas a jugar",
             icon: "event_seat",
             image_url: "/src/assets/menu/campopadel.jpg",
-            route: "reservas"
+            route: "reservas",
           },
           {
             name: "Clases",
@@ -98,10 +116,8 @@
             image_url: "/src/assets/menu/partidopadel.jpg",
           },
         ],
-        clubs: [
-          { name: "Racket Sports Bugambilias OK", image_url: "/src/assets/menu/partidopadel.jpg" },
-          { name: "Padel Provi Revolución", image_url: "/src/assets/menu/partidopadel.jpg" },
-        ],
+        matches: [], // Aquí se almacenan los partidos próximos
+        activeMatch: null,
         tabs: [
           { name: "inicio", label: "Inicio", icon: "home" },
           { name: "torneos", label: "Torneos", icon: "sports_tennis" },
@@ -111,9 +127,31 @@
       };
     },
     methods: {
+      async fetchMatches() {
+        try {
+          const response = await api.get("/matches/upcoming");
+          this.matches = response.data.matches;
+        } catch (error) {
+          console.error("Error al cargar partidos:", error);
+          this.$q.notify({
+            type: "negative",
+            message: "No se pudieron cargar los partidos.",
+          });
+        }
+      },
+      formatDate(date) {
+        return new Date(date).toLocaleDateString("es-ES", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        });
+      },
+      navigateToMatch(matchId) {
+        this.$router.push(`/player/match/${matchId}`);
+      },
       navigateTo(route) {
         this.$router.push(`/player/${route}`);
-      },  
+      },
       onTabChange(tabName) {
         this.$router.push(`/player/${tabName}`);
       },
@@ -123,6 +161,9 @@
       onMenu() {
         console.log("Menú abierto");
       },
+    },
+    mounted() {
+      this.fetchMatches();
     },
   };
   </script>
@@ -219,26 +260,56 @@
     color: #bbbbbb; /* Texto más claro */
   }
   
-  /* Clubs */
-  .clubs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-    margin-top: 16px;
+  .events-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto; /* Desplazamiento horizontal */
+  padding: 16px 0;
+  scroll-snap-type: x mandatory; /* Efecto de desplazamiento suave */
   }
-  
-  .club-card {
+
+  .event-card {
+    flex: 0 0 calc(33.333% - 16px); /* Tres tarjetas visibles a la vez */
+    max-width: calc(33.333% - 16px);
     background: #1f1f1f;
-    padding: 8px;
     border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    scroll-snap-align: start; /* Alineación en el scroll */
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    padding: 16px;
   }
-  
-  .club-card img {
+
+
+  .event-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  }
+
+  .event-image {
     width: 100%;
-    height: auto;
-    border-radius: 8px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .event-info {
+    padding: 8px;
+    text-align: center;
+    color: #ffffff;
+  }
+
+  .event-date,
+  .event-time,
+  .event-club,
+  .event-court {
+    margin: 4px 0;
+  }
+
+  .event-date {
+    font-weight: bold;
+    color: #ffd700; /* Dorado */
   }
   
   .bg-dark {

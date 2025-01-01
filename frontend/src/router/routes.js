@@ -57,8 +57,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/player/inicio", 
+    component: () => import("src/pages/DashboardPlayer.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/player/match/:matchId", 
+    component: () => import("src/pages/player/MatchDetails.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/player/perfil", 
-    component: () => import("src/pages/player/PlayerProfile.vue"),
+    component: () => import("pages/player/PlayerProfile.vue"),
     meta: { requiresAuth: true },
   },
   { 
@@ -71,7 +81,7 @@ const routes = [
   { path: "/asociaciones", component: () => import("pages/Asociaciones.vue") },
   { path: "/perfil", component: () => import("pages/Perfil.vue") },
   // Otras rutas...
-  { path: "/:catchAll(.*)", redirect: "/" },
+  { path: "/:catchAll(.*)", name: "NotFound", component: () => import("pages/ErrorNotFound.vue") },
 ];
 
 export default routes;

@@ -11,14 +11,21 @@ router = APIRouter()
 @router.post("/")
 def create_reservation(data: dict, current_user: dict = Depends(get_current_user)):
     try:
+        # Validar campos obligatorios
+        required_fields = ["club_id", "court_id", "reservation_date", "start_time", "end_time", "total_price"]
+        for field in required_fields:
+            if field not in data:
+                raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {field}")
+
         player_id = current_user["id"]
+        club_id = data["club_id"]
         court_id = data["court_id"]
         reservation_date = data["reservation_date"]
         start_time = data["start_time"]
         end_time = data["end_time"]
         total_price = data["total_price"]
 
-        # Verificar disponibilidad
+        # Verificar disponibilidad en reservas
         overlapping_reservations = supabase.from_("reservations").select("*").match({
             "court_id": court_id,
             "reservation_date": reservation_date,
@@ -29,11 +36,19 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             "block_date": reservation_date,
         }).execute()
 
+        # Verificar si los datos fueron obtenidos
+        if not overlapping_reservations or not overlapping_blocks:
+            raise HTTPException(
+                status_code=500,
+                detail="Error al verificar disponibilidad en reservas o bloques."
+            )
+
+        # Verificar si hay conflictos
         if overlapping_reservations.data or overlapping_blocks.data:
             raise HTTPException(status_code=400, detail="La cancha no está disponible para este rango de tiempo.")
 
         # Insertar reserva
-        response = supabase.from_("reservations").insert({
+        reservation_response = supabase.from_("reservations").insert({
             "player_id": player_id,
             "court_id": court_id,
             "reservation_date": reservation_date,
@@ -43,9 +58,36 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             "total_price": total_price,
         }).execute()
 
-        return {"message": "Reserva creada exitosamente.", "data": response.data}
+        if not reservation_response or not reservation_response.data:
+            raise HTTPException(
+                status_code=500,
+                detail="Error al crear la reserva."
+            )
+
+        # Crear partido relacionado
+        match_response = supabase.from_("matches").insert({
+            "team1_players": [player_id],
+            "team2_players": [],
+            "club_id": club_id,
+            "court_id": court_id,
+            "match_date": reservation_date,
+            "match_time": start_time,
+        }).execute()
+
+        if not match_response or not match_response.data:
+            raise HTTPException(
+                status_code=500,
+                detail="Error al crear el partido."
+            )
+
+        return {
+            "message": "Reserva y partido creados exitosamente.",
+            "reservation": reservation_response.data,
+            "match": match_response.data,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear la reserva: {str(e)}")
+
 
 
 # Obtener reservas
@@ -167,50 +209,63 @@ def get_available_times(club_id: str, date: str, current_user: dict = Depends(ge
 
 # Checar disponibilidad  por cancha sin transpapelarse con otras reservas
 @router.get("/available-courts")
-def get_available_courts(club_id: str, date: str, time: str, current_user: dict = Depends(get_current_user)):
+def get_available_courts(club_id: str, date: str, time: str):
     try:
-        # Validación básica
-        if not club_id or not date or not time:
-            raise HTTPException(status_code=422, detail="Faltan parámetros requeridos: club_id, date, o time.")
+        # Convertir hora y fecha a objetos de datetime
+        start_time = datetime.strptime(time, "%H:%M")
+        end_time = start_time + timedelta(minutes=60)  # Suponiendo que la duración es 1 hora
 
-        print(f"Club ID: {club_id}, Date: {date}, Time: {time}")
+        # Obtener todas las canchas del club
+        courts = supabase.from_("courts").select("*").eq("club_id", club_id).execute()
 
-        # Obtener las canchas del club
-        courts_response = supabase.from_("courts").select("*").eq("club_id", club_id).execute()
-        if not courts_response.data:
+        if not courts.data:
             raise HTTPException(status_code=404, detail="No se encontraron canchas para este club.")
 
-        courts = courts_response.data
-        court_ids = [court["id"] for court in courts]
-
-        # Obtener reservas existentes para estas canchas
-        reservations_response = supabase.from_("reservations").select("*").in_("court_id", court_ids).match({
-            "reservation_date": date,
-        }).execute()
-        reservations = reservations_response.data or []
-
-        # Obtener bloqueos de las canchas
-        blocked_response = supabase.from_("court_blocks").select("*").in_("court_id", court_ids).match({
-            "block_date": date,
-        }).execute()
-        blocked = blocked_response.data or []
-
-        # Filtrar canchas disponibles en la hora seleccionada
         available_courts = []
-        for court in courts:
-            is_reserved = any(
-                r["court_id"] == court["id"] and r["start_time"] <= time < r["end_time"]
-                for r in reservations
-            )
-            is_blocked = any(
-                b["court_id"] == court["id"] and b["start_time"] <= time < b["end_time"]
-                for b in blocked
-            )
-            if not is_reserved and not is_blocked:
-                available_courts.append(court)
+
+        for court in courts.data:
+            # Verificar si la cancha tiene reservas superpuestas
+            overlapping_reservations = supabase.from_("reservations").select("*").match({
+                "court_id": court["id"],
+                "reservation_date": date,
+            }).execute()
+
+            if overlapping_reservations.data:
+                is_available = True
+                for reservation in overlapping_reservations.data:
+                    reservation_start = datetime.strptime(reservation["start_time"], "%H:%M:%S")
+                    reservation_end = datetime.strptime(reservation["end_time"], "%H:%M:%S")
+
+                    # Verificar si los rangos de tiempo se superponen
+                    if not (end_time <= reservation_start or start_time >= reservation_end):
+                        is_available = False
+                        break
+
+                if not is_available:
+                    continue
+
+            # Verificar si la cancha está bloqueada
+            overlapping_blocks = supabase.from_("court_blocks").select("*").match({
+                "court_id": court["id"],
+                "block_date": date,
+            }).execute()
+
+            if overlapping_blocks.data:
+                for block in overlapping_blocks.data:
+                    block_start = datetime.strptime(block["start_time"], "%H:%M:%S")
+                    block_end = datetime.strptime(block["end_time"], "%H:%M:%S")
+
+                    # Verificar si los rangos de tiempo se superponen
+                    if not (end_time <= block_start or start_time >= block_end):
+                        is_available = False
+                        break
+
+                if not is_available:
+                    continue
+
+            # Si pasó todas las verificaciones, agregar a la lista de disponibles
+            available_courts.append(court)
 
         return {"available_courts": available_courts}
-
     except Exception as e:
-        print(f"Error in get_available_courts: {e}")
         raise HTTPException(status_code=500, detail=f"Error al obtener canchas disponibles: {str(e)}")

@@ -60,35 +60,52 @@ export default {
     const total = ref(reservationDetails.value.price + commission.value);
 
     const confirmReservation = async () => {
-      try {
-        $q.loading.show();
+  try {
+    $q.loading.show();
 
-        const reservationData = {
-          court_id: reservationDetails.value.courtId,
-          reservation_date: reservationDetails.value.date,
-          start_time: reservationDetails.value.time,
-          end_time: calculateEndTime(reservationDetails.value.time, reservationDetails.value.duration),
-          total_price: parseFloat(reservationDetails.value.price),
-        };
+    const reservationData = {
+      court_id: reservationDetails.value.courtId,
+      reservation_date: reservationDetails.value.date,
+      start_time: reservationDetails.value.time,
+      end_time: calculateEndTime(
+        reservationDetails.value.time,
+        reservationDetails.value.duration
+      ),
+      total_price: parseFloat(reservationDetails.value.price),
+      club_id: reservationDetails.value.clubId,
+    };
 
-        const response = await api.post("/reservations", reservationData);
+    const response = await api.post("/reservations", reservationData);
 
+    // Verifica si la respuesta es correcta
+    if (response.status === 200 && response.data) {
+      const match = response.data.match?.[0]; // Obtener el primer elemento de la lista de matches
+
+      if (match?.id) {
         $q.notify({
           type: "positive",
           message: response.data.message || "Reserva confirmada exitosamente.",
         });
 
-        router.push("/success");
-      } catch (error) {
-        console.error("Error al confirmar la reserva:", error);
-        $q.notify({
-          type: "negative",
-          message: error.response?.data?.detail || "Error al confirmar la reserva.",
-        });
-      } finally {
-        $q.loading.hide();
+        // Redirigir al detalle del partido
+        router.push(`/player/match/${match.id}`);
+      } else {
+        throw new Error("No se pudo obtener el ID del partido.");
       }
-    };
+    } else {
+      throw new Error(response.data.message || "Error desconocido.");
+    }
+  } catch (error) {
+    console.error("Error al confirmar la reserva:", error);
+    $q.notify({
+      type: "negative",
+      message: error.response?.data?.detail || "Error al confirmar la reserva.",
+    });
+  } finally {
+    $q.loading.hide();
+  }
+};
+
 
     const calculateEndTime = (startTime, duration) => {
       const [hours, minutes] = startTime.split(":").map(Number);
