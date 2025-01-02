@@ -35,7 +35,7 @@
               {{ error }}
             </div>
             <div v-if="success" class="success-message">
-              ¡Registro exitoso! Por favor, inicia sesión.
+              ¡Registro exitoso! Por favor revisa el correo que te hemos enviado.
             </div>
           </q-form>
           <div class="register-links">
@@ -83,7 +83,7 @@ export default {
     };
 
     const goToLogin = () => {
-      router.push("/login");
+      router.push("/");
     };
 
     return {

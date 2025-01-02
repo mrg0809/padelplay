@@ -5,7 +5,15 @@ const routes = [
     name: "CheckoutPage",
     component: () => import("src/pages/CheckoutPage.vue"),
   },
+  { path: "/forgot-password", component: () => import("pages/RecoveryPassword.vue")},
+  { path: "/reset-password", component: () => import("pages/ResetPassword.vue")},
   { path: "/signup", component: () => import("pages/RegisterPage.vue")},
+  
+  { 
+    path: "/admin/usuarios", 
+    component: () => import("pages/admin/ManageUsers.vue"),
+    meta: { requiresAuth: true },
+  },
   { 
     path: "/dashboard/superuser", 
     component: () => import("pages/DashboardSuperuser.vue"),

@@ -6,7 +6,7 @@
     <!-- Saludo -->
         <div class="greeting">
           <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
-          Hola Marcelo
+          ADMINISTRADOR
         </div>
     <!-- Iconos de la derecha -->
         <div class="header-icons">
@@ -28,18 +28,15 @@
       <div class="divider"></div>
       <div class="home">
         <div class="options">
-          <div v-for="option in options" :key="option.name" class="option-card">
+          <div v-for="option in options"
+           :key="option.name"
+            class="option-card"
+            @click="navigateTo(option.route)"
+            >
             <img :src="option.image_url" alt="Option Image" class="option-image" />
             <q-icon :name="option.icon" size="lg" class="option-icon" />
             <h3>{{ option.name }}</h3>
             <p>{{ option.description }}</p>
-          </div>
-        </div>
-        <h2>Tus favoritos:</h2>
-        <div class="clubs">
-          <div v-for="club in clubs" :key="club.name" class="club-card">
-            <img :src="club.image_url" alt="Club Image" />
-            <p>{{ club.name }}</p>
           </div>
         </div>
       </div>
@@ -72,45 +69,34 @@ export default {
     return {
       options: [
         {
-          name: "Reserva una cancha",
-          description: "Si ya sabes con quién vas a jugar",
-          icon: "event_seat",
+          name: "Estadísticas",
+          description: "Ve estadísticas clave de padelplay",
+          icon: "calculate",
           image_url: "/src/assets/menu/campopadel.jpg",
+          route: "stats",
         },
         {
-          name: "Clases",
-          description: "Encuentra clases cerca de ti",
-          icon: "school",
-          image_url: "/src/assets/menu/maestropadel.jpg",
+          name: "Usuarios",
+          description: "Agrega usuarios tipo club o asociación",
+          icon: "manage_accounts",
+          image_url: "/src/assets/menu/orangepadel.jpeg",
+          route: "usuarios",
         },
-        {
-          name: "Torneos",
-          description: "Inscríbete a torneos cerca de ti",
-          icon: "emoji_events",
-          image_url: "/src/assets/menu/cuadrotorneo.jpg",
-        },
-        {
-          name: "Partidos",
-          description: "Encuentra jugadores de tu nivel",
-          icon: "sports_tennis",
-          image_url: "/src/assets/menu/partidopadel.jpg",
-        },
-      ],
-      clubs: [
-        { name: "Racket Sports Bugambilias OK", image_url: "/src/assets/menu/partidopadel.jpg" },
-        { name: "Padel Provi Revolución", image_url: "/src/assets/menu/partidopadel.jpg" },
       ],
       tabs: [
         { name: "inicio", label: "Inicio", icon: "home" },
-        { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-        { name: "asociaciones", label: "Asociaciones", icon: "group" },
-        { name: "perfil", label: "Perfil", icon: "account_circle" },
+        { name: "estadisticas", label: "Estadísticas", icon: "calculate" },
+        { name: "usuarios", label: "Usuarios", icon: "manage_accounts" },
+        { name: "opciones", label: "Opciones", icon: "construction" },
       ],
     };
   },
   methods: {
+    navigateTo(route) {
+        this.$router.push(`/admin/${route}`);
+      },
     onTabChange(tabName) {
-      this.$router.push(`/${tabName}`);
+      this.$router.push(`/admin/${tabName}`);
     },
     onNotifications() {
       console.log("Notificaciones abiertas");
