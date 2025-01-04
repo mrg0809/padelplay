@@ -75,6 +75,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/club/editartorneo/:tournamentId",
+    component: () => import("src/pages/club/EditTournament.vue"),
+    meta: { requiresAuth: true },
+    name: "EditTournament"
+  },
+  {
     path: "/club/:clubId",
     name: "ClubDetails",
     component: () => import("src/pages/club/ClubDetails.vue"),

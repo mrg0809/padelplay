@@ -120,3 +120,29 @@ def send_invitation_email(recipient_email: str, tournament_name: str):
     except Exception as e:
         print(f"Error al enviar el correo: {str(e)}")
         raise HTTPException(status_code=500, detail=f"No se pudo enviar la invitación a {recipient_email}.")
+    
+    
+
+@router.put("/{tournament_id}")
+async def update_tournament(tournament_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    try:
+        # Verificar que el usuario sea del club que creó el torneo
+        club_id = current_user.get("club_id")
+        tournament = supabase.from_("tournaments").select("*").eq("id", tournament_id).single().execute()
+        
+        if tournament.error:
+            raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+        
+        if tournament.data["club_id"] != club_id:
+            raise HTTPException(status_code=403, detail="No tienes permisos para editar este torneo.")
+
+        # Actualizar el torneo con los nuevos datos
+        update_response = supabase.from_("tournaments").update(data).eq("id", tournament_id).execute()
+
+        if update_response.error:
+            raise HTTPException(status_code=500, detail=f"Error al actualizar el torneo: {update_response.error.message}")
+
+        return {"message": "Torneo actualizado exitosamente.", "data": update_response.data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar el torneo: {str(e)}")
