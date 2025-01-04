@@ -65,8 +65,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
-    path: "/club/torneos", 
+    path: "/club/creartorneos", 
     component: () => import("src/pages/club/CreateTournament.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/torneos", 
+    component: () => import("src/pages/club/ListTournaments.vue"),
     meta: { requiresAuth: true },
   },
   {
@@ -98,6 +103,17 @@ const routes = [
     path: "/player/reservas", 
     component: () => import("src/pages/player/ListClubs.vue"),
     meta: { requiresAuth: true },
+  },
+  { 
+    path: "/player/torneos", 
+    component: () => import("src/pages/player/ListTournaments.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/tournament/:tournamentId",
+    component: () => import("src/pages/tournament/TournamentDetails.vue"),
+    meta: { requiresAuth: true },
+    name: "TournamentDetails"
   },
   { path: "/inicio", component: () => import("pages/Home.vue") },
   { path: "/torneos", component: () => import("pages/Torneos.vue") },

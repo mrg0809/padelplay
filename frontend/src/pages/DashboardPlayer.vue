@@ -108,6 +108,7 @@
             description: "Inscríbete a torneos cerca de ti",
             icon: "emoji_events",
             image_url: "/src/assets/menu/cuadrotorneo.jpg",
+            route: "torneos"
           },
           {
             name: "Estadisticas",

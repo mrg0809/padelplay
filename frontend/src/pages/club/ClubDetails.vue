@@ -176,7 +176,22 @@
           <!-- Seccion Torneos -->
           <div v-if="selectedTab === 'tournaments'">
             <h4 class="text-center">Torneos</h4>
-            <p>Aquí se mostrarán los torneos disponibles en el club.</p>
+            <div class="q-mt-md tournament-list">
+              <div
+                v-for="tournament in tournaments"
+                :key="tournament.id"
+                class="tournament-card"
+                @click="goToTournamentDetails(tournament.id)"
+              >
+                <h5>{{ tournament.name }}</h5>
+                <p>Fecha: {{ tournament.start_date }}</p>
+                <p>Categoría: {{ tournament.category }}</p>
+                <p>Género: {{ tournament.gender }}</p>
+              </div>
+              <p v-if="!tournaments.length" class="text-center q-mt-md">
+                No hay torneos disponibles en este club.
+              </p>
+            </div>
           </div>
 
           <div v-if="selectedTab === 'wall'">
@@ -222,6 +237,7 @@ export default {
       { label: "90 minutos", duration: 90 },
       { label: "120 minutos", duration: 120 },
     ]);
+    const tournaments = ref([])
     const loadingCourts = ref(false);
 
     const clubId = route.params.clubId;
@@ -285,6 +301,7 @@ export default {
 
         generateDays();
         fetchAvailableTimes();
+        await fetchTournaments();
 
         if (selectedTab.value === "info" && coordinates.value) {
           setTimeout(() => {
@@ -305,6 +322,24 @@ export default {
         loading.value = false;
       }
     });
+
+    const fetchTournaments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("id, name, start_date, category, gender")
+          .eq("club_id", clubId);
+
+        if (error) {
+          console.error("Error al obtener los torneos:", error.message);
+          return;
+        }
+
+        tournaments.value = data;
+      } catch (err) {
+        console.error("Error inesperado:", err.message);
+      }
+    };
 
     const generateDays = () => {
       days.value = [];
@@ -550,11 +585,16 @@ export default {
       getCourtPrice,
       openSocialLink,
       openWhatsApp,
+      tournaments,
+      fetchTournaments,
     };
   },
   methods: {
     goBack() {
       this.$router.back();
+    },
+    goToTournamentDetails(tournamentId) {
+      this.$router.push({ name: "TournamentDetails", params: { tournamentId } });
     },
   },
 };
@@ -631,5 +671,34 @@ export default {
 .time-option-btn {
   width: 88px; 
   margin: 3px; 
+}
+.tournament-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.tournament-card {
+  background: #1e1e1e;
+  padding: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tournament-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.tournament-card h5 {
+  margin: 0 0 8px;
+  color: #ffd700;
+}
+
+.tournament-card p {
+  margin: 4px 0;
+  color: #ccc;
 }
 </style>

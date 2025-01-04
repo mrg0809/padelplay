@@ -88,7 +88,7 @@
             description: "Organiza torneos y eventos",
             icon: "emoji_events",
             image_url: "/src/assets/menu/campopadel.jpg",
-            route: "torneos",
+            route: "creartorneos",
           },
         ],
         tabs: [
