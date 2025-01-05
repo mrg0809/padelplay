@@ -3,8 +3,8 @@
       <!-- Header -->
       <q-header class="bg-primary text-white">
         <q-toolbar>
-          <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
           <q-toolbar-title>Editar Torneo</q-toolbar-title>
+          <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
         </q-toolbar>
       </q-header>
   
@@ -85,12 +85,15 @@
   import { supabase } from "src/services/supabase";
   import { ref, onMounted } from "vue";
   import { useRouter, useRoute } from "vue-router";
+  import { useQuasar } from "quasar";
+  import api from "../../api";
   
   export default {
     name: "EditTournament",
     setup() {
       const router = useRouter();
       const route = useRoute();
+      const $q = useQuasar();
   
       const form = ref({
         name: "",
@@ -148,13 +151,19 @@
       const updateTournament = async () => {
         try {
           confirmDialogVisible.value = false;
-          const { error } = await supabase.from("tournaments").update(form.value).eq("id", tournamentId);
-          if (error) throw error;
-          this.$q.notify({ type: "positive", message: "Torneo actualizado exitosamente." });
-          router.push("/dashboard/club");
+
+          const response = await api.put(`/tournaments/${tournamentId}`, form.value);
+
+          if (response.status === 200) {
+            console.log("200 ok")
+            $q.notify({ type: "positive", message: "Torneo actualizado exitosamente." });
+            router.push("/dashboard/club");
+          } else {
+            throw new Error("Error al actualizar el torneo.");
+          }
         } catch (err) {
           console.error("Error al actualizar torneo:", err.message);
-          this.$q.notify({ type: "negative", message: "Error al actualizar el torneo." });
+          $q.notify({ type: "negative", message: "Error al actualizar el torneo." });
         }
       };
   

@@ -130,7 +130,7 @@ async def update_tournament(tournament_id: str, data: dict, current_user: dict =
         club_id = current_user.get("club_id")
         tournament = supabase.from_("tournaments").select("*").eq("id", tournament_id).single().execute()
         
-        if tournament.error:
+        if not tournament:
             raise HTTPException(status_code=404, detail="Torneo no encontrado.")
         
         if tournament.data["club_id"] != club_id:
@@ -139,7 +139,7 @@ async def update_tournament(tournament_id: str, data: dict, current_user: dict =
         # Actualizar el torneo con los nuevos datos
         update_response = supabase.from_("tournaments").update(data).eq("id", tournament_id).execute()
 
-        if update_response.error:
+        if not update_response:
             raise HTTPException(status_code=500, detail=f"Error al actualizar el torneo: {update_response.error.message}")
 
         return {"message": "Torneo actualizado exitosamente.", "data": update_response.data}
