@@ -3,7 +3,7 @@ from app.routers import auth, courts, clubs, matches, players, reservations, tou
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 app = FastAPI()
 
 app.add_middleware(

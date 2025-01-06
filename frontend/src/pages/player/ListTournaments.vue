@@ -52,7 +52,7 @@
               @click="goToTournamentDetails(tournament.id)"
             >
               <q-card-section>
-                <h4>{{ tournament.name }}</h4>
+                <h4 class="tennis-yellow">{{ tournament.name }}</h4>
                 <p>
                   <strong>Fecha:</strong> {{ tournament.start_date }} <br />
                   <strong>Ciudad:</strong> {{ tournament.city || "No disponible" }} <br />
@@ -204,5 +204,9 @@
   .q-card:hover {
     background-color: #292929;
   }
+
+  .tennis-yellow {
+  color: #f0ff00; /* Color amarillo pelota de tenis */
+}
   </style>
   

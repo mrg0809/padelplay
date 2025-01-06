@@ -33,7 +33,10 @@
                 label="Email del Jugador 2"
                 type="email"
                 outlined
-                dense
+                color="orange"
+                label-color="orange"
+                standout
+                clearable
                 class="q-mb-md"
                 required
               />
@@ -42,7 +45,10 @@
                 label="Confirmar Email del Jugador 2"
                 type="email"
                 outlined
-                dense
+                color="orange"
+                label-color="orange"
+                standout
+                clearable
                 class="q-mb-md"
                 required
               />
@@ -83,8 +89,8 @@
       const player1Name = ref("");
       const player2Email = ref("");
       const player2EmailConfirm = ref("");
-      const commission = ref(10); // Comisión fija en dólares
-      const totalPrice = ref(tournament.value.price + commission.value);
+      const commission = ref(20);
+      const totalPrice = ref(Number(tournament.value.price) + commission.value);
   
       const fetchPlayer1Name = () => {
         const token = localStorage.getItem("token");
@@ -151,5 +157,10 @@
     background-color: #1e1e1e !important;
     color: white !important;
   }
-  </style>
+  .q-field {
+    background-color: #282828; /* Fondo del input */
+    border-radius: 4px; 
+  }
+
+    </style>
   
