@@ -86,6 +86,11 @@ const routes = [
     component: () => import("src/pages/club/ClubDetails.vue"),
   },
   { 
+    path: "/notifications", 
+    component: () => import("src/pages/ShowNotifications.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/player/editarinfo", 
     component: () => import("src/pages/player/EditPlayerInfo.vue"),
     meta: { requiresAuth: true },

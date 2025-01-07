@@ -1,0 +1,121 @@
+<template>
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <!-- Header -->
+    <q-header elevated class="bg-primary text-white">
+      <q-toolbar>
+        <q-toolbar-title>Notificaciones</q-toolbar-title>
+        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
+      </q-toolbar>
+    </q-header>
+
+    <!-- Main Content -->
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <q-card flat bordered class="bg-dark text-white">
+          <q-card-section>
+            <div class="text-h6 text-center">Notificaciones</div>
+          </q-card-section>
+
+          <div v-if="notifications.length === 0" class="text-center q-my-md">
+            <q-icon name="notifications_off" size="64px" color="grey" />
+            <p>No tienes notificaciones pendientes.</p>
+          </div>
+
+          <q-list v-else>
+            <q-item
+              v-for="notification in notifications"
+              :key="notification.id"
+              clickable
+              class="notification-item"
+              @click="markAsRead(notification.id)"
+            >
+              <q-item-section avatar>
+                <q-icon name="notifications" size="36px" color="primary" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-bold">{{ notification.title }}</q-item-label>
+                <q-item-label caption>{{ notification.message }}</q-item-label>
+                <q-item-label caption class="text-grey text-sm">
+                  {{ formatDate(notification.timestamp) }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section v-if="!notification.is_read">
+                <q-badge color="red" label="Nueva" />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </q-page>
+    </q-page-container>
+  </q-layout>
+</template>
+  
+<script>
+import api from "../api";
+
+export default {
+  data() {
+    return {
+      notifications: [],
+    };
+  },
+  async mounted() {
+    await this.fetchNotifications();
+  },
+  methods: {
+    async fetchNotifications() {
+      try {
+        const response = await api.get("/notifications/");
+        const data = response.data;
+
+        // Validar si la respuesta tiene datos
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          this.notifications = data.data;
+        } else {
+          this.notifications = []; // Asegurarse de que esté vacío si no hay notificaciones
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        this.notifications = []; // Manejo en caso de error
+      }
+    },
+    async markAsRead(notificationId) {
+      try {
+        await api.put(`/notifications/${notificationId}/read`);
+        this.fetchNotifications(); // Actualizar la lista
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
+    },
+    formatDate(timestamp) {
+      if (!timestamp) return "Fecha desconocida";
+      const options = { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" };
+      return new Date(timestamp).toLocaleDateString("es-MX", options);
+    },
+    goBack() {
+      this.$router.back();
+    },
+  },
+};
+</script>
+
+<style scoped>
+.notification-item {
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  background-color: #1e1e1e;
+}
+.notification-item:hover {
+  background-color: #292929;
+}
+.text-bold {
+  font-weight: bold;
+}
+.text-grey {
+  color: grey;
+}
+</style>
+
+  

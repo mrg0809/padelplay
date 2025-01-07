@@ -29,7 +29,7 @@
                     <!-- Jugadores o botones de agregar -->
                     <div class="player team1-player1">
                       <div v-if="team1[0]">
-                        {{ team1[0].name || "Jugador 1 Equipo 1" }}
+                        {{ team1[0] || "Jugador 1 Equipo 1" }}
                       </div>
                       <q-btn
                         v-else
@@ -43,7 +43,7 @@
                     </div>
                     <div class="player team1-player2">
                       <div v-if="team1[1]">
-                        {{ team1[1].name || "Jugador 2 Equipo 1" }}
+                        {{ team1[1] || "Jugador 2 Equipo 1" }}
                       </div>
                       <q-btn
                         v-else
@@ -57,7 +57,7 @@
                     </div>
                     <div class="player team2-player1">
                       <div v-if="team2[0]">
-                        {{ team2[0].name || "Jugador 1 Equipo 2" }}
+                        {{ team2[0] || "Jugador 1 Equipo 2" }}
                       </div>
                       <q-btn
                         v-else
@@ -71,7 +71,7 @@
                     </div>
                     <div class="player team2-player2">
                       <div v-if="team2[1]">
-                        {{ team2[1].name || "Jugador 2 Equipo 2" }}
+                        {{ team2[1] || "Jugador 2 Equipo 2" }}
                       </div>
                       <q-btn
                         v-else
@@ -138,23 +138,7 @@
         </q-page>
       </q-page-container>
       <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+      <PlayerNavigationMenu />
     </q-layout>
   </template>
   
@@ -165,8 +149,12 @@
   import { ref, onMounted } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
+  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
   export default {
+    components: {
+      PlayerNavigationMenu,
+    },
     setup() {
       const route = useRoute();
       const router = useRouter();
@@ -229,10 +217,6 @@
       const goBack = () => {
         router.back();
       };
-
-      const onTabChange = (tabName) => {
-        router.push(`/player/${tabName}`);
-      };
   
       onMounted(fetchMatchDetails);
   
@@ -246,13 +230,6 @@
         addPlayerToTeam,
         saveScore,
         goBack,
-        onTabChange,
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "asociaciones", label: "Asociaciones", icon: "group" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
       };
     },
   };

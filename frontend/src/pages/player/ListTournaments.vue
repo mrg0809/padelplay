@@ -65,23 +65,7 @@
         </q-page>
       </q-page-container>
       <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+      <PlayerNavigationMenu/>
     </q-layout>
   </template>
   
@@ -89,9 +73,13 @@
   import { ref, onMounted, watch } from "vue";
   import { supabase } from "src/services/supabase";
   import { useRouter } from "vue-router";
+  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
   export default {
     name: "ListTournaments",
+    components: {
+      PlayerNavigationMenu
+    },
     setup() {
       const router = useRouter();
   
@@ -150,10 +138,6 @@
       const goBack = () => {
         router.back();
       };
-
-      const onTabChange = (tabName) => {
-        router.push(`/player/${tabName}`);
-      };
   
       // Watch para los filtros
       watch(filters, fetchTournaments, { deep: true });
@@ -171,13 +155,6 @@
         genders,
         goToTournamentDetails,
         goBack,
-        onTabChange,
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "asociaciones", label: "Asociaciones", icon: "group" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
       };
     },
   };

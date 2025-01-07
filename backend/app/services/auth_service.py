@@ -16,7 +16,7 @@ def authenticate_user(email: str, password: str):
 
         # Obtén el perfil del usuario de la tabla `profiles`, incluyendo `user_type` y `club_id`
         profile_response = supabase.from_("profiles") \
-            .select("user_type, club_id") \
+            .select("user_type, club_id, full_name") \
             .eq("id", user_id) \
             .single() \
             .execute()
@@ -26,13 +26,15 @@ def authenticate_user(email: str, password: str):
 
         user_type = profile_response.data["user_type"]
         club_id = profile_response.data.get("club_id")  # Puede ser None si no aplica
+        full_name = profile_response.data.get("full_name")
 
         # Crea un token JWT
         token = create_access_token({
             "sub": user_id,
             "email": user_data.email,
             "user_type": user_type,
-            "club_id": club_id  # Incluye `club_id` en el token
+            "club_id": club_id,  # Incluye `club_id` en el token
+            "full_name": full_name,
         })
         return {"access_token": token, "token_type": "bearer"}
 

@@ -6,11 +6,11 @@
       <!-- Saludo -->
           <div class="greeting">
             <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
-            Hola Marcelo
+            Bienvenido {{full_name}}
           </div>
       <!-- Iconos de la derecha -->
           <div class="header-icons">
-            <q-btn flat round dense icon="notifications" @click="onNotifications" />
+            <NotificationBell />
             <q-btn flat round dense icon="menu" @click="onMenu" />
           </div>
         </div>
@@ -60,35 +60,26 @@
           </div>
         </div>
       </q-page-container>
-  
-      <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+
+      <NavigationMenu />
+    
     </q-layout>
   </template>
   
   <script>
+  import NotificationBell from "../components/NotificationBell.vue";
   import api from "../api";
+  import NavigationMenu from "../components/PlayerNavigationMenu.vue";
 
   export default {
     name: "DashboardPlayer",
+    components: {
+      NotificationBell,
+      NavigationMenu,
+    },
     data() {
       return {
+        full_name: null,
         options: [
           {
             name: "Reserva una cancha",
@@ -119,12 +110,6 @@
         ],
         matches: [], // Aquí se almacenan los partidos próximos
         activeMatch: null,
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "asociaciones", label: "Asociaciones", icon: "group" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
       };
     },
     methods: {
@@ -153,17 +138,21 @@
       navigateTo(route) {
         this.$router.push(`/player/${route}`);
       },
-      onTabChange(tabName) {
-        this.$router.push(`/player/${tabName}`);
-      },
-      onNotifications() {
-        console.log("Notificaciones abiertas");
-      },
       onMenu() {
         console.log("Menú abierto");
       },
+      fetchUserNameFromToken() {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(atob(base64));
+        this.full_name = payload.full_name || "Usuario";
+      }
+    },
     },
     mounted() {
+      this.fetchUserNameFromToken();
       this.fetchMatches();
     },
   };

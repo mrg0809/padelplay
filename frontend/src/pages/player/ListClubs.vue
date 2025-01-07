@@ -54,6 +54,7 @@
           </div>
         </q-page>
       </q-page-container>
+      <PlayerNavigationMenu />
     </q-layout>
   </template>
   
@@ -62,8 +63,12 @@
   import { useRouter } from "vue-router";
   import { supabase } from "../../services/supabase";
   import { useQuasar } from "quasar";
+  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
   export default {
+    components:{
+      PlayerNavigationMenu,
+    },
     setup() {
       const clubs = ref([]);
       const router = useRouter();
