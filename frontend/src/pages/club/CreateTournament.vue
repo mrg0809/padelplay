@@ -84,28 +84,12 @@
         </q-form>
       </q-page>
     </q-page-container>
-    <!-- Menú de Navegación Inferior -->
-    <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+    <ClubNavigationMenu />
   </q-layout>
 </template>
 
 <script>
+import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 import api from "../../api"; // Asegúrate de importar tu configuración de API
 import { supabase } from "src/services/supabase";
 
@@ -131,11 +115,6 @@ export default {
       systems: ["eliminacion directa", "round robin", "combinado"],
       courts: [],
       selectAllCourts: false,
-      tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
     };
   },
   async mounted() {
@@ -149,6 +128,9 @@ export default {
 
     const { data, error } = await supabase.from("courts").select("id, name").eq("club_id", this.clubId);
     if (!error) this.courts = data;
+  },
+  components:{
+    ClubNavigationMenu,
   },
   methods: {
     toggleSelectAll(selected) {
@@ -172,9 +154,6 @@ export default {
         this.$q.notify({ type: "negative", message: `Error: ${err.message}` });
       }
     },
-    onTabChange(tabName) {
-        this.$router.push(`/club/${tabName}`);
-      },
       goBack() {
       this.$router.back();
     },

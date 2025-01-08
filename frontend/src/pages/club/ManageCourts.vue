@@ -100,6 +100,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <ClubNavigationMenu />
   </q-layout>
   
 </template>
@@ -107,6 +108,7 @@
 <script>
 import { getUserFromToken } from 'src/api';
 import api from "../../api";
+import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
 
 export default {
   data() {
@@ -125,6 +127,9 @@ export default {
         club_id: null,
       },
     };
+  },
+  components:{
+    ClubNavigationMenu,
   },
   methods: {
     async fetchCourts() {

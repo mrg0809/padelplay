@@ -86,6 +86,12 @@ const routes = [
     component: () => import("src/pages/club/ClubDetails.vue"),
   },
   { 
+    path: "/matches/:matchId/chat", 
+    component: () => import("pages/player/MatchChat.vue"),
+    meta: { requiresAuth: true },
+    name: "MatchChat"
+  },
+  { 
     path: "/notifications", 
     component: () => import("src/pages/ShowNotifications.vue"),
     meta: { requiresAuth: true },

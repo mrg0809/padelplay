@@ -6,11 +6,11 @@
           <!-- Saludo -->
           <div class="greeting">
             <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
-            Hola 
+            {{club_name}} 
           </div>
           <!-- Iconos de la derecha -->
           <div class="header-icons">
-            <q-btn flat round dense icon="notifications" @click="onNotifications" />
+            <NotificationBell />
             <q-btn flat round dense icon="menu" @click="onMenu" />
           </div>
         </div>
@@ -41,33 +41,18 @@
           </div>
         </div>
       </q-page-container>
-  
-      <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+      <ClubNavigationMenu />
     </q-layout>
   </template>
   
   <script>
+import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
+import NotificationBell from 'src/components/NotificationBell.vue';
+
   export default {
     data() {
       return {
-        clubName: "Club PadelPlay", // Reemplaza con el nombre real del club desde la API o store
+        club_name: null,
         options: [
           {
             name: "Horarios",
@@ -91,19 +76,15 @@
             route: "stats",
           },
         ],
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
       };
+    },
+    components:{
+      ClubNavigationMenu,
+      NotificationBell,
     },
     methods: {
       navigateTo(route) {
         this.$router.push(`/club/${route}`);
-      },
-      onTabChange(tabName) {
-        this.$router.push(`/club/${tabName}`);
       },
       onNotifications() {
         console.log("Notificaciones abiertas");
@@ -111,6 +92,18 @@
       onMenu() {
         console.log("Menú abierto");
       },
+      fetchClubNameFromToken() {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const base64Url = token.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const payload = JSON.parse(atob(base64));
+          this.club_name = payload.full_name || "Club";
+        }
+      },
+    },
+    mounted() {
+      this.fetchClubNameFromToken();
     },
   };
   </script>

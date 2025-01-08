@@ -11,7 +11,7 @@
       <!-- Iconos de la derecha -->
           <div class="header-icons">
             <NotificationBell />
-            <q-btn flat round dense icon="menu" @click="onMenu" />
+            <PlayerTopMenu />
           </div>
         </div>
       </q-header>
@@ -70,12 +70,14 @@
   import NotificationBell from "../components/NotificationBell.vue";
   import api from "../api";
   import NavigationMenu from "../components/PlayerNavigationMenu.vue";
+  import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
 
   export default {
     name: "DashboardPlayer",
     components: {
       NotificationBell,
       NavigationMenu,
+      PlayerTopMenu,
     },
     data() {
       return {
@@ -138,18 +140,15 @@
       navigateTo(route) {
         this.$router.push(`/player/${route}`);
       },
-      onMenu() {
-        console.log("Menú abierto");
-      },
       fetchUserNameFromToken() {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const base64Url = token.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const payload = JSON.parse(atob(base64));
-        this.full_name = payload.full_name || "Usuario";
-      }
-    },
+        const token = localStorage.getItem("token");
+        if (token) {
+          const base64Url = token.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const payload = JSON.parse(atob(base64));
+          this.full_name = payload.full_name || "Usuario";
+        }
+      },
     },
     mounted() {
       this.fetchUserNameFromToken();

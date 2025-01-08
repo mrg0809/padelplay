@@ -1,241 +1,303 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="bg-primary text-white">
-        <q-toolbar>
-          <q-toolbar-title>Detalles del Partido</q-toolbar-title>
-          <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-        </q-toolbar>
-      </q-header>
-  
-      <q-page-container>
-        <q-page class="q-pa-md">
-          <div v-if="loading" class="text-center">
-            <q-spinner-dots color="primary" size="lg" />
-          </div>
-          <div v-else>
-            <q-card class="bg-dark text-white q-pa-md">
-              <q-card-section>
-                <h3 class="text-center text-white">Partido</h3>
-                <p><strong>Fecha:</strong> {{ matchDetails.match_date }}</p>
-                <p><strong>Hora:</strong> {{ matchDetails.match_time }}</p>
-                <p><strong>Club:</strong> {{ matchDetails.club_name || "No disponible" }}</p>
-                <p><strong>Cancha:</strong> {{ matchDetails.court_name || "No disponible" }}</p>
-              </q-card-section>
-  
-              <!-- Representación de la cancha -->
-              <q-card-section class="q-mt-md">
-                <div class="court-container">
-                  <div class="court">
-                    <!-- Jugadores o botones de agregar -->
-                    <div class="player team1-player1">
-                      <div v-if="team1[0]">
-                        {{ team1[0] || "Jugador 1 Equipo 1" }}
-                      </div>
-                      <q-btn
-                        v-else
-                        outline
-                        round
-                        icon="add"
-                        dense
-                        color="orange"
-                        @click="addPlayerToTeam(1)"
-                      />
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="bg-primary text-white">
+      <q-toolbar>
+        <q-toolbar-title>Detalles del Partido</q-toolbar-title>
+        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
+      </q-toolbar>
+    </q-header>
+
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <div v-if="loading" class="text-center">
+          <q-spinner-dots color="primary" size="lg" />
+        </div>
+        <div v-else>
+          <q-card class="bg-dark text-white q-pa-md">
+            <q-card-section>
+              <h3 class="text-center text-white">Partido</h3>
+              <p><strong>Fecha:</strong> {{ matchDetails.match_date }}</p>
+              <p><strong>Hora:</strong> {{ matchDetails.match_time }}</p>
+              <p><strong>Club:</strong> {{ matchDetails.club_name || "No disponible" }}</p>
+              <p><strong>Cancha:</strong> {{ matchDetails.court_name || "No disponible" }}</p>
+            </q-card-section>
+
+            <!-- Representación de la cancha -->
+            <q-card-section class="q-mt-md">
+              <div class="court-container">
+                <div class="court">
+                  <!-- Jugadores o botones de agregar -->
+                  <div class="player team1-player1">
+                    <div v-if="team1[0]">
+                      {{ team1[0] || "Jugador 1 Equipo 1" }}
                     </div>
-                    <div class="player team1-player2">
-                      <div v-if="team1[1]">
-                        {{ team1[1] || "Jugador 2 Equipo 1" }}
-                      </div>
-                      <q-btn
-                        v-else
-                        outline
-                        round
-                        icon="add"
-                        dense
-                        color="orange"
-                        @click="addPlayerToTeam(1)"
-                      />
-                    </div>
-                    <div class="player team2-player1">
-                      <div v-if="team2[0]">
-                        {{ team2[0] || "Jugador 1 Equipo 2" }}
-                      </div>
-                      <q-btn
-                        v-else
-                        outline
-                        round
-                        icon="add"
-                        dense
-                        color="orange"
-                        @click="addPlayerToTeam(2)"
-                      />
-                    </div>
-                    <div class="player team2-player2">
-                      <div v-if="team2[1]">
-                        {{ team2[1] || "Jugador 2 Equipo 2" }}
-                      </div>
-                      <q-btn
-                        v-else
-                        outline
-                        round
-                        icon="add"
-                        dense
-                        color="orange"
-                        @click="addPlayerToTeam(2)"
-                      />
-                    </div>
-                    <div class="net"></div>
-                  </div>
-                </div>
-              </q-card-section>
-  
-              <!-- Marcador -->
-              <q-card-section class="score-input">
-                <h4 class="text-center text-white">Marcador</h4>
-                <div class="score-grid">
-                  <!-- Encabezado -->
-                  <div class="header"></div>
-                  <div class="header" v-for="(set, index) in scoreTable" :key="'header-' + index">
-                    Set {{ index + 1 }}
-                  </div>
-                  <!-- Equipo 1 -->
-                  <div class="team-label">Equipo 1</div>
-                  <div v-for="(set, index) in scoreTable" :key="'team1-' + index" class="score-cell">
-                    <q-input
-                      v-model.number="set.team1score"
+                    <q-btn
+                      v-else
+                      outline
+                      round
+                      icon="add"
                       dense
-                      outlined
-                      type="number"
-                      :min="0"
-                      :max="7"
-                      class="text-white"
-                      style="max-width: 60px; text-align: center;"
+                      color="orange"
+                      @click="openAddPlayerDialog(1, 0)"
                     />
                   </div>
-                  <!-- Equipo 2 -->
-                  <div class="team-label">Equipo 2</div>
-                  <div v-for="(set, index) in scoreTable" :key="'team2-' + index" class="score-cell">
-                    <q-input
-                      v-model.number="set.team2score"
+                  <div class="player team1-player2">
+                    <div v-if="team1[1]">
+                      {{ team1[1] || "Jugador 2 Equipo 1" }}
+                    </div>
+                    <q-btn
+                      v-else
+                      outline
+                      round
+                      icon="add"
                       dense
-                      outlined
-                      type="number"
-                      :min="0"
-                      :max="7"
-                      class="text-white"
-                      style="max-width: 60px; text-align: center;"
+                      color="orange"
+                      @click="openAddPlayerDialog(1, 1)"
                     />
                   </div>
+                  <div class="player team2-player1">
+                    <div v-if="team2[0]">
+                      {{ team2[0] || "Jugador 1 Equipo 2" }}
+                    </div>
+                    <q-btn
+                      v-else
+                      outline
+                      round
+                      icon="add"
+                      dense
+                      color="orange"
+                      @click="openAddPlayerDialog(2, 0)"
+                    />
+                  </div>
+                  <div class="player team2-player2">
+                    <div v-if="team2[1]">
+                      {{ team2[1] || "Jugador 2 Equipo 2" }}
+                    </div>
+                    <q-btn
+                      v-else
+                      outline
+                      round
+                      icon="add"
+                      dense
+                      color="orange"
+                      @click="openAddPlayerDialog(2, 1)"
+                    />
+                  </div>
+                  <div class="net"></div>
                 </div>
-                <q-btn
-                  label="Guardar Resultado"
-                  color="primary"
-                  class="q-mt-md"
-                  @click="saveScore"
-                />
-              </q-card-section>
-            </q-card>
-          </div>
-        </q-page>
-      </q-page-container>
-      <!-- Menú de Navegación Inferior -->
-      <PlayerNavigationMenu />
-    </q-layout>
-  </template>
-  
-  
-  
-  <script>
-  import api from "../../api";
-  import { ref, onMounted } from "vue";
-  import { useRoute, useRouter } from "vue-router";
-  import { useQuasar } from "quasar";
-  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-  
-  export default {
-    components: {
-      PlayerNavigationMenu,
-    },
-    setup() {
-      const route = useRoute();
-      const router = useRouter();
-      const $q = useQuasar();
-  
-      const matchDetails = ref(null);
-      const team1 = ref([]);
-      const team2 = ref([]);
-      const loading = ref(true);
-      const scoreTable = ref([
-        { name: "Set 1", team1score: 0, team2score: 0 }, 
-        { name: "Set 2", team1score: 0, team2score: 0 },
-        { name: "Set 3", team1score: 0, team2score: 0 },
-        ]);
-        const scoreColumns = ref([
-        { name: "name", required: true, label: "Set", align: "left", field: "name" }, 
-        { name: "team1score", label: "Equipo 1", align: "center", field: "team1score" }, 
-        { name: "team2score", label: "Equipo 2", align: "center", field: "team2score" }, 
-        ]);
-  
-      const fetchMatchDetails = async () => {
-        try {
-          const response = await api.get(`/matches/match/${route.params.matchId}`);
-          matchDetails.value = response.data;
-          team1.value = response.data.team1_players || [];
-          team2.value = response.data.team2_players || [];
-        } catch (error) {
-          console.error("Error al cargar los detalles del partido:", error.message);
-          $q.notify({
-            type: "negative",
-            message: "Error al cargar los detalles del partido.",
-          });
-        } finally {
-          loading.value = false;
-        }
-      };
-  
-      const addPlayerToTeam = (team) => {
-        // Lógica para agregar jugador al equipo
-      };
-  
-      const saveScore = async () => {
-        try {
-          await api.put(`/matches/match/${route.params.matchId}`, {
-            score: scoreTable.value,
-          });
+              </div>
+            </q-card-section>
+
+            <!-- Marcador -->
+            <q-card-section class="score-input">
+              <h4 class="text-center text-white">Marcador</h4>
+              <div class="score-grid">
+                <!-- Encabezado -->
+                <div class="header"></div>
+                <div class="header" v-for="(set, index) in scoreTable" :key="'header-' + index">
+                  Set {{ index + 1 }}
+                </div>
+                <!-- Equipo 1 -->
+                <div class="team-label">Equipo 1</div>
+                <div v-for="(set, index) in scoreTable" :key="'team1-' + index" class="score-cell">
+                  <q-input
+                    v-model.number="set.team1score"
+                    dense
+                    outlined
+                    type="number"
+                    :min="0"
+                    :max="7"
+                    class="text-white"
+                    style="max-width: 60px; text-align: center;"
+                  />
+                </div>
+                <!-- Equipo 2 -->
+                <div class="team-label">Equipo 2</div>
+                <div v-for="(set, index) in scoreTable" :key="'team2-' + index" class="score-cell">
+                  <q-input
+                    v-model.number="set.team2score"
+                    dense
+                    outlined
+                    type="number"
+                    :min="0"
+                    :max="7"
+                    class="text-white"
+                    style="max-width: 60px; text-align: center;"
+                  />
+                </div>
+              </div>
+              <q-btn
+                label="Guardar Resultado"
+                color="primary"
+                class="q-mt-md"
+                @click="saveScore"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
+        <div class="chat-bubble" @click="openChat">
+          <q-icon name="chat" size="36px" color="white" />
+        </div>
+      </q-page>
+    </q-page-container>
+
+    <!-- Dialogo para agregar jugadores -->
+    <q-dialog v-model="addPlayerDialog">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Jugador</div>
+          <q-input v-model="searchInput" label="Buscar por email o teléfono" outlined dense />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="negative" v-close-popup />
+          <q-btn flat label="Agregar" color="positive" @click="addPlayer" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Menú de Navegación Inferior -->
+    <PlayerNavigationMenu />
+  </q-layout>
+</template>
+
+<script>
+import api from "../../api";
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useQuasar } from "quasar";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+
+export default {
+  components: {
+    PlayerNavigationMenu,
+  },
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const $q = useQuasar();
+    const matchDetails = ref(null);
+    const team1 = ref([]);
+    const team2 = ref([]);
+    const loading = ref(true);
+    const searchInput = ref("");
+    const selectedTeam = ref(null);
+    const selectedPosition = ref(null);
+    const addPlayerDialog = ref(false);
+    const scoreTable = ref([
+      { name: "Set 1", team1score: 0, team2score: 0 },
+      { name: "Set 2", team1score: 0, team2score: 0 },
+      { name: "Set 3", team1score: 0, team2score: 0 },
+    ]);
+
+    const fetchMatchDetails = async () => {
+      try {
+        const response = await api.get(`/matches/match/${route.params.matchId}`);
+        matchDetails.value = response.data;
+        team1.value = response.data.team1_players || [];
+        team2.value = response.data.team2_players || [];
+      } catch (error) {
+        console.error("Error al cargar los detalles del partido:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al cargar los detalles del partido.",
+        });
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const openAddPlayerDialog = (team, position) => {
+      selectedTeam.value = team;
+      selectedPosition.value = position;
+      searchInput.value = "";
+      addPlayerDialog.value = true;
+    };
+
+    const addPlayer = async () => {
+      try {
+        const payload = {
+          email_or_phone: searchInput.value,
+          match_id: route.params.matchId,
+          team: selectedTeam.value,
+          position: selectedPosition.value,
+          club_name: matchDetails.value.club_name || "No especificado",
+          player_name: team1.value[0] || "Jugador desconocido",
+          match_date: matchDetails.value.match_date || "Fecha desconocida",
+          match_time: matchDetails.value.match_time|| "Hora desconocida",
+        };
+
+        const response = await api.post("/matches/add-player", payload);
+
+        if (response.data.status === "success") {
           $q.notify({
             type: "positive",
-            message: "Resultado guardado exitosamente.",
+            message: "Jugador agregado exitosamente.",
           });
-        } catch (error) {
-          console.error("Error al guardar el resultado:", error.message);
+          fetchMatchDetails();
+        } else if (response.data.status === "invited") {
           $q.notify({
-            type: "negative",
-            message: "Error al guardar el resultado.",
+            type: "info",
+            message: "Jugador invitado a unirse a PadelPlay.",
           });
         }
-      };
-  
-      const goBack = () => {
-        router.back();
-      };
-  
-      onMounted(fetchMatchDetails);
-  
-      return {
-        matchDetails,
-        team1,
-        team2,
-        loading,
-        scoreTable,
-        scoreColumns,
-        addPlayerToTeam,
-        saveScore,
-        goBack,
-      };
+
+        addPlayerDialog.value = false;
+      } catch (error) {
+        console.error("Error al agregar jugador:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al agregar jugador.",
+        });
+      }
+    };
+
+    const saveScore = async () => {
+      try {
+        await api.put(`/matches/match/${route.params.matchId}`, {
+          score: scoreTable.value,
+        });
+        $q.notify({
+          type: "positive",
+          message: "Resultado guardado exitosamente.",
+        });
+      } catch (error) {
+        console.error("Error al guardar el resultado:", error.message);
+        $q.notify({
+          type: "negative",
+          message: "Error al guardar el resultado.",
+        });
+      }
+    };
+
+    const goBack = () => {
+      router.back();
+    };
+
+    onMounted(fetchMatchDetails);
+
+    return {
+      matchDetails,
+      team1,
+      team2,
+      loading,
+      scoreTable,
+      addPlayerDialog,
+      searchInput,
+      addPlayer,
+      openAddPlayerDialog,
+      saveScore,
+      goBack,
+    };
+  },
+  methods:{
+    openChat() {
+      this.$router.push(`/matches/${this.$route.params.matchId}/chat`);
     },
-  };
-  </script>
+  }
+};
+</script>
   
-  <style scoped>
+<style scoped>
 .court-container {
   display: flex;
   justify-content: center;
@@ -362,5 +424,26 @@
   background-color: rgba(255, 255, 255, 0.1) !important; /* Fondo del campo */
   color: white !important;                              /* Color del texto */
   border: 1px solid rgba(255, 255, 255, 0.6) !important; /* Borde claro */
+}
+
+.chat-bubble {
+  position: fixed;
+  top: 80px;
+  right: 25px;
+  background-color: orangered;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chat-bubble:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 </style>

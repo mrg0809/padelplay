@@ -69,10 +69,12 @@
           </q-dialog>
         </q-page>
       </q-page-container>
+      <ClubNavigationMenu />
     </q-layout>
   </template>
   
   <script>
+  import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
   import api from "../../api";
   
   export default {
@@ -92,6 +94,9 @@
         daysOfWeek: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
         confirmDialogVisible: false, // Controla la visibilidad del diálogo
       };
+    },
+    components: {
+      ClubNavigationMenu
     },
     methods: {
       async fetchCourts() {

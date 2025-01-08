@@ -170,10 +170,12 @@
         </q-card>
       </q-page>
     </q-page-container>
+    <ClubNavigationMenu />
   </q-layout>
 </template>
 
 <script>
+import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 import api from "../../api";
 
 export default {
@@ -221,6 +223,9 @@ export default {
         "República Dominicana",
       ],
     };
+  },
+  components:{
+    ClubNavigationMenu,
   },
   methods: {
     async fetchClubInfo() {

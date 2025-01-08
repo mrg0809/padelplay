@@ -50,28 +50,13 @@
         </q-page>
       </q-page-container>
       <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
+      <ClubNavigationMenu />
     </q-layout>
   </template>
   
   
   <script>
+import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 import { supabase } from "src/services/supabase";
 
 export default {
@@ -82,12 +67,10 @@ export default {
       hours: [], // Horas generadas dinámicamente
       reservations: {}, // Datos de las reservas organizados por cancha y hora
       clubId: null, // ID del club extraído del token
-      tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
     };
+  },
+  components: {
+    ClubNavigationMenu,
   },
   methods: {
     getCellClass(courtId, hour) {
@@ -119,9 +102,7 @@ export default {
 
       return hours;
     },
-    onTabChange(tabName) {
-        this.$router.push(`/club/${tabName}`);
-    },
+    
     async fetchReservations() {
         try {
             const { data, error } = await supabase

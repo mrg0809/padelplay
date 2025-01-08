@@ -84,24 +84,7 @@
         </q-card>
       </q-dialog>
     </q-page-container>
-    <!-- Menú de Navegación Inferior -->
-    <q-footer class="bg-primary text-white">
-      <q-tabs
-        align="justify"
-        class="q-pa-xs"
-        active-color="white"
-        @update:model-value="onTabChange"
-      >
-        <q-tab
-          v-for="tab in tabs"
-          :key="tab.name"
-          :name="tab.name"
-          :label="tab.label"
-          :icon="tab.icon"
-          class="text-white"
-        />
-      </q-tabs>
-    </q-footer>
+    <ClubNavigationMenu />
   </q-layout>
 </template>
 
@@ -109,9 +92,13 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "src/services/supabase";
 import { useRouter } from "vue-router";
+import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 
 export default {
   name: "ListTournaments",
+  components:{
+    ClubNavigationMenu,
+  },
   setup() {
     const router = useRouter();
     const tournaments = ref([]);
@@ -197,10 +184,6 @@ export default {
       }
     };
 
-    const onTabChange = (tabName) => {
-      router.push(`/club/${tabName}`);
-    };
-
     const goBack = () => {
       router.back();
     };
@@ -220,7 +203,6 @@ export default {
     return {
       tournaments,
       goBack,
-      onTabChange,
       editTournament,
       openDeleteDialog,
       openCloseDialog,
@@ -228,11 +210,6 @@ export default {
       closeDialogVisible,
       deleteTournament,
       closeTournament,
-      tabs: [
-        { name: "inicio", label: "Inicio", icon: "home" },
-        { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-        { name: "perfil", label: "Perfil", icon: "account_circle" },
-      ],
     };
   },
 };

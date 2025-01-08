@@ -1,8 +1,22 @@
 from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from app.db.connection import supabase
 from app.core.security import get_current_user
+from app.utils.supabase_utils import handle_supabase_response
+from app.utils.email_utils import send_match_invitation_email
 
 router = APIRouter()
+
+class AddPlayerPayload(BaseModel):
+    email_or_phone: str
+    match_id: str
+    team: int
+    position: int
+    club_name: str
+    player_name: str
+    match_date: str
+    match_time: str
+
 
 @router.get("/match/{match_id}")
 def get_match_details(match_id: str):
@@ -92,3 +106,61 @@ def get_upcoming_matches(current_user: dict = Depends(get_current_user)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener los partidos: {str(e)}")
+    
+
+    
+@router.post("/add-player")
+async def add_player(data: AddPlayerPayload, current_user: dict = Depends(get_current_user)):
+    try:
+        print(data)
+        # Verificar si el partido existe
+        match_response = supabase.from_("matches").select("*").eq("id", data.match_id).execute()
+        match_data = handle_supabase_response(match_response)
+        if not match_data or len(match_data) == 0:
+            raise HTTPException(status_code=404, detail="Partido no encontrado.")
+
+        # Obtener el primer y único partido de los datos
+        match = match_data[0]
+
+        # Buscar al jugador por correo o teléfono
+        player_response = supabase.from_("players").select("*").or_(
+            f"email.eq.{data.email_or_phone},phone.eq.{data.email_or_phone}"
+        ).execute()
+        player_data = handle_supabase_response(player_response)
+
+        player_id = None
+        is_registered = False
+
+        if player_data and len(player_data["data"]) > 0:
+            # Si el jugador está registrado, obtener su ID
+            player_id = player_data[0]["user_id"]
+            is_registered = True
+        else:
+            # Enviar invitación si no está registrado
+            send_match_invitation_email(data.email_or_phone, data)
+
+        # Verificar si el jugador ya está en algún equipo del partido
+        all_players = (match.get("team1_players", []) + match.get("team2_players", []))
+        if player_id and player_id in all_players:
+            raise HTTPException(status_code=400, detail="El jugador ya está registrado en el partido.")
+
+        # Verificar si la posición en el equipo ya está ocupada
+        team_column = "team1_players" if data.team == 1 else "team2_players"
+        current_team = match.get(team_column, [])  # Obtener jugadores del equipo
+        if len(current_team) >= 2:
+            raise HTTPException(status_code=400, detail="El equipo ya tiene todas las posiciones ocupadas.")
+
+        # Agregar el jugador al equipo correspondiente
+        updated_team = current_team + [player_id] if is_registered else current_team
+        update_response = supabase.from_("matches").update({team_column: updated_team}).eq("id", data.match_id).execute()
+        handle_supabase_response(update_response)
+
+
+        return {
+            "message": "Jugador agregado exitosamente.",
+            "status": "success" if is_registered else "invited",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al agregar el jugador: {str(e)}")
+

@@ -71,13 +71,7 @@
           </q-dialog>
         </q-page>
       </q-page-container>
-  
-      <!-- Footer Navigation Tabs -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs align="justify" class="q-pa-xs" active-color="white" @update:model-value="onTabChange">
-          <q-tab v-for="tab in tabs" :key="tab.name" :name="tab.name" :label="tab.label" :icon="tab.icon" class="text-white" />
-        </q-tabs>
-      </q-footer>
+      <ClubNavigationMenu />
     </q-layout>
   </template>
   
@@ -87,9 +81,13 @@
   import { useRouter, useRoute } from "vue-router";
   import { useQuasar } from "quasar";
   import api from "../../api";
+  import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
   
   export default {
     name: "EditTournament",
+    components: {
+      ClubNavigationMenu,
+    },
     setup() {
       const router = useRouter();
       const route = useRoute();
@@ -171,10 +169,6 @@
         router.back();
       };
   
-      const onTabChange = (tabName) => {
-        router.push(`/club/${tabName}`);
-      };
-  
       onMounted(() => {
         fetchTournamentDetails();
         fetchCourts();
@@ -190,12 +184,6 @@
         confirmUpdateTournament,
         confirmDialogVisible,
         goBack,
-        onTabChange,
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
       };
     },
   };
