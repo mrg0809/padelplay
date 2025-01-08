@@ -128,7 +128,9 @@
         }
       },
       formatDate(date) {
-        return new Date(date).toLocaleDateString("es-ES", {
+        const [year, month, day] = date.split('-').map(Number); 
+        const localDate = new Date(year, month - 1, day); // Crear fecha en zona horaria local
+        return localDate.toLocaleDateString("es-MX", {
           weekday: "short",
           day: "numeric",
           month: "short",
