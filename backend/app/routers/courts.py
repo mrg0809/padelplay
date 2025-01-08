@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime
 from app.db.connection import supabase
 from app.utils.supabase_utils import handle_supabase_response
 from pydantic import BaseModel, Field
@@ -47,10 +48,28 @@ def update_court_endpoint(court_id: str, updates: dict):
     if response.data is None:
         raise HTTPException(status_code=400, detail="Failed to update court")
     return handle_supabase_response(response)
-    
+
+
 @router.delete("/{court_id}")
 def delete_court_endpoint(court_id: str):
-    response = supabase.table("courts").delete().eq("id", court_id).execute()
-    if response.data is None:
+    # Verificar si hay reservas futuras activas para la cancha
+    today = datetime.now().date()
+    response = supabase.table("reservations") \
+        .select("*") \
+        .eq("court_id", court_id) \
+        .gte("reservation_date", today) \
+        .eq("status", "active") \
+        .execute()
+    
+    if response.data and len(response.data) > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete court. There are pending future reservations."
+        )
+
+    # Eliminar la cancha si no tiene reservas futuras
+    delete_response = supabase.table("courts").delete().eq("id", court_id).execute()
+    if delete_response.data is None:
         raise HTTPException(status_code=400, detail="Failed to delete court")
+    
     return {"message": "Court deleted successfully"}

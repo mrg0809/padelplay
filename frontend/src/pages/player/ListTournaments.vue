@@ -65,7 +65,7 @@
         </q-page>
       </q-page-container>
       <!-- Menú de Navegación Inferior -->
-      <PlayerNavigationMenu/>
+      <PlayerNavigationMenu />
     </q-layout>
   </template>
   
@@ -78,7 +78,7 @@
   export default {
     name: "ListTournaments",
     components: {
-      PlayerNavigationMenu
+      PlayerNavigationMenu,
     },
     setup() {
       const router = useRouter();
