@@ -4,7 +4,7 @@ from app.core.security import get_current_user
 import uuid
 from app.core.config import settings
 
-router = APIRouter(prefix="/clubs", tags=["Clubs"])
+router = APIRouter()
 
 @router.get("/")
 def get_club_info(current_user=Depends(get_current_user)):
@@ -54,7 +54,6 @@ def save_schedules(data: dict, current_user: dict = Depends(get_current_user)):
             # Obtener todas las canchas del club
             courts_response = supabase.from_("courts").select("id").eq("club_id", club_id).execute()
             courts = courts_response.data if courts_response.data else []
-            print(f"Canchas obtenidas: {courts}")  # Log para verificar los datos de canchas
 
             if not courts:
                 raise HTTPException(status_code=400, detail="No hay canchas disponibles para este club.")
@@ -73,7 +72,6 @@ def save_schedules(data: dict, current_user: dict = Depends(get_current_user)):
                         "opening_time": schedule["opening_time"],
                         "closing_time": schedule["closing_time"],
                     }).execute()
-                    print(f"Insertando horario para cancha {court['id']}: {insert_response}")  # Log de inserción
 
         else:
             # Eliminar horarios generales previos para la cancha seleccionada
@@ -113,10 +111,8 @@ def get_club_schedules(current_user: dict = Depends(get_current_user)):
         response = supabase.table("schedules").select("*").eq("club_id", club_id).execute()
 
         if response.data is None or len(response.data) == 0:
-            print("No schedules found for club_id:", club_id)
             return {"message": "No schedules found", "data": []}
 
-        print("Schedules found:", response.data)
         return {"data": response.data}
 
     except Exception as e:
@@ -147,3 +143,90 @@ def upload_logo(file: UploadFile = File(...), current_user: dict = Depends(get_c
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud: {str(e)}")
+    
+
+
+@router.put("/schedules")
+def update_schedules(data: dict, current_user: dict = Depends(get_current_user)):
+    """
+    Actualiza los horarios del club, manejando días cerrados (NULL para opening_time y closing_time).
+    """
+    try:
+        # Depuración: Log de los datos recibidos
+        print(f"Datos recibidos: {data}")
+
+        club_id = current_user["club_id"]
+        schedules = data.get("schedules", [])
+        selected_court = data.get("court_id")
+
+        # Validar que se haya enviado el court_id
+        if not selected_court or not isinstance(selected_court, dict) or "id" not in selected_court:
+            raise HTTPException(status_code=400, detail="Court ID es obligatorio y debe ser un UUID válido.")
+
+        selected_court_id = selected_court["id"]
+
+        # Validar que schedules no esté vacío
+        if not schedules or not isinstance(schedules, list):
+            raise HTTPException(status_code=400, detail="La lista de horarios es obligatoria.")
+
+        # Validar y procesar cada horario
+        for schedule in schedules:
+            # Verificar que el horario tiene los datos requeridos
+            if not isinstance(schedule, dict):
+                raise HTTPException(status_code=400, detail="Cada horario debe ser un objeto JSON.")
+            
+            day_of_week = schedule.get("day_of_week")
+            opening_time = schedule.get("opening_time")
+            closing_time = schedule.get("closing_time")
+
+            if day_of_week is None:
+                raise HTTPException(status_code=400, detail="Falta el día de la semana en un horario.")
+
+            # Verificar si ya existe un horario para el mismo día
+            existing_schedule = (
+                supabase.from_("schedules")
+                .select("*")
+                .eq("club_id", club_id)
+                .eq("court_id", selected_court_id)
+                .eq("day_of_week", day_of_week)
+                .execute()
+            )
+
+            if existing_schedule.data:
+                # Actualizar horario existente
+                update_response = (
+                    supabase.from_("schedules")
+                    .update({
+                        "opening_time": opening_time,
+                        "closing_time": closing_time,
+                    })
+                    .eq("club_id", club_id)
+                    .eq("court_id", selected_court_id)
+                    .eq("day_of_week", day_of_week)
+                    .execute()
+                )
+                if not update_response.data:
+                    raise HTTPException(status_code=500, detail=f"Error al actualizar horario para el día {day_of_week}.")
+            else:
+                # Insertar nuevo horario
+                insert_response = (
+                    supabase.from_("schedules")
+                    .insert({
+                        "club_id": club_id,
+                        "court_id": selected_court_id,
+                        "day_of_week": day_of_week,
+                        "opening_time": opening_time,
+                        "closing_time": closing_time,
+                    })
+                    .execute()
+                )
+                if not insert_response.data:
+                    raise HTTPException(status_code=500, detail=f"Error al insertar horario para el día {day_of_week}.")
+
+        return {"message": "Horarios actualizados exitosamente."}
+
+    except Exception as e:
+        print(f"Error en update_schedules: {e}")  # Log detallado del error
+        raise HTTPException(status_code=500, detail=f"Error al actualizar horarios: {str(e)}")
+
+

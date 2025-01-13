@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from app.core.security import get_current_user
 
-router = APIRouter(prefix="/courts", tags=["Courts"])
+router = APIRouter()
 
 class CourtCreate(BaseModel):
     club_id: str

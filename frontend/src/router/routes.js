@@ -50,6 +50,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/bloqueos", 
+    component: () => import("src/pages/club/ManageScheduleBlocks.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/horarios", 
     component: () => import("src/pages/club/ManageSchedules.vue"),
     meta: { requiresAuth: true },

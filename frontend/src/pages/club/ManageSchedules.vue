@@ -54,60 +54,20 @@
           </q-card-section>
 
           <q-card-actions align="right">
-            <q-btn label="Guardar Cambios" color="primary" @click="confirmSave" />
+            <q-btn label="Guardar Cambios" color="primary" @click="saveOrUpdateSchedules" />
           </q-card-actions>
         </q-card>
 
         <!-- Botones adicionales -->
         <div class="q-mt-md">
           <q-btn
-            label="Bloqueo de cancha"
+            label="Establecer bloqueos"
             color="deep-orange"
+            class="full-width"
             glossy
-            rounded
-            @click="openBlockDialog"
+            @click="goToBlockPage"
           />
-          <q-btn
-            label="Días festivos"
-            color="deep-orange"
-            glossy
-            rounded
-            class="q-ml-md"
-            @click="openHolidayDialog"
-          />
-        </div>
-
-        <!-- Diálogo para bloquear cancha -->
-        <q-dialog v-model="blockCourtDialogVisible">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Bloquear cancha</div>
-              <q-date v-model="blockCourtData.date" label="Fecha" color="orange" dark dense />
-              <q-time v-model="blockCourtData.start_time" label="Hora de Inicio" dense />
-              <q-time v-model="blockCourtData.end_time" label="Hora de Fin" dense />
-              <q-input v-model="blockCourtData.reason" label="Motivo" outlined dense />
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Cancelar" color="primary" v-close-popup />
-              <q-btn flat label="Bloquear" color="negative" @click="blockCourt" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
-
-        <!-- Diálogo para días festivos -->
-        <q-dialog v-model="holidayDialogVisible">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Registrar Día Festivo</div>
-              <q-date v-model="holidayData.date" label="Fecha" dense />
-              <q-input v-model="holidayData.reason" label="Motivo" outlined dense />
-            </q-card-section>
-            <q-card-actions align="right">
-              <q-btn flat label="Cancelar" color="primary" v-close-popup />
-              <q-btn flat label="Guardar" color="negative" @click="blockHoliday" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
+        </div>  
       </q-page>
     </q-page-container>
     <ClubNavigationMenu />
@@ -125,14 +85,13 @@ export default {
       selectedCourt: null,
       courts: [],
       generalSchedule: Array(7).fill(null).map(() => ({
-        is_open: true,
+        is_open: false,
         opening_time: "06:00",
         closing_time: "23:00",
       })),
       daysOfWeek: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
       confirmDialogVisible: false,
       blockCourtDialogVisible: false,
-      holidayDialogVisible: false,
       blockCourtData: {
         date: null,
         start_time: null,
@@ -162,9 +121,9 @@ export default {
     },
     async onCourtChange() {
       this.generalSchedule = Array(7).fill(null).map(() => ({
-        is_open: true,
-        opening_time: "06:00",
-        closing_time: "23:00",
+        is_open: false,
+        opening_time: null,
+        closing_time: null,
       }));
 
       if (!this.selectedCourt) return;
@@ -173,9 +132,10 @@ export default {
         const response = await api.get("/clubs/schedules", {
           params: { court_id: this.selectedCourt },
         });
-
-        if (response.data?.data?.length > 0) {
-          response.data.data.forEach((schedule) => {
+        const schedules =response.data.data.filter(schedule => schedule.court_id === this.selectedCourt.id);
+        
+        if (schedules.length > 0) {
+          schedules.forEach((schedule) => {
             const index = schedule.day_of_week;
             this.generalSchedule[index] = {
               is_open: schedule.opening_time !== null && schedule.closing_time !== null,
@@ -188,53 +148,49 @@ export default {
         console.error("Error al obtener los horarios:", error);
       }
     },
-    confirmSave() {
-      this.confirmDialogVisible = true;
-    },
-    async saveSchedules(applyToAll) {
-      this.confirmDialogVisible = false;
+
+    async saveOrUpdateSchedules() {
+      
+      if (!this.selectedCourt) {
+        this.$q.notify({ type: "negative", message: "Por favor, selecciona una cancha" });
+        return;
+      }
 
       try {
-        await api.post("/clubs/schedules", {
-          apply_to_all: applyToAll,
-          schedules: this.generalSchedule.map((schedule, index) => ({
-            day_of_week: index,
-            opening_time: schedule.is_open ? schedule.opening_time : null,
-            closing_time: schedule.is_open ? schedule.closing_time : null,
-            court_id: applyToAll ? null : this.selectedCourt,
-          })),
+        const schedules = this.generalSchedule.map((schedule, index) => ({
+          day_of_week: index,
+          opening_time: schedule.is_open ? schedule.opening_time : null,
+          closing_time: schedule.is_open ? schedule.closing_time : null,
+          court_id: this.selectedCourt,
+        }));
+
+        // Detectar si hay horarios existentes para la cancha
+        const existingSchedules = await api.get("/clubs/schedules", {
+          params: { court_id: this.selectedCourt },
         });
-        this.$q.notify({ type: "positive", message: "Horarios guardados exitosamente" });
+
+        if (existingSchedules.data?.data?.length > 0) {
+          // Actualizar horarios existentes (PUT)
+          await api.put("/clubs/schedules", {
+            court_id: this.selectedCourt,
+            schedules: schedules,
+          });
+          this.$q.notify({ type: "positive", message: "Horarios actualizados exitosamente" });
+        } else {
+          // Crear nuevos horarios (POST)
+          await api.post("/clubs/schedules", {
+            schedules: schedules,
+          });
+          this.$q.notify({ type: "positive", message: "Horarios creados exitosamente" });
+        }
       } catch (error) {
-        console.error("Error al guardar los horarios:", error);
+        console.error("Error al guardar los horarios:", error.response?.data?.detail || error.message);
         this.$q.notify({ type: "negative", message: "Error al guardar los horarios" });
       }
     },
-    openBlockDialog() {
-      this.blockCourtDialogVisible = true;
-    },
-    openHolidayDialog() {
-      this.holidayDialogVisible = true;
-    },
-    async blockCourt() {
-      try {
-        await api.post("/clubs/court-blocks", this.blockCourtData);
-        this.blockCourtDialogVisible = false;
-        this.$q.notify({ type: "positive", message: "Cancha bloqueada exitosamente." });
-      } catch (error) {
-        console.error("Error al bloquear la cancha:", error);
-        this.$q.notify({ type: "negative", message: "Error al bloquear la cancha." });
-      }
-    },
-    async blockHoliday() {
-      try {
-        await api.post("/clubs/holiday-blocks", this.holidayData);
-        this.holidayDialogVisible = false;
-        this.$q.notify({ type: "positive", message: "Día festivo registrado exitosamente." });
-      } catch (error) {
-        console.error("Error al registrar el día festivo:", error);
-        this.$q.notify({ type: "negative", message: "Error al registrar el día festivo." });
-      }
+
+    goToBlockPage() {
+      this.$router.push(`/club/bloqueos`);
     },
     goBack() {
       this.$router.back();

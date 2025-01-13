@@ -33,7 +33,8 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
 
         overlapping_blocks = supabase.from_("court_blocks").select("*").match({
             "court_id": court_id,
-            "block_date": reservation_date,
+            "start_date": reservation_date,
+            "end_date": reservation_date,
         }).execute()
 
         # Verificar si los datos fueron obtenidos
@@ -184,7 +185,7 @@ def get_available_times(club_id: str, date: str, current_user: dict = Depends(ge
             "reservation_date": date,
         }).execute()
         blocked_times_response = supabase.from_("court_blocks").select("court_id, start_time").match({
-            "block_date": date,
+            "start_date": date,
         }).execute()
 
         reserved_times = {
@@ -247,7 +248,8 @@ def get_available_courts(club_id: str, date: str, time: str):
             # Verificar si la cancha está bloqueada
             overlapping_blocks = supabase.from_("court_blocks").select("*").match({
                 "court_id": court["id"],
-                "block_date": date,
+                "start_date": date,
+                "end_date": date,
             }).execute()
 
             if overlapping_blocks.data:

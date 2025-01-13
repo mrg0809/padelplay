@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth, courts, clubs, matches, notifications, players, reservations, tournaments
+from app.routers import auth, blocks, courts, clubs, matches, notifications, players, reservations, tournaments
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
@@ -15,8 +15,9 @@ app.add_middleware(
 )
 # Registrar routers
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-app.include_router(clubs.router)
-app.include_router(courts.router)
+app.include_router(blocks.router, prefix="/block", tags=["Blocks"])
+app.include_router(clubs.router, prefix="/clubs", tags=["Clubs"])
+app.include_router(courts.router, prefix="/courts", tags=["Courts"])
 app.include_router(matches.router, prefix="/matches", tags=["Matches"])
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(players.router, prefix="/players", tags=["Players"])
@@ -26,4 +27,4 @@ app.include_router(tournaments.router, prefix="/tournaments", tags=["Tournaments
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Padel API"}
+    return {"message": "Welcome to the Padelplay API"}
