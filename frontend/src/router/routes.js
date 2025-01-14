@@ -65,6 +65,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/promociones", 
+    component: () => import("src/pages/club/ManageDiscounts.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/reservas", 
     component: () => import("src/pages/club/ManageReserves.vue"),
     meta: { requiresAuth: true },

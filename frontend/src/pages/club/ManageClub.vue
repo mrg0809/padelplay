@@ -69,6 +69,13 @@ import NotificationBell from 'src/components/NotificationBell.vue';
             route: "canchas",
           },
           {
+            name: "Descuentos y Promociones",
+            description: "Establece descuentos y promociones para tu club",
+            icon: "money_off",
+            image_url: "/src/assets/menu/organizepadel.jpg",
+            route: "promociones",
+          },
+          {
             name: "Estadisticas",
             description: "Revisa las estadísticas mas relevantes de tu club",
             icon: "insights",
