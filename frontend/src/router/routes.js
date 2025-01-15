@@ -151,6 +151,10 @@ const routes = [
     component: () => import("src/pages/tournament/PadeliteTournament.vue"),
   },
   {
+    path: "/padelite/cuadro-final",
+    component: () => import("src/pages/tournament/PadeliteFinalStage.vue"),
+  },
+  {
     path: "/tournament/:tournamentId",
     component: () => import("src/pages/tournament/TournamentDetails.vue"),
     meta: { requiresAuth: true },
