@@ -15,6 +15,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/admin/padelite", 
+    component: () => import("pages/admin/CaptureScores.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/dashboard/superuser", 
     component: () => import("pages/DashboardSuperuser.vue"),
     meta: { requiresAuth: true },
@@ -140,6 +145,10 @@ const routes = [
     path: "/tournamet/checkout",
     name: "TournamentCheckout",
     component: () => import("src/pages/tournament/TournamentCheckout.vue"),
+  },
+  {
+    path: "/padelite",
+    component: () => import("src/pages/tournament/PadeliteTournament.vue"),
   },
   {
     path: "/tournament/:tournamentId",

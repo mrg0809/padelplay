@@ -36,7 +36,20 @@
               class="q-mb-sm"
             />
           </div>
-  
+          
+          <q-card
+          class="q-mb-md"
+          clickable
+          bordered
+          @click="goToPadelite"
+          >
+          <q-card-section>
+            <q-img
+            src="/src/assets/padelite/padelite.jpg"
+            fit="fill"
+            ></q-img>
+          </q-card-section>
+          </q-card>
           <!-- Listado de Torneos -->
           <div v-if="tournaments.length === 0" class="text-center q-mt-md">
             <q-icon name="event_busy" size="64px" />
@@ -135,6 +148,10 @@
         router.push({ name: "TournamentDetails", params: { tournamentId: id } });
       };
 
+      const goToPadelite = (id) => {
+        router.push("/padelite");
+      };
+
       const goBack = () => {
         router.back();
       };
@@ -154,6 +171,7 @@
         categories,
         genders,
         goToTournamentDetails,
+        goToPadelite,
         goBack,
       };
     },

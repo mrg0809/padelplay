@@ -82,6 +82,13 @@ export default {
           image_url: "/src/assets/menu/orangepadel.jpeg",
           route: "usuarios",
         },
+        {
+          name: "Padelite",
+          description: "Captura resultados",
+          icon: "manage_accounts",
+          image_url: "/src/assets/padelite/padelite.jpg",
+          route: "padelite",
+        },
       ],
       tabs: [
         { name: "inicio", label: "Inicio", icon: "home" },
