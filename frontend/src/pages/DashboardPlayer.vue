@@ -1,11 +1,11 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark">
+    <q-layout view="hHh lpR fFf">
       <!-- Encabezado -->
       <q-header elevated class="bg-primary text-white">
         <div class="header-content">
       <!-- Saludo -->
           <div class="greeting">
-            <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
             Bienvenido {{full_name}}
           </div>
       <!-- Iconos de la derecha -->
@@ -14,25 +14,19 @@
             <PlayerTopMenu />
           </div>
         </div>
+        <BannerPromoScrolling />
       </q-header>
   
-  
-      <!-- Contenido Principal -->
       <q-page-container>
-        <!-- Imagen al inicio -->
-        <div class="header-image">
-          <img src="/src/assets/padelplayletraslogo.png" alt="Header Image" />
-        </div>
+      
+        
   
-        <!-- Línea divisora -->
-        <div class="divider"></div>
         <div class="home">
           <div class="options">
             <div v-for="option in options" :key="option.name" class="option-card" @click="navigateTo(option.route)"> 
               <img :src="option.image_url" alt="Option Image" class="option-image" />
-              <q-icon :name="option.icon" size="lg" class="option-icon" />
               <h3>{{ option.name }}</h3>
-              <p>{{ option.description }}</p>
+              <q-icon :name="option.icon" size="lg" class="option-icon" />
             </div>
           </div>
           <h2>Mis Eventos:</h2>
@@ -71,6 +65,7 @@
   import api from "../api";
   import NavigationMenu from "../components/PlayerNavigationMenu.vue";
   import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
+  import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 
   export default {
     name: "DashboardPlayer",
@@ -78,35 +73,33 @@
       NotificationBell,
       NavigationMenu,
       PlayerTopMenu,
+      BannerPromoScrolling,
     },
     data() {
       return {
         full_name: null,
         options: [
           {
-            name: "Reserva una cancha",
+            name: "Reserva tu cancha",
             description: "Encuentra tu club favorito",
             icon: "event_seat",
             image_url: "/src/assets/menu/campopadel.jpg",
             route: "reservas",
           },
           {
-            name: "Clases",
-            description: "Encuentra clases cerca de ti",
-            icon: "school",
+            name: "Únete a un partido",
+            icon: "sports_tennis",
             image_url: "/src/assets/menu/maestropadel.jpg",
           },
           {
-            name: "Torneos",
-            description: "Inscríbete a torneos cerca de ti",
+            name: "Inscribete a torneos",
             icon: "emoji_events",
             image_url: "/src/assets/menu/cuadrotorneo.jpg",
             route: "torneos"
           },
           {
-            name: "Estadisticas",
-            description: "Analiza la estadisticas de tus juegos",
-            icon: "sports_tennis",
+            name: "Clases de Pádel",
+            icon: "school",
             image_url: "/src/assets/menu/partidopadel.jpg",
           },
         ],
@@ -162,7 +155,7 @@
   <style scoped>
   /* General */
   body {
-    background-color: #121212; /* Fondo oscuro */
+    background-color: #d6cdcd; /* Fondo oscuro */
     color: #ffffff; /* Texto claro */
   }
   
@@ -185,27 +178,13 @@
   
   .header-icons {
     display: flex;
-    gap: 8px;
-  }
-  
-  .header-image img {
-    width: 100%; /* La imagen ocupará todo el ancho del contenedor */
-    height: auto;
-    border-radius: 8px; /* Opcional: bordes redondeados */
-    margin-bottom: 16px; /* Espacio debajo de la imagen */
-    margin-top: 16px;
-  }
-  
-  .divider {
-    height: 2px;
-    background-color: #444; /* Color de la línea */
-    margin: 16px 0; /* Espaciado arriba y abajo */
+    gap: 6px;
   }
   
   .logo-icon {
-    width: 24px; /* Ajusta el tamaño del logo */
-    height: 24px;
-    margin-left: 8px; /* Espaciado entre texto y logo */
+    width: 50px; /* Ajusta el tamaño del logo */
+    height: 50px;
+    margin-left: 2px; /* Espaciado entre texto y logo */
   }
   
   /* Opciones */
@@ -238,8 +217,8 @@
   }
   
   .option-icon {
-    margin-top: 8px;
-    color: #ffd700; /* Ícono dorado */
+    margin-bottom: 10px;
+    color: #ffffff
   }
   
   .option-card h3 {
@@ -273,7 +252,6 @@
     padding: 16px;
   }
 
-
   .event-card:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
@@ -302,10 +280,5 @@
   .event-date {
     font-weight: bold;
     color: #ffd700; /* Dorado */
-  }
-  
-  .bg-dark {
-    background-color: #121212 !important; /* Fondo oscuro */
-    color: #ffffff !important; /* Texto claro */
   }
   </style>

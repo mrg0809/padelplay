@@ -42,7 +42,6 @@ module.exports = configure(function (/* ctx */) {
 
       'roboto-font', // optional, you are not bound to it
       'material-icons', // optional, you are not bound to it
-      'mdi-v6',
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
@@ -90,7 +89,8 @@ module.exports = configure(function (/* ctx */) {
     framework: {
       config: {
         dark: true,
-      },
+        iconSet: 'material-icons',
+      
 
       // iconSet: 'material-icons', // Quasar icon set
       // lang: 'en-US', // Quasar language pack
