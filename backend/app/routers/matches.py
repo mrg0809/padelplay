@@ -75,7 +75,7 @@ def update_match_score(match_id: str, data: dict, current_user: dict = Depends(g
 def get_upcoming_matches(current_user: dict = Depends(get_current_user)):
     try:
         player_id = current_user["id"]
-
+        
         # Obtener partidos donde el jugador está en team1_players o team2_players
         response = supabase.from_("matches").select(
             """

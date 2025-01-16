@@ -1,5 +1,5 @@
 <template>
-  <q-footer class="bg-primary text-white">
+  <q-footer class="text-white">
     <q-tabs align="justify" class="q-pa-xs" active-color="white" @update:model-value="onTabChange">
       <q-tab
         v-for="tab in tabs"
@@ -19,9 +19,9 @@ export default {
     return {
       tabs: [
         { name: "inicio", label: "Inicio", icon: "home" },
-        { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-        { name: "asociaciones", label: "Asociaciones", icon: "group" },
-        { name: "perfil", label: "Perfil", icon: "account_circle" },
+        { name: "torneos", label: "Torneos", icon: "emoji_events" },
+        { name: "reservas", label: "Reservas", icon: "event" },
+        { name: "perfil", label: "Perfil", icon: "person_outline" },
       ],
     };
   },
@@ -36,6 +36,7 @@ export default {
   
   <style scoped>
   .q-footer {
+    background: #000000;
     position: fixed;
     bottom: 0;
     width: 100%;

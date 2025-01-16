@@ -1,7 +1,7 @@
 <template>
     <q-layout view="hHh lpR fFf">
       <!-- Encabezado -->
-      <q-header elevated class="bg-primary text-white">
+      <q-header elevated class="text-white">
         <div class="header-content">
       <!-- Saludo -->
           <div class="greeting">
@@ -26,12 +26,16 @@
             <div v-for="option in options" :key="option.name" class="option-card" @click="navigateTo(option.route)"> 
               <img :src="option.image_url" alt="Option Image" class="option-image" />
               <h3>{{ option.name }}</h3>
-              <q-icon :name="option.icon" size="lg" class="option-icon" />
+              <q-icon :name="option.icon" size="xl" class="option-icon" />
             </div>
           </div>
-          <h2>Mis Eventos:</h2>
-          <div class="events-carousel">
+          <div class="next-events">
+            <h4>Mis Eventos:</h4>
+          </div>
+          <div class="events-carousel flex flex-center">
+            <q-spinner-puff v-if="isLoading" color="primary" size="9em" />
             <div
+              v-else
               v-for="match in matches"
               :key="match.id"
               class="event-card"
@@ -39,10 +43,9 @@
             >
               <!-- Ícono dinámico según el tipo de evento -->
               <q-icon
-                :name="match.tournament_id ? 'mdi-trophy' : 'mdi-tennis'"
-                class="event-icon"
-                :color="match.tournament_id ? 'orange' : 'yellow'"
-                size="48px"
+                :name="match.tournament_id ? 'emoji_events' : 'sports_tennis'"
+                class="event-icon material-icons-outlined"
+                size="35px"
               />
               <div class="event-info">
                 <p class="event-date">{{ formatDate(match.match_date) }}</p>
@@ -66,6 +69,7 @@
   import NavigationMenu from "../components/PlayerNavigationMenu.vue";
   import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+  import { ref } from 'vue';
 
   export default {
     name: "DashboardPlayer",
@@ -82,7 +86,7 @@
           {
             name: "Reserva tu cancha",
             description: "Encuentra tu club favorito",
-            icon: "event_seat",
+            icon: "edit_calendar",
             image_url: "/src/assets/menu/campopadel.jpg",
             route: "reservas",
           },
@@ -92,7 +96,7 @@
             image_url: "/src/assets/menu/maestropadel.jpg",
           },
           {
-            name: "Inscribete a torneos",
+            name: "Inscríbete a torneos",
             icon: "emoji_events",
             image_url: "/src/assets/menu/cuadrotorneo.jpg",
             route: "torneos"
@@ -107,6 +111,10 @@
         activeMatch: null,
       };
     },
+    setup() {
+      const isLoading = ref(true);
+      return { isLoading }
+    },
     methods: {
       async fetchMatches() {
         try {
@@ -118,6 +126,8 @@
             type: "negative",
             message: "No se pudieron cargar los partidos.",
           });
+        } finally {
+          this.isLoading = false;
         }
       },
       formatDate(date) {
@@ -153,19 +163,17 @@
   </script>
   
   <style scoped>
-  /* General */
-  body {
-    background-color: #d6cdcd; /* Fondo oscuro */
-    color: #ffffff; /* Texto claro */
+
+  .home {
+    background-color: #9c9b9b;
   }
   
-  /* Encabezado */
   .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 16px;
-    background-color: #1e1e1e; /* Fondo del encabezado */
+    background-color: #000000; /* Fondo del encabezado */
   }
   
   .greeting {
@@ -178,30 +186,30 @@
   
   .header-icons {
     display: flex;
-    gap: 6px;
+    gap: 2px;
   }
   
   .logo-icon {
-    width: 50px; /* Ajusta el tamaño del logo */
-    height: 50px;
-    margin-left: 2px; /* Espaciado entre texto y logo */
+    width: 60px; /* Ajusta el tamaño del logo */
+    height: 60px;
   }
   
   /* Opciones */
   .options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
+    gap: 1px;
   }
   
   .option-card {
     background: #1f1f1f; /* Fondo de tarjeta oscuro */
     color: #ffffff; /* Texto blanco */
-    border-radius: 8px;
+    border-radius: 15px;
     text-align: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); /* Sombra */
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
+    margin: 7px;
   }
   
   .option-card:hover {
@@ -235,17 +243,19 @@
   display: flex;
   gap: 16px;
   overflow-x: auto; /* Desplazamiento horizontal */
-  padding: 16px 0;
+  padding: 5px 0;
   scroll-snap-type: x mandatory; /* Efecto de desplazamiento suave */
+  align-items: center;
   }
 
   .event-card {
     flex: 0 0 calc(33.333% - 16px); /* Tres tarjetas visibles a la vez */
     max-width: calc(33.333% - 16px);
     background: #1f1f1f;
-    border-radius: 8px;
+    border-radius: 15px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     cursor: pointer;
+    margin: auto;
     transition: transform 0.2s, box-shadow 0.2s;
     scroll-snap-align: start; /* Alineación en el scroll */
     text-align: center;
@@ -279,6 +289,25 @@
 
   .event-date {
     font-weight: bold;
-    color: #ffd700; /* Dorado */
+  }
+
+  .next-events {
+    background-color: #00000021;
+    background: #1e1e1e;
+    color: #ffffff;
+    width: 94%;
+    overflow: hidden; /* Oculta contenido fuera del área visible */
+    height: 30px; 
+    border-radius: 80px;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    text-align: center;
+    margin: 7px auto;
+  }
+
+  .next-events h4 {
+    font-size: medium;
+    margin: 1px auto;
   }
   </style>
