@@ -15,30 +15,68 @@
       <q-page-container class="home">
         <q-page class="q-pa-md">
           <!-- Search Bar -->
-          <div class="search-bar">
-            <q-input
-              v-model="searchQuery"
-              filled
-              dense
-              placeholder="Buscar por nombre o ubicación"
-              @input="searchClubs"
-              class="text-dark"
+          <div class="filter-options">
+            <q-select
+                color="white"
+                bg-color="black"
+                v-model="selectedCity"
+                :options="cityOptions"
+                label="Ciudad"
+                emit-value
+                map-options
+                rounded
+                standout
             >
-              <template v-slot:prepend>
-                <q-icon name="search" class="text-primary" />
-              </template>
-            </q-input>
+            <template v-slot:prepend>
+                <q-icon name="location_on" />
+            </template>
+        </q-select>
+
+
+            <q-select
+                v-model="selectedDates"
+                :options="dateOptions"
+                label="Fechas"
+                color="white"
+                bg-color="black"
+                multiple
+                emit-value
+                map-options
+                rounded
+                standout
+            >
+                <template v-slot:prepend>
+                    <q-icon name="calendar_month" />
+                </template>
+            </q-select>
+
+            <q-select
+                v-model="selectedGenre"
+                :options="genreOptions"
+                label="Tipo"
+                color="white"
+                bg-color="black"
+                multiple
+                emit-value
+                map-options
+                rounded
+                standout
+            >
+                <template v-slot:prepend>
+                    <q-icon name="wc" />
+                </template>
+            </q-select>
           </div>
   
-          <!-- Clubs List -->
-          <div class="clubs-list">
-            <q-list v-if="clubs.length > 0" class="q-mt-md">
+          <!-- Games List -->
+          <div class="games-list">
+            <q-list v-if="games.length > 0" class="q-mt-md">
               <q-item
-                v-for="club in clubs"
-                :key="club.id"
+                v-for="game in games"
+                :key="game.id"
                 clickable
-                @click="viewClubDetails(club.id)"
-                class="club-card"
+                @click="viewGameDetails(game.id)"
+                class="game-card"
               >
                 <q-item-section avatar>
                   <img
@@ -57,7 +95,7 @@
               </q-item>
             </q-list>
             <div v-else-if="searching" class="text-center">Buscando...</div>
-            <div v-else class="text-center">No se encontraron clubes.</div>
+            <div v-else class="text-center">No se encontraron juegos.</div>
           </div>
         </q-page>
       </q-page-container>
@@ -81,35 +119,40 @@
       NotificationBell,
     },
     setup() {
-      const clubs = ref([]);
+      const cityOptions = ref([]);
+      const games = []
       const router = useRouter();
       const searchQuery = ref("");
       const searching = ref(false);
       const $q = useQuasar();
       let userLocation = null;
+      const genreOptions = ref([
+        { label: 'Femenil', value: 'femenil' },
+        { label: 'Varonil', value: 'varonil' },
+        { label: 'Mixto', value: 'mixto' },
+        ]);
   
       onMounted(async () => {
-        try {
-            const userLocation = await getUserLocation(); // Obtener la ubicación del usuario
-            console.log("User Location:", userLocation);
-            await searchClubs("", userLocation); // Carga inicial con geolocalización
-        } catch (error) {
-            console.error("Geolocation error:", error.message);
-            $q.notify({
-            type: "negative",
-            message: "No se pudo obtener tu ubicación.",
-            });
-            await searchClubs(""); // Carga inicial sin geolocalización
-        }
+        fetchCities();
         });
 
-// Buscar al escribir
-watch(searchQuery, (newQuery) => {
-  if (newQuery && newQuery.trim() !== "") {
-    searchClubs(newQuery); // Solo búsqueda por texto
-  }
-});
+        const fetchCities = async () => {
+        try {
+          const { data, error } = await supabase.rpc("get_unique_cities");
+          if (error) {
+            console.error("Error fetching cities:", error.message);
+            return;
+          }
   
+          cityOptions.value = data.map((city) => ({
+            label: city,
+            value: city,
+          }));
+        } catch (error) {
+          console.error("Unexpected error fetching cities:", error.message);
+        }
+      };
+
       const getUserLocation = () => {
         return new Promise((resolve, reject) => {
           if (navigator.geolocation) {
@@ -132,22 +175,9 @@ watch(searchQuery, (newQuery) => {
         });
       };
   
-      const searchClubs = async (query, userLocation = null) => {
+      const searchOpenGames = async (userLocation = null) => {
       try {
-        if (query.trim()) {
-          // Buscar por nombre
-          const { data, error } = await supabase
-            .from("clubs")
-            .select("id, name, address, logo_url")
-            .ilike("name", `%${query}%`);
-          if (error) throw error;
-          clubs.value = data.map((club) => ({
-            id: club.id,
-            name: club.name,
-            address: club.address,
-            logo_url: club.logo_url,
-          }));
-        } else if (userLocation) {
+        if (userLocation) {
           // Buscar por geolocalización
           const { latitude, longitude } = userLocation;
           const { data, error } = await supabase.rpc("calculate_distance", {
@@ -166,25 +196,25 @@ watch(searchQuery, (newQuery) => {
           clubs.value = [];
         }
       } catch (error) {
-        console.error("Error fetching clubs:", error.message);
+        console.error("Error fetching games:", error.message);
         $q.notify({
           type: "negative",
-          message: "Error al buscar clubes: " + error.message,
+          message: "Error al buscar partidos: " + error.message,
         });
       }
     };
 
     const viewClubDetails = (clubId) => {
-      console.log("Navigating to Club:", clubId);
-      router.push(`/club/${clubId}`); // Navegar usando router.push
+      router.push(`/club/${clubId}`); 
     };
 
     return {
-      clubs,
+      games,
       searchQuery,
       searching,
-      searchClubs,
-      viewClubDetails, // Exportar para su uso en el template
+      genreOptions,
+      viewClubDetails,
+      cityOptions, 
     };
   },
 
@@ -229,22 +259,8 @@ watch(searchQuery, (newQuery) => {
     width: 60px; /* Ajusta el tamaño del logo */
     height: 60px;
   }
-  .search-bar {
-    background-color: white;
-    height: 30px;
-    width: 100%;
-    margin-bottom: 16px;
-    border-radius: 80px;
-  }
-  
-  .search-bar q-input {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-  }
 
-
-  .clubs-list .club-card {
+  .games-list .game-card {
     padding: 16px;
     border-radius: 8px;
     background-image: url("../../assets/texturafondo.png");
@@ -263,5 +279,21 @@ watch(searchQuery, (newQuery) => {
     font-size: 1.2em;
     font-weight: bold;
   }
+
+  .filter-options {
+  display: flex;
+  flex-direction: row; /* Alinea los elementos en fila */
+  justify-content: space-around; /* Distribuye espacio alrededor de los elementos */
+}
+
+.filter-options q-select {
+  height: 10px;
+  width: 40%;
+}
+
+.filter-options q-select ::v-deep .q-field__label,
+.filter-options q-select ::v-deep .q-item__label {
+  font-size: 0.5em; 
+}
   </style>
   

@@ -137,6 +137,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/player/unete", 
+    component: () => import("src/pages/player/ListOpenGames.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/player/torneos", 
     component: () => import("src/pages/player/ListTournaments.vue"),
     meta: { requiresAuth: true },

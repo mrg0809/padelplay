@@ -29,10 +29,11 @@
               <q-icon :name="option.icon" size="xl" class="option-icon" />
             </div>
           </div>
-          <div class="next-events">
-            <h4>Mis Eventos:</h4>
-          </div>
+
           <div class="events-carousel flex flex-center">
+            <div class="next-events">
+              <h4>Mis Eventos:</h4>
+            </div>
             <q-spinner-puff v-if="isLoading" color="primary" size="9em" />
             <div
               v-else
@@ -87,24 +88,25 @@
             name: "Reserva tu cancha",
             description: "Encuentra tu club favorito",
             icon: "edit_calendar",
-            image_url: "/src/assets/menu/campopadel.jpg",
+            image_url: "/src/assets/menu/reserva.jpeg",
             route: "reservas",
           },
           {
             name: "Únete a un partido",
             icon: "sports_tennis",
-            image_url: "/src/assets/menu/maestropadel.jpg",
+            image_url: "/src/assets/menu/unete.jpeg",
+            route: "unete",
           },
           {
             name: "Inscríbete a torneos",
             icon: "emoji_events",
-            image_url: "/src/assets/menu/cuadrotorneo.jpg",
+            image_url: "/src/assets/menu/torneos.jpeg",
             route: "torneos"
           },
           {
             name: "Clases de Pádel",
             icon: "school",
-            image_url: "/src/assets/menu/partidopadel.jpg",
+            image_url: "/src/assets/menu/clases.jpeg",
           },
         ],
         matches: [], // Aquí se almacenan los partidos próximos
@@ -165,7 +167,7 @@
   <style scoped>
 
   .home {
-    background-color: #9c9b9b;
+    background-color: #dddddd;
   }
   
   .header-content {
@@ -202,7 +204,8 @@
   }
   
   .option-card {
-    background: #1f1f1f; /* Fondo de tarjeta oscuro */
+    background-image: url("../assets/texturafondo.png");
+    background-size: cover;
     color: #ffffff; /* Texto blanco */
     border-radius: 15px;
     text-align: center;
@@ -251,7 +254,8 @@
   .event-card {
     flex: 0 0 calc(33.333% - 16px); /* Tres tarjetas visibles a la vez */
     max-width: calc(33.333% - 16px);
-    background: #1f1f1f;
+    background-image: url("../assets/texturafondo.png");
+    background-size: cover;
     border-radius: 15px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     cursor: pointer;
@@ -292,8 +296,8 @@
   }
 
   .next-events {
-    background-color: #00000021;
-    background: #1e1e1e;
+    background-image: url("../assets/texturafondo.png");
+    background-size: cover;
     color: #ffffff;
     width: 94%;
     overflow: hidden; /* Oculta contenido fuera del área visible */
