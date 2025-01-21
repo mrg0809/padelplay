@@ -15,26 +15,41 @@
               v-model="filters.city"
               :options="cityOptions"
               label="Ciudad"
-              outlined
-              dense
-              class="q-mb-sm"
-            />
+              rounded
+              standout
+              class="q-mb-sm filter-select"
+              bg-color="primary"
+            >
+            <template v-slot:prepend>
+                <q-icon name="location_on" />
+            </template>
+            </q-select>
             <q-select
               v-model="filters.category"
               :options="categories"
               label="Categoría"
-              outlined
-              dense
+              rounded
+              standout
               class="q-mb-sm"
-            />
+              bg-color="primary"
+            >
+              <template v-slot:prepend>
+                  <q-icon name="category" />
+              </template>
+            </q-select>
             <q-select
               v-model="filters.gender"
               :options="genders"
               label="Género"
-              outlined
-              dense
+              rounded
+              standout
               class="q-mb-sm"
-            />
+              bg-color="primary"
+            >
+              <template v-slot:prepend>
+                  <q-icon name="wc" />
+              </template>
+            </q-select>
           </div>
           
           <q-card
@@ -181,10 +196,17 @@
   <style scoped>
   .filters {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 10px;
   }
-  
+
+  .filters q-select {
+    --q-field-height: 12px !important; /* Ajusta la altura del q-select */
+    width: 12px !important; /* Ajusta el ancho del q-select */
+    font-size: 14px;
+  }
+
+
   .tournaments-list {
     display: flex;
     flex-direction: column;
@@ -203,5 +225,11 @@
   .tennis-yellow {
   color: #f0ff00; /* Color amarillo pelota de tenis */
 }
+
+.filter-select {
+  width: 30%;
+  height: 10px;
+}
+
   </style>
   

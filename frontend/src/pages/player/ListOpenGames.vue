@@ -1,232 +1,214 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="text-white">
-        <div class="header-content">
-          <div class="greeting">
-            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-          </div>
-      <!-- Iconos de la derecha -->
-          <div class="header-icons">
-            <NotificationBell />
-          </div>
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
         </div>
-        <BannerPromoScrolling />
-      </q-header>
-      <q-page-container class="home">
-        <q-page class="q-pa-md">
-          <!-- Search Bar -->
-          <div class="filter-options">
-            <q-select
-                color="white"
-                bg-color="black"
-                v-model="selectedCity"
-                :options="cityOptions"
-                label="Ciudad"
-                emit-value
-                map-options
-                rounded
-                standout
-            >
-            <template v-slot:prepend>
-                <q-icon name="location_on" />
-            </template>
-        </q-select>
-
-
-            <q-select
-                v-model="selectedDates"
-                :options="dateOptions"
-                label="Fechas"
-                color="white"
-                bg-color="black"
-                multiple
-                emit-value
-                map-options
-                rounded
-                standout
-            >
-                <template v-slot:prepend>
-                    <q-icon name="calendar_month" />
-                </template>
-            </q-select>
-
-            <q-select
-                v-model="selectedGenre"
-                :options="genreOptions"
-                label="Tipo"
-                color="white"
-                bg-color="black"
-                multiple
-                emit-value
-                map-options
-                rounded
-                standout
-            >
-                <template v-slot:prepend>
-                    <q-icon name="wc" />
-                </template>
-            </q-select>
-          </div>
-  
-          <!-- Games List -->
-          <div class="games-list">
-            <q-list v-if="games.length > 0" class="q-mt-md">
+        <div class="header-icons">
+          <NotificationBell />
+        </div>
+      </div>
+      <BannerPromoScrolling />
+    </q-header>
+    <q-page-container class="home">
+      <q-page class="q-pa-md">
+        <!-- Filter Buttons -->
+        <div class="filter-options">
+          <!-- Button Dropdown for City -->
+          <q-btn
+            dense
+            color="white"
+            outline
+            icon="location_on"
+            label="Ciudad"
+            @click="cityMenu = true"
+          />
+          <q-menu v-model="cityMenu" anchor="bottom left" self="top left">
+            <q-list>
               <q-item
-                v-for="game in games"
-                :key="game.id"
+                v-for="city in cityOptions"
+                :key="city.value"
                 clickable
-                @click="viewGameDetails(game.id)"
-                class="game-card"
+                @click="selectCity(city)"
               >
-                <q-item-section avatar>
-                  <img
-                    :src="club.logo_url || '/src/assets/logo.jpeg'"
-                    alt="Club Logo"
-                    class="club-logo"
-                  />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label class="club-name">{{ club.name }}</q-item-label>
-                  <q-item-label caption>{{ club.address }}</q-item-label>
-                  <q-item-label caption v-if="club.distance">
-                    Distancia: {{ (club.distance / 1000).toFixed(2) }} km
-                  </q-item-label>
-                </q-item-section>
+                <q-item-section>{{ city.label }}</q-item-section>
               </q-item>
             </q-list>
-            <div v-else-if="searching" class="text-center">Buscando...</div>
-            <div v-else class="text-center">No se encontraron juegos.</div>
-          </div>
-        </q-page>
-      </q-page-container>
-      <PlayerNavigationMenu />
-    </q-layout>
-  </template>
-  
-  <script>
-  import { ref, onMounted, watch } from "vue";
-  import { useRouter } from "vue-router";
-  import { supabase } from "../../services/supabase";
-  import { useQuasar } from "quasar";
-  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-  import NotificationBell from "src/components/NotificationBell.vue";
-  import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
-  
-  export default {
-    components:{
-      PlayerNavigationMenu,
-      BannerPromoScrolling,
-      NotificationBell,
-    },
-    setup() {
-      const cityOptions = ref([]);
-      const games = []
-      const router = useRouter();
-      const searchQuery = ref("");
-      const searching = ref(false);
-      const $q = useQuasar();
-      let userLocation = null;
-      const genreOptions = ref([
-        { label: 'Femenil', value: 'femenil' },
-        { label: 'Varonil', value: 'varonil' },
-        { label: 'Mixto', value: 'mixto' },
-        ]);
-  
-      onMounted(async () => {
-        fetchCities();
-        });
+          </q-menu>
 
-        const fetchCities = async () => {
-        try {
-          const { data, error } = await supabase.rpc("get_unique_cities");
-          if (error) {
-            console.error("Error fetching cities:", error.message);
-            return;
-          }
-  
-          cityOptions.value = data.map((city) => ({
-            label: city,
-            value: city,
-          }));
-        } catch (error) {
-          console.error("Unexpected error fetching cities:", error.message);
-        }
-      };
+          <!-- Button Dropdown for Dates -->
+          <q-btn
+            dense
+            color="white"
+            outline
+            icon="calendar_month"
+            label="Fechas"
+            @click="dateMenu = true"
+          />
+          <q-menu v-model="dateMenu" anchor="bottom left" self="top left">
+            <q-list>
+              <q-item
+                v-for="date in dateOptions"
+                :key="date.value"
+                clickable
+                @click="selectDate(date)"
+              >
+                <q-item-section>{{ date.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
 
-      const getUserLocation = () => {
-        return new Promise((resolve, reject) => {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const { latitude, longitude } = position.coords;
-                if (latitude && longitude) {
-                  resolve({ latitude, longitude });
-                } else {
-                  reject(new Error("Invalid geolocation data"));
-                }
-              },
-              (error) => {
-                reject(error);
-              }
-            );
-          } else {
-            reject(new Error("Geolocation is not supported by your device."));
-          }
-        });
-      };
-  
-      const searchOpenGames = async (userLocation = null) => {
+          <!-- Button Dropdown for Genre -->
+          <q-btn
+            dense
+            color="white"
+            outline
+            icon="wc"
+            label="Tipo"
+            @click="genreMenu = true"
+          />
+          <q-menu v-model="genreMenu" anchor="bottom left" self="top left">
+            <q-list>
+              <q-item
+                v-for="genre in genreOptions"
+                :key="genre.value"
+                clickable
+                @click="selectGenre(genre)"
+              >
+                <q-item-section>{{ genre.label }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </div>
+
+        <!-- Games List -->
+        <div class="games-list">
+          <q-list v-if="games.length > 0" class="q-mt-md">
+            <q-item
+              v-for="game in games"
+              :key="game.id"
+              clickable
+              @click="viewGameDetails(game.id)"
+              class="game-card"
+            >
+              <q-item-section avatar>
+                <img
+                  :src="club.logo_url || '/src/assets/logo.jpeg'"
+                  alt="Club Logo"
+                  class="club-logo"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="club-name">{{ club.name }}</q-item-label>
+                <q-item-label caption>{{ club.address }}</q-item-label>
+                <q-item-label caption v-if="club.distance">
+                  Distancia: {{ (club.distance / 1000).toFixed(2) }} km
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <div v-else-if="searching" class="text-center">Buscando...</div>
+          <div v-else class="text-center">No se encontraron juegos.</div>
+        </div>
+      </q-page>
+    </q-page-container>
+    <PlayerNavigationMenu />
+  </q-layout>
+</template>
+
+<script>
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { supabase } from "../../services/supabase";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+import NotificationBell from "src/components/NotificationBell.vue";
+import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+
+export default {
+  components: {
+    PlayerNavigationMenu,
+    BannerPromoScrolling,
+    NotificationBell,
+  },
+  setup() {
+    const cityOptions = ref([]);
+    const dateOptions = ref([
+      { label: "Hoy", value: "today" },
+      { label: "Mañana", value: "tomorrow" },
+      { label: "Esta semana", value: "this_week" },
+    ]);
+    const genreOptions = ref([
+      { label: "Femenil", value: "femenil" },
+      { label: "Varonil", value: "varonil" },
+      { label: "Mixto", value: "mixto" },
+    ]);
+
+    const selectedCity = ref(null);
+    const selectedDates = ref([]);
+    const selectedGenre = ref(null);
+
+    const cityMenu = ref(false);
+    const dateMenu = ref(false);
+    const genreMenu = ref(false);
+
+    const fetchCities = async () => {
       try {
-        if (userLocation) {
-          // Buscar por geolocalización
-          const { latitude, longitude } = userLocation;
-          const { data, error } = await supabase.rpc("calculate_distance", {
-            lat: latitude,
-            lng: longitude,
-          });
-          if (error) throw error;
-          clubs.value = data.map((club) => ({
-            id: club.club_id,
-            name: club.name,
-            address: club.address,
-            logo_url: club.logo_url,
-            distance: club.distance,
-          }));
-        } else {
-          clubs.value = [];
+        const { data, error } = await supabase.rpc("get_unique_cities");
+        if (error) {
+          console.error("Error fetching cities:", error.message);
+          return;
         }
+
+        cityOptions.value = data.map((city) => ({
+          label: city,
+          value: city,
+        }));
       } catch (error) {
-        console.error("Error fetching games:", error.message);
-        $q.notify({
-          type: "negative",
-          message: "Error al buscar partidos: " + error.message,
-        });
+        console.error("Unexpected error fetching cities:", error.message);
       }
     };
 
-    const viewClubDetails = (clubId) => {
-      router.push(`/club/${clubId}`); 
+    const selectCity = (city) => {
+      selectedCity.value = city.value;
+      cityMenu.value = false;
     };
+
+    const selectDate = (date) => {
+      if (!selectedDates.value.includes(date.value)) {
+        selectedDates.value.push(date.value);
+      } else {
+        selectedDates.value = selectedDates.value.filter(
+          (d) => d !== date.value
+        );
+      }
+      dateMenu.value = false;
+    };
+
+    const selectGenre = (genre) => {
+      selectedGenre.value = genre.value;
+      genreMenu.value = false;
+    };
+
+    onMounted(fetchCities);
 
     return {
-      games,
-      searchQuery,
-      searching,
+      cityOptions,
+      dateOptions,
       genreOptions,
-      viewClubDetails,
-      cityOptions, 
+      selectedCity,
+      selectedDates,
+      selectedGenre,
+      cityMenu,
+      dateMenu,
+      genreMenu,
+      selectCity,
+      selectDate,
+      selectGenre,
     };
   },
-
-
-  
-    methods: {
-      goBack() {
-        this.$router.back();
-      },
-    },
-  };
-  </script>
+};
+</script>
   
   <style>
 
@@ -282,8 +264,8 @@
 
   .filter-options {
   display: flex;
-  flex-direction: row; /* Alinea los elementos en fila */
-  justify-content: space-around; /* Distribuye espacio alrededor de los elementos */
+  gap: 10px;
+  justify-content: center;
 }
 
 .filter-options q-select {

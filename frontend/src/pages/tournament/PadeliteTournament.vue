@@ -1,5 +1,5 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-layout view="hHh lpR fFf" class="text-white">
       <q-header elevated class="bg-primary text-white">
         <q-toolbar>
           <q-toolbar-title>PADELITE</q-toolbar-title>
