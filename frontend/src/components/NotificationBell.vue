@@ -1,5 +1,5 @@
 <template>
-    <q-btn flat round icon="notifications" @click="goToNotifications">
+    <q-btn flat round icon="o_notifications" @click="goToNotifications" size="lg">
       <q-badge v-if="unreadCount > 0" color="red" floating>{{ unreadCount }}</q-badge>
     </q-btn>
   </template>

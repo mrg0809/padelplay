@@ -1,11 +1,18 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Detalles del Partido</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
-    </q-header>
+    <q-header elevated class="text-white">
+        <div class="header-content">
+          <div class="greeting">
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          </div>
+      <!-- Iconos de la derecha -->
+          <div class="header-icons">
+            <NotificationBell />
+            <PlayerTopMenu />
+          </div>
+        </div>
+        <BannerPromoScrolling />
+      </q-header>
 
     <q-page-container>
       <q-page class="q-pa-md">
@@ -13,17 +20,35 @@
           <q-spinner-dots color="primary" size="lg" />
         </div>
         <div v-else>
-          <q-card class="bg-dark text-white q-pa-md">
+          <q-card class="text-white q-pa-md match-card">
             <q-card-section>
-              <h3 class="text-center text-white">Partido</h3>
-              <p><strong>Fecha:</strong> {{ matchDetails.match_date }}</p>
-              <p><strong>Hora:</strong> {{ matchDetails.match_time }}</p>
-              <p><strong>Club:</strong> {{ matchDetails.club_name || "No disponible" }}</p>
-              <p><strong>Cancha:</strong> {{ matchDetails.court_name || "No disponible" }}</p>
+              <div class="row items-center" style="position: relative; width: 100%; margin-bottom: 20px;">
+                <q-btn flat @click="onMenu" style="position: absolute; left: 0;">
+                  <q-icon name="o_share" size="lg"/>
+                </q-btn>
+                <h3 class="text-h5 text-white" style="flex: 1; margin: 0; text-align: center;">Reserva</h3>
+                <div class="row" style="position: absolute; right: 0;">
+                  <q-btn flat @click="openChat">
+                    <q-icon name="o_chat" size="lg"/>
+                  </q-btn>
+                </div>
+              </div>
+                <p>
+                Juegas en el club {{ matchDetails.club_name || "No disponible" }}
+                <q-btn size="xs" flat round color="yellow" @click="goToMaps"><q-icon name="o_location_on" size="xs"/></q-btn>
+                el dia {{ formatDate(matchDetails.match_date) }} a
+                las {{ matchDetails.match_time.slice(0, 5) }} hrs. En la cancha {{ matchDetails.court_name || "No disponible" }}.
+                </p>
+                <p>Categoria jugadores: Abierto<br>
+                   Tipo de partido: Cerrado<br>
+                   Costo: $1215 PP: $405 </p>
             </q-card-section>
+          </q-card>
 
+          <q-card class="match-card text-white q-pa-md">
             <!-- Representación de la cancha -->
             <q-card-section class="q-mt-md">
+              <h3 class="text-center text-white">Jugadores</h3>
               <div class="court-container">
                 <div class="court">
                   <!-- Jugadores o botones de agregar -->
@@ -33,11 +58,9 @@
                     </div>
                     <q-btn
                       v-else
-                      outline
+                      flat
                       round
-                      icon="add"
-                      dense
-                      color="orange"
+                      icon="o_person_add"
                       @click="openAddPlayerDialog(1, 0)"
                     />
                   </div>
@@ -47,11 +70,9 @@
                     </div>
                     <q-btn
                       v-else
-                      outline
+                      flat
                       round
-                      icon="add"
-                      dense
-                      color="orange"
+                      icon="o_person_add"
                       @click="openAddPlayerDialog(1, 1)"
                     />
                   </div>
@@ -61,11 +82,9 @@
                     </div>
                     <q-btn
                       v-else
-                      outline
+                      flat
                       round
-                      icon="add"
-                      dense
-                      color="orange"
+                      icon="o_person_add"
                       @click="openAddPlayerDialog(2, 0)"
                     />
                   </div>
@@ -75,22 +94,26 @@
                     </div>
                     <q-btn
                       v-else
-                      outline
+                      flat
                       round
-                      icon="add"
-                      dense
-                      color="orange"
+                      icon="o_person_add"
                       @click="openAddPlayerDialog(2, 1)"
                     />
                   </div>
+                  
+                  <div class="line1">A</div>
                   <div class="net"></div>
+                  <div class="line2">B</div>
+                  <div class="horizontal-line"></div>
+                  
                 </div>
               </div>
             </q-card-section>
-
+          </q-card>
             <!-- Marcador -->
+          <q-card class="match-card text-white q-pa-md">
             <q-card-section class="score-input">
-              <h4 class="text-center text-white">Marcador</h4>
+              <h3 class="text-center text-white">Resultado</h3>
               <div class="score-grid">
                 <!-- Encabezado -->
                 <div class="header"></div>
@@ -135,9 +158,6 @@
             </q-card-section>
           </q-card>
         </div>
-        <div class="chat-bubble" @click="openChat">
-          <q-icon name="chat" size="36px" color="white" />
-        </div>
       </q-page>
     </q-page-container>
 
@@ -162,14 +182,22 @@
 
 <script>
 import api from "../../api";
+import dayjs from "dayjs";
+import 'dayjs/locale/es-mx'
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+import NotificationBell from "src/components/NotificationBell.vue";
+import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
 
 export default {
   components: {
+    BannerPromoScrolling,
+    NotificationBell,
     PlayerNavigationMenu,
+    PlayerTopMenu,
   },
   setup() {
     const route = useRoute();
@@ -293,11 +321,45 @@ export default {
     openChat() {
       this.$router.push(`/matches/${this.$route.params.matchId}/chat`);
     },
+    formatDate(date) {
+      dayjs.locale("es-mx");
+      const formattedDate = dayjs(date).format('dddd, D [de] MMMM [del] YYYY');
+      const [day, restOfDate] = formattedDate.split(' de ');
+      const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
+      const capitalizedMonth = restOfDate.charAt(0).toUpperCase() + restOfDate.slice(1);
+      return capitalizedDay + ' de ' + capitalizedMonth;
+    },
   }
 };
 </script>
   
 <style scoped>
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000; /* Fondo del encabezado */
+  }
+  
+  .greeting {
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .header-icons {
+    display: flex;
+    gap: 2px;
+  }
+  
+  .logo-icon {
+    width: 60px; /* Ajusta el tamaño del logo */
+    height: 60px;
+  }
+
 .court-container {
   display: flex;
   justify-content: center;
@@ -317,6 +379,20 @@ export default {
   padding: 0;
 }
 
+.match-card {
+  background-image: url("../../assets/texturafondo.png");
+  margin-bottom: 10px;
+  border-radius: 7%;
+  padding: 0px;
+}
+
+.match-card h3 {
+  margin-top: 0px;
+  margin-bottom: 15px;
+  font-size: x-large;
+  font-weight: bold;
+}
+
 .player {
   position: absolute;
   display: flex;
@@ -328,22 +404,22 @@ export default {
 
 .team1-player1 {
   top: 25%;
-  left: 25%;
+  left: 33%;
 }
 
 .team1-player2 {
   top: 75%;
-  left: 25%;
+  left: 33%;
 }
 
 .team2-player1 {
   top: 25%;
-  left: 75%;
+  left: 67%;
 }
 
 .team2-player2 {
   top: 75%;
-  left: 75%;
+  left: 67%;
 }
 
 .net {
@@ -351,10 +427,44 @@ export default {
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 2px;
+  width: 1.5px;
+  background-color: rgb(194, 194, 194);
+  opacity: 0.6;
+  transform: translateX(-50%);
+  box-shadow: 1px 15px 4px #d1d0d0;
+}
+
+.line1 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15%;
+  width: 1.5px;
+  background-color: white;
+  opacity: 0.9;
+  transform: translateX(-50%);
+}
+
+.line2 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 85%;
+  width: 1.5px;
+  background-color: white;
+  opacity: 0.9;
+  transform: translateX(-50%);
+}
+
+.horizontal-line {
+  position: absolute;
+  top: 50%;
+  left: 15%;
+  width: 70%;
+  height: 1.5px; /* Ajusta el grosor de la línea si es necesario */
   background-color: white;
   opacity: 0.7;
-  transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
 /* Marcador */
@@ -426,24 +536,9 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.6) !important; /* Borde claro */
 }
 
-.chat-bubble {
-  position: fixed;
-  top: 80px;
-  right: 25px;
-  background-color: orangered;
-  border-radius: 50%;
-  width: 56px;
-  height: 56px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+.vertical-text {
+  transform: rotate(-90deg); /* Rota el texto 90 grados a la izquierda */
+  transform-origin: left top; /* Establece el punto de origen de la rotación */
 }
 
-.chat-bubble:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-}
 </style>

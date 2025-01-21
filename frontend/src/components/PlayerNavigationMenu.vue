@@ -18,10 +18,10 @@ export default {
   data() {
     return {
       tabs: [
-        { name: "inicio", label: "Inicio", icon: "home" },
-        { name: "torneos", label: "Torneos", icon: "emoji_events" },
-        { name: "reservas", label: "Reservas", icon: "event" },
-        { name: "perfil", label: "Perfil", icon: "person_outline" },
+        { name: "inicio", label: "Inicio", icon: "o_home" },
+        { name: "torneos", label: "Torneos", icon: "o_emoji_events" },
+        { name: "reservas", label: "Reservas", icon: "o_event" },
+        { name: "perfil", label: "Perfil", icon: "o_person_outline" },
       ],
     };
   },

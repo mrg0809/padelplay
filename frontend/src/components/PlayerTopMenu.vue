@@ -1,5 +1,5 @@
 <template>
-    <q-btn flat round dense icon="menu" @click="onMenu" />
+    <q-btn flat round dense icon="o_menu" @click="onMenu" size="lg" />
 </template>
   
   <script>
