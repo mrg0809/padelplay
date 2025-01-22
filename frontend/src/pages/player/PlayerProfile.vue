@@ -1,12 +1,19 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <!-- Encabezado -->
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Perfil del Jugador</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
-    </q-header>
+
+    <q-header elevated class="text-white">
+        <div class="header-content">
+          <div class="greeting">
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          </div>
+      <!-- Iconos de la derecha -->
+          <div class="header-icons">
+            <NotificationBell />
+            <PlayerTopMenu />
+          </div>
+        </div>
+        <BannerPromoScrolling />
+      </q-header>
 
     <!-- Contenido Principal -->
     <q-page-container>
@@ -112,6 +119,7 @@
         </q-card>
       </q-page>
     </q-page-container>
+    <PlayerNavigationMenu />
   </q-layout>
 </template>
 
@@ -119,8 +127,19 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../services/supabase";
 import { useQuasar } from "quasar";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
+import NotificationBell from "src/components/NotificationBell.vue";
+import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 
 export default {
+  components: {
+    BannerPromoScrolling,
+    NotificationBell,
+    PlayerNavigationMenu,
+    PlayerTopMenu,
+  },
+
   data() {
     return {
       player: {

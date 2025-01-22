@@ -101,9 +101,11 @@
                     />
                   </div>
                   
-                  <div class="line1">A</div>
+                  <div class="line1"></div>
+                  <div class="player parejaA vertical-text">Pareja A</div>
                   <div class="net"></div>
-                  <div class="line2">B</div>
+                  <div class="line2"></div>
+                  <div class="player parejaB vertical-text">Pareja B</div>
                   <div class="horizontal-line"></div>
                   
                 </div>
@@ -539,6 +541,16 @@ export default {
 .vertical-text {
   transform: rotate(-90deg); /* Rota el texto 90 grados a la izquierda */
   transform-origin: left top; /* Establece el punto de origen de la rotación */
+}
+
+.parejaA {
+  top: 65%;
+  left: 5%;
+}
+
+.parejaB {
+  top: 65%;
+  right: 0%;
 }
 
 </style>
