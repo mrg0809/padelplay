@@ -2,56 +2,48 @@
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
 
     <q-header elevated class="text-white">
-        <div class="header-content">
-          <div class="greeting">
-            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-          </div>
-      <!-- Iconos de la derecha -->
-          <div class="header-icons">
-            <NotificationBell />
-            <PlayerTopMenu />
-          </div>
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
         </div>
-        <BannerPromoScrolling />
-      </q-header>
 
-    <!-- Contenido Principal -->
+        <div class="header-icons">
+          <NotificationBell />
+          <PlayerTopMenu />
+          </div>
+      </div>
+      <BannerPromoScrolling />
+    </q-header>
+
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-card flat bordered class="bg-dark text-white">
-          <!-- Foto del jugador -->
-          <q-card-section class="q-pb-none">
-            <div class="text-center">
+        <q-card flat bordered class="text-white profile-card">
+          <q-card-section class="q-pb-none relative">  
+            <q-btn flat round dense icon="query_stats" class="absolute-top-left" /> 
+            <q-btn flat round dense icon="o_share" class="absolute-top-right" /> 
+
+            <div class="text-center"> 
               <q-avatar size="120px" class="q-my-md">
                 <template v-if="player.photo_url">
                   <img :src="player.photo_url" alt="Foto del jugador" />
                 </template>
                 <template v-else>
-                  <q-icon name="person" size="70px" />
+                  <q-icon name="person" size="120px" />
                 </template>
               </q-avatar>
-              <q-btn
-                flat
-                dense
-                color="secondary"
-                icon="edit"
-                label="Editar información"
-                class="q-my-sm"
-                @click="editProfile"
-              />
+              <h4 class="q-ma-none">{{ player.first_name }}</h4> 
             </div>
           </q-card-section>
 
-          <!-- Información del jugador -->
-          <q-card-section>
-            <q-list dense class="bg-dark text-white">
+          <q-card-section class="q-pa-md text-center">  
+            <q-list dense class="text-white">
               <q-item>
                 <q-item-section side>
-                  <q-icon name="badge" />
+                  <q-icon name="star" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>Nombre</q-item-label>
-                  <q-item-label caption>{{ player.first_name }} {{ player.last_name }}</q-item-label>
+                  <q-item-label>Nivel o categoría</q-item-label>
+                  <q-item-label caption>{{ player.category || "No especificado" }}</q-item-label>
                 </q-item-section>
               </q-item>
 
@@ -62,16 +54,6 @@
                 <q-item-section>
                   <q-item-label>Fecha de nacimiento</q-item-label>
                   <q-item-label caption>{{ formatDate(player.birth_date) }}</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item>
-                <q-item-section side>
-                  <q-icon name="phone" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Teléfono</q-item-label>
-                  <q-item-label caption>{{ player.phone || "No proporcionado" }}</q-item-label>
                 </q-item-section>
               </q-item>
 
@@ -105,16 +87,66 @@
                 </q-item-section>
               </q-item>
 
-              <q-item>
-                <q-item-section side>
-                  <q-icon name="star" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Nivel o categoría</q-item-label>
-                  <q-item-label caption>{{ player.category || "No especificado" }}</q-item-label>
-                </q-item-section>
-              </q-item>
             </q-list>
+            <q-btn
+              flat
+              dense
+              color="white"
+              icon="edit"
+              label="Editar"
+              class="q-my-sm"
+              @click="editProfile"
+            />
+          </q-card-section>
+        </q-card>
+
+        <q-card flat bordered class="text-white profile-card q-mt-md"> 
+          <q-card-section class="q-pb-none">
+            <div class="icon-buttons text-center"> 
+              <q-btn
+                flat
+                dense
+                color="white"
+                icon="o_group"
+                label="Comunidad"
+                class="q-my-sm"
+                stack
+                @click="editProfile"
+              />
+
+              <q-btn
+                flat
+                dense
+                color="white"
+                icon="o_calendar_month"
+                label="Eventos"
+                class="q-my-sm"
+                stack
+                @click="editProfile"
+              />
+
+              <q-btn
+                flat
+                dense
+                color="white"
+                icon="o_redeem"
+                label="Recompensas"
+                class="q-my-sm"
+                stack
+                @click="editProfile"
+              />
+
+              <q-btn
+                flat
+                dense
+                color="white"
+                icon="o_history"
+                label="Historial"
+                class="q-my-sm"
+                stack
+                @click="editProfile"
+              />
+            </div>
           </q-card-section>
         </q-card>
       </q-page>
@@ -217,5 +249,44 @@ export default {
   .q-item {
     color: white;
   }
+
+  .profile-card {
+    background-image: url(../../assets/texturafondo.png);
+    background-size: cover;
+    border-radius: 20px;
+  }
+
+  .q-card-section.text-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.q-card-section.text-center h4 {
+  margin-top: 0; 
+}
+
+.icon-buttons {
+  display: flex;
+  justify-content: center; 
+  flex-wrap: wrap; 
+  gap: 0px; 
+}
+
+.q-card-section.relative {
+  position: relative; 
+}
+
+.absolute-top-left {
+  position: absolute;
+  top: 10px; 
+  left: 10px; 
+}
+
+.absolute-top-right {
+  position: absolute;
+  top: 10px; 
+  right: 10px; 
+}
   </style>
   

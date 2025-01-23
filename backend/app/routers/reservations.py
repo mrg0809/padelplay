@@ -64,6 +64,9 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
                 status_code=500,
                 detail="Error al crear la reserva."
             )
+        
+        #Obtener ID de la reserva
+        reservation_id = reservation_response.data[0]["id"]
 
         # Crear partido relacionado
         match_response = supabase.from_("matches").insert({
@@ -73,6 +76,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             "court_id": court_id,
             "match_date": reservation_date,
             "match_time": start_time,
+            "reservation_id": reservation_id,
         }).execute()
 
         if not match_response or not match_response.data:
