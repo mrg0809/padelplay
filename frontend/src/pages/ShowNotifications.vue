@@ -2,10 +2,17 @@
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
     <!-- Header -->
     <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Notificaciones</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
+     
+        <div class="header-content">
+        <div class="greeting">
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          </div>
+      <!-- Iconos de la derecha -->
+          <div class="header-icons">
+            <q-btn flat round icon="close" @click="goBack" />
+          </div>
+        </div>
+      
     </q-header>
 
     <!-- Main Content -->
@@ -115,6 +122,29 @@ export default {
 }
 .text-grey {
   color: grey;
+}
+.logo-icon {
+  width: 60px; /* Ajusta el tamaño del logo */
+  height: 60px;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000; /* Fondo del encabezado */
+} 
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
 }
 </style>
 
