@@ -1,16 +1,21 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>{{ clubDetails?.name || "Detalles del Club" }}</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
+    <q-header elevated class="text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+        </div>
+        <div class="header-icons">
+          <NotificationBell />
+        </div>
+      </div>
+      <BannerPromoScrolling />
     </q-header>
 
     <q-page-container>
       <q-page class="q-pa-md">
         <div v-if="loading" class="text-center">
-          <q-spinner-dots color="primary" size="lg" />
+          <q-spinner-dots color="primary" size="xl" />
         </div>
         <div v-else>
           <!-- Información del club -->
@@ -19,11 +24,11 @@
               v-if="clubDetails?.logo_url"
               :src="clubDetails.logo_url"
               alt="Club Logo"
-              class="q-mb-md"
-              style="max-width: 200px; border-radius: 8px;"
+              style="max-width: 150px; border-radius: 8px;"
             />
           </div>
-
+          <q-card class="tabs-section">
+            <q-card-section>
           <!-- Pestañas del Club -->
           <q-tabs v-model="selectedTab" align="justify" class="text-white">
             <q-tab name="info" label="Info" icon="info" />
@@ -31,16 +36,18 @@
             <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
             <q-tab name="wall" label="Muro" icon="chat" />
           </q-tabs>
-
+        </q-card-section>
+          </q-card>
           <q-separator />
 
           <!-- Contenido de las pestañas -->
           <!-- Pestaña Info -->
+          
           <div v-if="selectedTab === 'info'">
+            <q-card class="tabs-section">
+              <q-card-section>
             <p><strong>Dirección:</strong> {{ clubDetails?.address || "No disponible" }}</p>
-            <p v-if="clubDetails?.city"><strong>Ciudad:</strong> {{ clubDetails.city }}</p>
-            <p v-if="clubDetails?.state"><strong>Estado:</strong> {{ clubDetails.state }}</p>
-            <p v-if="clubDetails?.country"><strong>País:</strong> {{ clubDetails.country }}</p>
+            <p v-if="clubDetails?.city"><strong>Ciudad:</strong> {{ clubDetails.city }}, {{ clubDetails.state }}, {{ clubDetails.country }}</p>
 
             <div id="map" style="height: 200px;" v-if="coordinates"></div>
             
@@ -51,7 +58,7 @@
                   flat
                   round
                   icon="mdi-google-maps"
-                  color="primary"
+                  color="blue"
                   class="q-my-md"
                   size="xl"
                   @click="openMaps(coordinates)"
@@ -61,7 +68,7 @@
                   flat
                   round
                   icon="mdi-facebook"
-                  color="primary"
+                  color="blue"
                   class="q-mx-sm"
                   size="xl"
                   @click="openSocialLink(clubDetails.facebook_url)"
@@ -81,7 +88,7 @@
                   flat
                   round
                   icon="mdi-tiktok"
-                  color="black"
+                  color="white"
                   class="q-mx-sm"
                   size="xl"
                   @click="openSocialLink(clubDetails.tiktok_url)"
@@ -98,9 +105,13 @@
                 />
               </div>
             </div>
+          </q-card-section>
+        </q-card>
           </div>
           <!-- Pestaña reservas -->
           <div v-if="selectedTab === 'reservations'">
+            <q-card class="tabs-section">
+              <q-card-section>
             <!-- Muestra fechas -->
             <div class="q-mt-lg days-container">
               <q-btn flat icon="arrow_back" @click="previousWeek" />
@@ -109,7 +120,7 @@
                   v-for="(day, index) in days"
                   :key="index"
                   :outline="selectedDay !== day.date"
-                  color="primary"
+                  color="grey"
                   class="day-button"
                   @click="selectDay(day.date)"
                 >
@@ -122,14 +133,14 @@
             <!-- Muestra horarios disponibles -->
             <div class="available-times q-mt-lg">
               <div v-if="loadingTimes" class="text-center">
-                <q-spinner-dots color="primary" size="lg" />
+                <q-spinner-dots color="white" size="xl" />
               </div>
               <div v-else class="time-grid">
                 <q-btn
                   v-for="time in consolidatedTimes"
                   :key="time"
                   :label="time"
-                  :color="time === selectedTime ? 'green' : 'primary'"
+                  :color="time === selectedTime ? 'green' : 'grey'"
                   class="time-slot"
                   @click="selectTime(time)"
                 />
@@ -139,7 +150,7 @@
             <div v-if="selectedTime" class="q-mt-lg">
               <h5>Canchas disponibles para {{ selectedTime }}:</h5>
               <div v-if="loadingCourts" class="text-center">
-                <q-spinner-dots color="primary" size="lg" />
+                <q-spinner-dots color="white" size="lg" />
               </div>
               <div v-else>
                 <q-list bordered separator>
@@ -172,10 +183,11 @@
                 </q-list>
               </div>
             </div>
+          </q-card-section>
+        </q-card>
           </div>
           <!-- Seccion Torneos -->
           <div v-if="selectedTab === 'tournaments'">
-            <h4 class="text-center">Torneos</h4>
             <div class="q-mt-md tournament-list">
               <div
                 v-for="tournament in tournaments"
@@ -198,9 +210,11 @@
             <h4 class="text-center">Muro del Club</h4>
             <p>Aquí se mostrarán las publicaciones del club.</p>
           </div>
+            
         </div>
       </q-page>
     </q-page-container>
+    <PlayerNavigationMenu />
   </q-layout>
 </template>
 
@@ -212,8 +226,16 @@ import { useQuasar } from "quasar";
 import api from "../../api";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+import NotificationBell from "src/components/NotificationBell.vue";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 
 export default {
+  components: {
+    BannerPromoScrolling,
+    NotificationBell,
+    PlayerNavigationMenu,
+  },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -602,7 +624,7 @@ export default {
 
 <style scoped>
 .club-logo {
-  max-width: 150px;
+  width: 300px;
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -616,6 +638,30 @@ export default {
 .available-times {
   margin-top: 16px;
 }
+.logo-icon {
+    width: 60px; /* Ajusta el tamaño del logo */
+    height: 60px;
+}
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000; /* Fondo del encabezado */
+  }
+  
+.greeting {
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+.header-icons {
+    display: flex;
+    gap: 2px;
+  }
 .time-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
@@ -668,6 +714,12 @@ export default {
   padding: 10px; 
   border-radius: 5px; 
 }
+.tabs-section {
+  margin-bottom: 10px;
+  background-image: url(../../assets/texturafondo.png);
+  background-size: cover;
+  border-radius: 20px;
+}
 .time-option-btn {
   width: 88px; 
   margin: 3px; 
@@ -679,7 +731,8 @@ export default {
 }
 
 .tournament-card {
-  background: #1e1e1e;
+  background-image: url(../../assets/texturafondo.png);
+  background-size: cover;
   padding: 16px;
   border-radius: 8px;
   cursor: pointer;

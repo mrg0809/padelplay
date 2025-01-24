@@ -30,10 +30,12 @@
             </div>
           </div>
 
+          <div class="next-events">
+            <h4>Mis Eventos:</h4>
+          </div>
+          
           <div class="events-carousel flex flex-center">
-            <div class="next-events">
-              <h4>Mis Eventos:</h4>
-            </div>
+            
             <q-spinner-puff v-if="isLoading" color="primary" size="9em" />
             <div
               v-else
@@ -243,12 +245,14 @@
   }
   
   .events-carousel {
+  width: 100%;
   display: flex;
   gap: 16px;
   overflow-x: auto; /* Desplazamiento horizontal */
   padding: 5px 0;
   scroll-snap-type: x mandatory; /* Efecto de desplazamiento suave */
   align-items: center;
+  white-space: nowrap;
   }
 
   .event-card {
