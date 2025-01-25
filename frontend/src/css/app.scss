@@ -4,5 +4,10 @@
 @tailwind utilities;
 
 body {
-    background-color: #f5f5f5dc; /* Color de fondo deseado */
+    background-color: #DDDDDD; /* Color de fondo deseado */
   }
+
+global-card {
+  background-image: url(../assets/texturafondo.png);
+  background-size: cover;
+}

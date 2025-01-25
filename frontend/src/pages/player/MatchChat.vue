@@ -1,10 +1,17 @@
 <template>
     <q-layout view="hHh lpR fFf" class="bg-dark text-white">
       <q-header elevated class="bg-primary text-white">
-        <q-toolbar>
-          <q-btn flat round icon="arrow_back" @click="goBack" />
-          <q-toolbar-title>Chat del Partido</q-toolbar-title>
-        </q-toolbar>
+     
+          <div class="header-content">
+          <div class="greeting">
+              <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+            </div>
+        <!-- Iconos de la derecha -->
+            <div class="header-icons">
+              <q-btn flat round icon="close" @click="goBack" />
+            </div>
+          </div>
+        
       </q-header>
   
       <q-page-container>
@@ -13,16 +20,19 @@
           <MatchChatRoom :matchId="matchId" />
         </q-page>
       </q-page-container>
+      <PlayerNavigationMenu />
     </q-layout>
   </template>
   
   <script>
   import MatchChatRoom from 'src/components/MatchChatRoom.vue';
+  import PlayerNavigationMenu from 'src/components/PlayerNavigationMenu.vue';
   import { useRoute } from 'vue-router';
   
   export default {
     components: {
       MatchChatRoom,
+      PlayerNavigationMenu
     },
     setup() {
       const route = useRoute();
@@ -42,45 +52,31 @@
   </script>
   
   <style scoped>
-  .messages {
-    max-height: 70vh;
-    overflow-y: auto;
-    padding: 16px;
-  }
-  
-  .message {
-    margin: 8px 0;
+  .header-content {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000; 
   }
   
-  .message.mine {
-    align-items: flex-end;
-  }
-  
-  .message.theirs {
-    align-items: flex-start;
-  }
-  
-  .message-content {
-    background-color: #007bff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 12px;
-    max-width: 70%;
-  }
-  
-  .message-time {
-    font-size: 0.75rem;
-    color: #ccc;
-    margin-top: 4px;
-  }
-  
-  .message-input {
+  .greeting {
+    font-size: 1rem;
+    font-weight: 500;
     display: flex;
     align-items: center;
-    padding: 16px;
-    background-color: #1e1e1e;
+    gap: 8px;
   }
+  
+  .header-icons {
+    display: flex;
+    gap: 2px;
+  }
+  
+  .logo-icon {
+    width: 60px; 
+    height: 60px;
+  }
+
   </style>
   

@@ -17,25 +17,24 @@
     <q-page-container>
       <q-page class="q-pa-md">
         <div v-if="loading" class="text-center">
-          <q-spinner-dots color="primary" size="lg" />
+          <q-spinner-dots color="primary" size="xl" />
         </div>
         <div v-else>
           <q-card class="text-white q-pa-md match-card">
             <q-card-section>
               <div class="row items-center" style="position: relative; width: 100%; margin-bottom: 20px;">
-                <q-btn flat @click="onMenu" style="position: absolute; left: 0;">
-                  <q-icon name="o_share" size="lg"/>
+                <q-btn flat @click="shareMatch" style="position: absolute; left: 0;">
+                  <q-icon name="o_share" size="md"/>
                 </q-btn>
                 <h3 class="text-h5 text-white" style="flex: 1; margin: 0; text-align: center;">Reserva</h3>
                 <div class="row" style="position: absolute; right: 0;">
                   <q-btn flat @click="openChat">
-                    <q-icon name="o_chat" size="lg"/>
+                    <q-icon name="o_chat" size="md"/>
                   </q-btn>
                 </div>
               </div>
                 <p>
                 Juegas en el club {{ matchDetails.club_name || "No disponible" }}
-                <q-btn size="xs" flat round color="yellow" @click="goToMaps"><q-icon name="o_location_on" size="xs"/></q-btn>
                 el dia {{ formatDate(matchDetails.match_date) }} a
                 las {{ matchDetails.match_time.slice(0, 5) }} hrs. En la cancha {{ matchDetails.court_name || "No disponible" }}.
                 </p>
@@ -54,7 +53,13 @@
                   <!-- Jugadores o botones de agregar -->
                   <div class="player team1-player1">
                     <div v-if="team1[0]">
-                      {{ team1[0] || "Jugador 1 Equipo 1" }}
+                      <q-avatar size="40px" v-if="team1[0].photo_url">
+                        <img :src="team1[0].photo_url" alt="Foto del jugador" />
+                      </q-avatar>
+                      <span v-else>{{ team1[0].first_name || "Jugador 1 Equipo 1" }}</span>
+                      <div class="text-caption">
+                        {{ team1[0].category }} 
+                      </div>
                     </div>
                     <q-btn
                       v-else
@@ -66,7 +71,13 @@
                   </div>
                   <div class="player team1-player2">
                     <div v-if="team1[1]">
-                      {{ team1[1] || "Jugador 2 Equipo 1" }}
+                      <q-avatar size="40px" v-if="team1[1].photo_url">
+                        <img :src="team1[1].photo_url" alt="Foto del jugador" />
+                      </q-avatar>
+                      <span v-else>{{ team1[1].first_name || "Jugador 2 Equipo 1" }}</span>
+                      <div class="text-caption">
+                        {{ team1[0].category }} 
+                      </div>
                     </div>
                     <q-btn
                       v-else
@@ -78,7 +89,13 @@
                   </div>
                   <div class="player team2-player1">
                     <div v-if="team2[0]">
-                      {{ team2[0] || "Jugador 1 Equipo 2" }}
+                      <q-avatar size="40px" v-if="team2[0].photo_url">
+                        <img :src="team2[0].photo_url" alt="Foto del jugador" />
+                      </q-avatar>
+                      <span v-else>{{ team2[0].first_name || "Jugador 1 Equipo 2" }}</span>
+                      <div class="text-caption">
+                        {{ team1[0].category }} 
+                      </div>
                     </div>
                     <q-btn
                       v-else
@@ -90,7 +107,13 @@
                   </div>
                   <div class="player team2-player2">
                     <div v-if="team2[1]">
-                      {{ team2[1] || "Jugador 2 Equipo 2" }}
+                      <q-avatar size="40px" v-if="team2[1].photo_url">
+                        <img :src="team2[1].photo_url" alt="Foto del jugador" />
+                      </q-avatar>
+                      <span v-else>{{ team2[1].first_name || "Jugador 2 Equipo 2" }}</span>
+                      <div class="text-caption">
+                        {{ team1[0].category }} 
+                      </div>
                     </div>
                     <q-btn
                       v-else
@@ -298,6 +321,22 @@ export default {
         });
       }
     };
+    
+    const shareMatch = async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Te invitamos a este gran juego`,
+            url: window.location.href,
+          });
+          console.log("Encuentro compartido exitosamente");
+        } catch (err) {
+          console.error("Error al compartir el partido:", err.message);
+        }
+      } else {
+        alert("La funcionalidad de compartir no es compatible con este dispositivo.");
+      }
+    };
 
     const goBack = () => {
       router.back();
@@ -316,6 +355,7 @@ export default {
       addPlayer,
       openAddPlayerDialog,
       saveScore,
+      shareMatch,
       goBack,
     };
   },

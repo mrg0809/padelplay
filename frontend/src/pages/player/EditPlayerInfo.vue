@@ -2,18 +2,26 @@
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
     <!-- Encabezado -->
     <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Perfil del Jugador</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
-    </q-header>
+     
+     <div class="header-content">
+     <div class="greeting">
+         <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+       </div>
+   <!-- Iconos de la derecha -->
+       <div class="header-icons">
+         <q-btn flat round icon="close" @click="goBack" />
+       </div>
+     </div>
+   
+ </q-header>
 
     <!-- Contenido Principal -->
     <q-page-container>
       <q-page padding>
-        <q-card flat bordered class="bg-dark text-white">
+        <div class="text-h6 text-center text-black q-mb-md">Editar Información del Jugador</div>
+        <q-card flat bordered class="text-white global-card">
           <q-card-section>
-            <div class="text-h6 text-center">Editar Información del Jugador</div>
+            
           </q-card-section>
 
           <q-card-section>
@@ -59,12 +67,13 @@
                 class="q-mb-md"
               />
 
-              <q-input v-model="playerInfo.photo_url" label="URL de Foto" outlined dense class="q-mb-md" />
 
-              <q-btn type="submit" label="Guardar" color="primary" class="q-mt-md full-width" />
+              
             </q-form>
+            
           </q-card-section>
         </q-card>
+        <q-btn type="submit" label="Guardar" color="primary" class="q-mt-md full-width" @click="savePlayerInfo" />
       </q-page>
     </q-page-container>
   </q-layout>
@@ -85,7 +94,6 @@ export default {
         preferred_hand: null,
         position: null,
         category: "sexta",
-        photo_url: "",
       },
     };
   },
@@ -118,9 +126,32 @@ export default {
 </script>
 
 <style scoped>
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .greeting {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+  }
+
 .form-container {
   display: flex;
   flex-direction: column;
+}
+
+.global-card {
+  background-image: url(../../assets/texturafondo.png);
+  background-size: cover;
+  border-radius: 20px;
 }
 
 .q-mb-md {

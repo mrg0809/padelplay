@@ -18,13 +18,13 @@
     <!-- Main Content -->
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-card flat bordered class="bg-dark text-white">
+        <q-card flat bordered class="text-black">
           <q-card-section>
             <div class="text-h6 text-center">Notificaciones</div>
           </q-card-section>
 
           <div v-if="notifications.length === 0" class="text-center q-my-md">
-            <q-icon name="notifications_off" size="64px" color="grey" />
+            <q-icon name="o_notifications_off" size="64px" color="black" />
             <p>No tienes notificaciones pendientes.</p>
           </div>
 
@@ -37,7 +37,7 @@
               @click="markAsRead(notification.id)"
             >
               <q-item-section avatar>
-                <q-icon name="notifications" size="36px" color="primary" />
+                <q-icon name="o_notifications" size="36px" color="white" />
               </q-item-section>
               <q-item-section>
                 <q-item-label class="text-bold">{{ notification.title }}</q-item-label>
@@ -47,7 +47,7 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section v-if="!notification.is_read">
-                <q-badge color="red" label="Nueva" />
+                <q-badge color="orange" label="Nueva" />
               </q-item-section>
             </q-item>
           </q-list>
@@ -112,8 +112,10 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   padding: 10px;
-  background-color: #1e1e1e;
+  background-image: url(../assets/texturafondo.png);
+  background-size: cover;
 }
+
 .notification-item:hover {
   background-color: #292929;
 }

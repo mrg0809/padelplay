@@ -1,47 +1,46 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-page-container>
-        <q-page class="q-pa-md">
-          <q-card class="bg-dark text-white">
-            <!-- Mensajes -->
-            <div class="chat-messages">
-              <div
-                v-for="message in messages"
-                :key="message.id"
-                :class="['message', message.sender_id === currentUserId ? 'self' : 'other']"
-              >
-                <p><strong>{{ user.full_name }}</strong></p>
-                <p>{{ message.message }}</p>
-                <small>{{ formatTimestamp(message.timestamp) }}</small>
-              </div>
-            </div>
-           
-          </q-card>
-          <!-- Campo para enviar mensaje -->
-        <div>
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <q-card class="bg-dark text-white">
+          <div class="chat-messages">
+            <q-chat-message
+              v-for="message in messages"
+              :key="message.id"
+              :name="userMap[message.sender_id]?.first_name || 'Usuario desconocido'"
+              :avatar="userMap[message.sender_id]?.photo_url"
+              :text="[message.message]"
+              :stamp="formatTimestamp(message.timestamp)"
+              :sent="message.sender_id === currentUserId"
+              :bg-color="message.sender_id === currentUserId ? 'amber-7' : 'primary'"
+              :text-color="message.sender_id === currentUserId ? 'black' : 'white'"
+            />
+          </div>
+        </q-card>
+        <div class="chat-message-input">
           <q-input
-                v-model="newMessage"
-                placeholder="Escribe un mensaje..."
-                outlined
-                dense
-                class="q-my-sm"
-                @keyup.enter="sendMessage"
-              />
-              <q-btn
-                label="Enviar"
-                color="primary"
-                @click="sendMessage"
-                :disable="!newMessage.trim()"
-              />
+            v-model="newMessage"
+            placeholder="Escribe un mensaje..."
+            outlined
+            dense
+            @keyup.enter="sendMessage"
+          />
+          <q-btn
+            color="black"
+            @click="sendMessage"
+            :disable="!newMessage.trim()"
+            icon="o_send"
+          />
         </div>
-        </q-page>
-      </q-page-container>
-    </q-layout>
-  </template>
+      </q-page>
+    </q-page-container>
+  </q-layout>
+</template>
   
   <script>
   import { ref, onMounted, onUnmounted } from "vue";
   import { supabase } from "../services/supabase";
+  import { QChatMessage } from "quasar";
   
   export default {
     props: {
@@ -50,11 +49,15 @@
         required: true,
       },
     },
+    components: {
+      QChatMessage
+    },
     setup(props) {
       const messages = ref([]);
       const newMessage = ref("");
       const currentUserId = ref(null); // ID del usuario actual
       const user = ref({full_name: "Usuario desconocido"})
+      const userMap = ref({})
       let subscription = null;
   
       const fetchMessages = async () => {
@@ -75,36 +78,19 @@
         }
       };
   
-      const fetchChatUsers = async () => {
-        try {
-          const { data, error } = await supabase
-            .from("chat_users")
-            .select("user_id")
-            .eq("match_id", props.matchId);
-  
-          if (error) {
-            console.error("Error al cargar usuarios del chat:", error);
-          } else {
-            const userIds = data.map((u) => u.user_id);
-            await fetchUserDetails(userIds);
-          }
-        } catch (err) {
-          console.error("Error inesperado al cargar usuarios del chat:", err);
-        }
-      };
   
       const fetchUserDetails = async (userIds) => {
         try {
           const { data, error } = await supabase
             .from("players")
-            .select("id, email")
-            .in("id", userIds);
+            .select("user_id, first_name, photo_url")
+            .in("user_id", userIds);
   
           if (error) {
             console.error("Error al obtener detalles de usuarios:", error);
           } else {
             data.forEach((user) => {
-              userMap.value[user.id] = user.email;
+              userMap.value[user.user_id] = user;
             });
           }
         } catch (err) {
@@ -170,7 +156,8 @@
           user.value.full_name = payload.full_name || "Usuario desconocido"
         }
         await fetchMessages();
-        await fetchChatUsers();
+        const userIds = messages.value.map(message => message.sender_id); // Obtener los IDs de los remitentes
+        await fetchUserDetails(userIds);
         setupRealtime();
       });
   
@@ -187,6 +174,7 @@
         formatTimestamp,
         sendMessage,
         user,
+        userMap,
       };
     },
   };
@@ -194,30 +182,20 @@
   
   <style scoped>
   .chat-messages {
-    max-height: 400px;
+    height: 80%;
     overflow-y: auto;
     margin-bottom: 16px;
     padding: 8px;
     background-color: #1e1e1e;
     border-radius: 8px;
   }
-  
-  .message {
-    margin-bottom: 8px;
-    padding: 8px;
-    border-radius: 4px;
+
+  .chat-message-input {
+    width: 100%;
+    display: flex;
+    justify-content: center;  
   }
   
-  .message.self {
-    background-color: #007bff;
-    color: white;
-    align-self: flex-end;
-  }
-  
-  .message.other {
-    background-color: #444;
-    color: white;
-    align-self: flex-start;
-  }
+ 
   </style>
   

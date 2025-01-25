@@ -38,19 +38,19 @@ def get_match_details(match_id: str):
         match_data["court_name"] = court.data.get("name", "Cancha no disponible") if court.data else "Cancha no disponible"
 
         # Obtener información de los jugadores
-        team1_names = []
-        team2_names = []
+        team1_info = []
+        team2_info = []
 
         if match_data["team1_players"]:
-            players_team1 = supabase.from_("profiles").select("id, full_name").in_("id", match_data["team1_players"]).execute()
-            team1_names = [player["full_name"] for player in players_team1.data] if players_team1.data else []
+            players_team1 = supabase.from_("players").select("user_id, first_name, photo_url, category").in_("user_id", match_data["team1_players"]).execute()
+            team1_info = [{"first_name": player["first_name"], "photo_url": player["photo_url"], "category": player["category"]} for player in players_team1.data] if players_team1.data else []
 
         if match_data["team2_players"]:
-            players_team2 = supabase.from_("profiles").select("id, full_name").in_("id", match_data["team2_players"]).execute()
-            team2_names = [player["full_name"] for player in players_team2.data] if players_team2.data else []
+            players_team2 = supabase.from_("players").select("user_id, first_name, photo_url, category").in_("user_id", match_data["team2_players"]).execute()
+            team2_info = [{"first_name": player["first_name"], "photo_url": player["photo_url"], "category": player["category"]} for player in players_team2.data] if players_team2.data else []
 
-        match_data["team1_players"] = team1_names
-        match_data["team2_players"] = team2_names
+        match_data["team1_players"] = team1_info
+        match_data["team2_players"] = team2_info
 
         return match_data
 
