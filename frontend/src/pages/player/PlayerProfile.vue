@@ -89,7 +89,7 @@
                 label="Comunidad"
                 class="q-my-sm"
                 stack
-                @click="editProfile"
+                @click="goToCommunity"
               />
 
               <q-btn
@@ -243,6 +243,9 @@ export default {
     goBack() {
       this.$router.back();
     },
+    goToCommunity() {
+      this.$router.push("/player/community");
+    },
   },
   mounted() {
     this.fetchPlayer();
@@ -315,7 +318,7 @@ export default {
     justify-content: center; 
     width: 100%;
     flex-wrap: wrap; 
-    gap: 3px; 
+    gap: 5px; 
   }
 
   .q-card-section.relative {

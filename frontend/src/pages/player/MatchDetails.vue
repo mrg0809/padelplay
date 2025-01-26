@@ -35,6 +35,7 @@
               </div>
                 <p>
                 Juegas en el club {{ matchDetails.club_name || "No disponible" }}
+                <q-btn size="sm" flat round color="orange" icon="o_location_on" @click="goToMaps"></q-btn> 
                 el dia {{ formatDate(matchDetails.match_date) }} a
                 las {{ matchDetails.match_time.slice(0, 5) }} hrs. En la cancha {{ matchDetails.court_name || "No disponible" }}.
                 </p>
@@ -370,6 +371,22 @@ export default {
       const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
       const capitalizedMonth = restOfDate.charAt(0).toUpperCase() + restOfDate.slice(1);
       return capitalizedDay + ' de ' + capitalizedMonth;
+    },
+    goToMaps() {
+      const latitude = this.matchDetails.latitude;
+      const longitude = this.matchDetails.longitude;
+
+      if (latitude && longitude) {
+        // URL para abrir en Google Maps
+        const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        window.open(mapUrl, '_blank');
+      } else {
+        this.$q.notify({
+          message: 'Ubicación no disponible',
+          color: 'negative',
+          position: 'top',
+        });
+      }
     },
   }
 };

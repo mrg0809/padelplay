@@ -1,8 +1,8 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
     <q-page-container>
-      <q-page class="q-pa-md">
-        <q-card class="bg-dark text-white">
+      <q-page>
+        <q-card class="text-white chat-card">
           <div class="chat-messages">
             <q-chat-message
               v-for="message in messages"
@@ -23,6 +23,7 @@
             placeholder="Escribe un mensaje..."
             outlined
             dense
+            dark
             @keyup.enter="sendMessage"
           />
           <q-btn
@@ -182,20 +183,44 @@
   
   <style scoped>
   .chat-messages {
-    height: 80%;
-    overflow-y: auto;
-    margin-bottom: 16px;
-    padding: 8px;
-    background-color: #1e1e1e;
-    border-radius: 8px;
-  }
+  flex: 1; 
+  overflow-y: auto;
+  padding: 8px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+}
 
-  .chat-message-input {
-    width: 100%;
-    display: flex;
-    justify-content: center;  
-  }
+.chat-message-input {
+  width: 100%; 
+  display: flex;
+  align-items: center; 
+  gap: 8px; 
+  padding: 8px;
+  box-sizing: border-box; 
+}
+
+.chat-message-input .q-field {
+  flex: 1; 
+  margin: 0; 
+}
+
+.chat-message-input q-input {
+  flex: 1; 
+  margin: 0;
+}
+
+.chat-message-input q-btn {
+  flex-shrink: 0; 
+  width: 48px; 
+  height: 48px; 
+}
   
- 
+  .chat-card {
+  min-height: 600px; 
+  max-height: 70vh; 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; 
+}
   </style>
   

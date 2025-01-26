@@ -30,8 +30,10 @@ def get_match_details(match_id: str):
         match_data = match.data
 
         # Obtener información del club
-        club = supabase.from_("clubs").select("name").eq("id", match_data["club_id"]).single().execute()
+        club = supabase.from_("clubs").select("name, latitude, longitude").eq("id", match_data["club_id"]).single().execute()
         match_data["club_name"] = club.data.get("name", "Club no disponible") if club.data else "Club no disponible"
+        match_data["latitude"] = club.data.get("latitude", "Latitud no disponible") if club.data else "Latitud no disponible"
+        match_data["longitude"] = club.data.get("longitude", "Longitud no disponible") if club.data else "Longitud no disponible"
 
         # Obtener información de la cancha
         court = supabase.from_("courts").select("name").eq("id", match_data["court_id"]).single().execute()

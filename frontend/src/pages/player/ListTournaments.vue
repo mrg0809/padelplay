@@ -1,10 +1,16 @@
 <template>
     <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="bg-primary text-white">
-        <q-toolbar>
-          <q-toolbar-title>Listado de Torneos</q-toolbar-title>
-          <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-        </q-toolbar>
+      <q-header elevated class="text-white">
+        <div class="header-content">
+          <div class="greeting">
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          </div>
+      <!-- Iconos de la derecha -->
+          <div class="header-icons">
+            <NotificationBell />
+          </div>
+        </div>
+        <BannerPromoScrolling />
       </q-header>
   
       <q-page-container>
@@ -66,7 +72,7 @@
           </q-card-section>
           </q-card>
           <!-- Listado de Torneos -->
-          <div v-if="tournaments.length === 0" class="text-center q-mt-md">
+          <div v-if="tournaments.length === 0" class="text-center text-black">
             <q-icon name="event_busy" size="64px" />
             <p>No se encontraron torneos.</p>
           </div>
@@ -74,7 +80,7 @@
             <q-card
               v-for="tournament in tournaments"
               :key="tournament.id"
-              class="q-mb-md"
+              class="q-mb-md tournament-card"
               clickable
               bordered
               @click="goToTournamentDetails(tournament.id)"
@@ -102,11 +108,13 @@
   import { supabase } from "src/services/supabase";
   import { useRouter } from "vue-router";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+  import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   
   export default {
     name: "ListTournaments",
     components: {
       PlayerNavigationMenu,
+      BannerPromoScrolling,
     },
     setup() {
       const router = useRouter();
@@ -194,42 +202,69 @@
   </script>
   
   <style scoped>
-  .filters {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-  }
+    .filters {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
 
-  .filters q-select {
-    --q-field-height: 12px !important; /* Ajusta la altura del q-select */
-    width: 12px !important; /* Ajusta el ancho del q-select */
-    font-size: 14px;
-  }
+    .filters q-select {
+      --q-field-height: 12px !important; /* Ajusta la altura del q-select */
+      width: 12px !important; /* Ajusta el ancho del q-select */
+      font-size: 14px;
+    }
 
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background-color: #000000; /* Fondo del encabezado */
+    }
+    
+    .greeting {
+      font-size: 1rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .header-icons {
+      display: flex;
+      gap: 2px;
+    }
+    
+    .logo-icon {
+      width: 60px; /* Ajusta el tamaño del logo */
+      height: 60px;
+    }
 
-  .tournaments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .q-card {
-    background-color: #1e1e1e;
-    color: white;
-  }
-  
-  .q-card:hover {
-    background-color: #292929;
-  }
+    .tournaments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .q-card {
+      background-image: url(../../assets/texturafondo.png);
+      background-size: cover;
+      color: white;
+    }
+    
+    .q-card:hover {
+      background-color: #292929;
+    }
 
-  .tennis-yellow {
-  color: #f0ff00; /* Color amarillo pelota de tenis */
-}
+    .tennis-yellow {
+      margin: 0;
+    color: #f0ff00; 
+    }
 
-.filter-select {
-  width: 30%;
-  height: 10px;
-}
+    .filter-select {
+      max-width: 33%;
+      height: 10px;
+    }
 
-  </style>
+</style>
   

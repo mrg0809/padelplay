@@ -174,9 +174,9 @@ watch(searchQuery, (newQuery) => {
       }
     };
 
-    const viewClubDetails = (clubId) => {
+    const viewClubDetails = (clubId, tabName = "reservations") => {
       console.log("Navigating to Club:", clubId);
-      router.push(`/club/${clubId}`); // Navegar usando router.push
+      router.push({ path: `/club/${clubId}`, query: { tab: tabName } }); // Navegar usando router.push
     };
 
     return {

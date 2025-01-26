@@ -112,6 +112,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/player/community", 
+    component: () => import("src/pages/player/PlayerCommunity.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/player/editarinfo", 
     component: () => import("src/pages/player/EditPlayerInfo.vue"),
     meta: { requiresAuth: true },

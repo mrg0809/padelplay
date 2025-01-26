@@ -321,6 +321,12 @@ export default {
           console.error("No valid coordinates available");
         }
 
+        if (route.params.tab) {
+          selectedTab.value = route.params.tab;
+        } else if (route.query.tab){
+          selectedTab.value = route.query.tab;
+        }
+
         generateDays();
         fetchAvailableTimes();
         await fetchTournaments();
