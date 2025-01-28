@@ -9,9 +9,9 @@
 
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-card class="bg-dark text-white">
+        <q-card class="text-white">
           <q-card-section>
-            <h3 class="text-primary">Resumen de Reserva</h3>
+            <h3 class="text-white">Resumen de Reserva</h3>
           </q-card-section>
           <q-card-section>
             <p><strong>Club:</strong> {{ reservationDetails.clubName }}</p>
@@ -20,8 +20,8 @@
             <p><strong>Horario:</strong> {{ reservationDetails.time }}</p>
             <p><strong>Duración:</strong> {{ reservationDetails.duration }} minutos</p>
             <p><strong>Precio:</strong> ${{ reservationDetails.price.toFixed(2) }}</p>
-            <p><strong>Comisión:</strong> ${{ commission.toFixed(2) }}</p>
-            <p><strong>Total a Pagar:</strong> ${{ total.toFixed(2) }}</p>
+            <p><strong>Comisión:</strong> {{ commission }}%</p>
+            <p><strong>Subtotal:</strong> ${{ subtotal.toFixed(2) }}</p>
           </q-card-section>
 
           <q-card-actions align="right">
@@ -56,8 +56,8 @@ export default {
       price: parseFloat(route.query.price) || 0,
     });
 
-    const commission = ref(20); // Ejemplo de comisión fija
-    const total = ref(reservationDetails.value.price + commission.value);
+    const commission = ref(4); // Comision porcentaje
+    const subtotal = ref(reservationDetails.value.price + (commission.value*reservationDetails.value.price/100));
 
     const confirmReservation = async () => {
   try {
@@ -125,7 +125,7 @@ export default {
     return {
       reservationDetails,
       commission,
-      total,
+      subtotal,
       confirmReservation,
       goBack,
     };
@@ -135,9 +135,10 @@ export default {
 
 <style scoped>
 .q-card {
+  background-image: url(../assets/texturafondo.png);
+  background-size: cover;
   max-width: 400px;
   margin: auto;
-  background-color: #333; /* Fondo oscuro para contrastar */
   color: #fff; /* Texto blanco para visibilidad */
   border-radius: 8px; /* Bordes redondeados */
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Sombra para destacar */
@@ -150,4 +151,6 @@ export default {
 .q-card-section {
   padding: 16px;
 }
+
+
 </style>

@@ -440,6 +440,7 @@ export default {
 
 .match-card {
   background-image: url("../../assets/texturafondo.png");
+  background-size: cover;
   margin-bottom: 10px;
   border-radius: 7%;
   padding: 0px;

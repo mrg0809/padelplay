@@ -1,21 +1,16 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <!-- Header -->
     <q-header elevated class="bg-primary text-white">
-     
-        <div class="header-content">
+      <div class="header-content">
         <div class="greeting">
-            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-          </div>
-      <!-- Iconos de la derecha -->
-          <div class="header-icons">
-            <q-btn flat round icon="close" @click="goBack" />
-          </div>
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
         </div>
-      
+        <div class="header-icons">
+          <q-btn flat round icon="close" @click="goBack" />
+        </div>
+      </div>
     </q-header>
 
-    <!-- Main Content -->
     <q-page-container>
       <q-page class="q-pa-md">
         <q-card flat bordered class="text-black">
@@ -34,20 +29,37 @@
               :key="notification.id"
               clickable
               class="notification-item"
-              @click="markAsRead(notification.id)"
             >
-              <q-item-section avatar>
+              <q-item-section avatar @click="markAsRead(notification.id)">
                 <q-icon name="o_notifications" size="36px" color="white" />
               </q-item-section>
-              <q-item-section>
+              <q-item-section @click="markAsRead(notification.id)">
                 <q-item-label class="text-bold">{{ notification.title }}</q-item-label>
                 <q-item-label caption>{{ notification.message }}</q-item-label>
                 <q-item-label caption class="text-grey text-sm">
-                  {{ formatDate(notification.timestamp) }}
+                  {{ formatDate(notification.created_at) }}
                 </q-item-label>
               </q-item-section>
-              <q-item-section v-if="!notification.is_read">
-                <q-badge color="orange" label="Nueva" />
+              <q-item-section side>
+                <q-btn
+                  v-if="!notification.is_read"
+                  flat
+                  round
+                  icon="done"
+                  color="white"
+                  size="sm"
+                  class="q-mr-sm"
+                  @click.stop="markAsRead(notification.id)"
+                />
+                <q-btn
+                  flat
+                  round
+                  icon="close"
+                  color="white"
+                  size="sm"
+                  class="q-mr-sm"
+                  @click.stop="deleteNotification(notification.id)"
+                />
               </q-item-section>
             </q-item>
           </q-list>
@@ -92,6 +104,14 @@ export default {
         this.fetchNotifications(); // Actualizar la lista
       } catch (error) {
         console.error("Error marking notification as read:", error);
+      }
+    },
+    async deleteNotification(notificationId) {
+      try {
+        await api.delete(`/notifications/${notificationId}`);
+        this.fetchNotifications(); // Actualizar la lista después de eliminar
+      } catch (error) {
+        console.error("Error deleting notification:", error);
       }
     },
     formatDate(timestamp) {

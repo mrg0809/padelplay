@@ -21,8 +21,8 @@
         async fetchUnreadCount() {
             try {
                 const response = await api.get("/notifications");
-                const notifications = Array.isArray(response.data) ? response.data : []; // Asegura que sea un arreglo
-                this.unreadCount = notifications.filter((notification) => !notification.read).length;
+                const notifications = Array.isArray(response.data.data) ? response.data.data : []; 
+                this.unreadCount = notifications.filter((notification) => !notification.is_read).length;
             } catch (error) {
                 console.error("Error fetching unread count:", error);
             }

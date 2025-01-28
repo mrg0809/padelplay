@@ -109,6 +109,7 @@
             name: "Clases de Pádel",
             icon: "school",
             image_url: "/src/assets/menu/clases.jpeg",
+            route: "lessons"
           },
         ],
         matches: [], // Aquí se almacenan los partidos próximos

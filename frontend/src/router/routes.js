@@ -127,6 +127,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/player/lessons", 
+    component: () => import("src/pages/player/ListLessons.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/player/match/:matchId", 
     component: () => import("src/pages/player/MatchDetails.vue"),
     meta: { requiresAuth: true },

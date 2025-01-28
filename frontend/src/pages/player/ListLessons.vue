@@ -5,7 +5,7 @@
           <div class="greeting">
             <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
           </div>
-      <!-- Iconos de la derecha -->
+      
           <div class="header-icons">
             
           </div>
@@ -58,25 +58,12 @@
             </q-select>
           </div>
           
-          <q-card
-          class="q-mb-md"
-          clickable
-          bordered
-          @click="goToPadelite"
-          >
-          <q-card-section>
-            <q-img
-            src="/src/assets/padelite/padelite.jpg"
-            fit="fill"
-            ></q-img>
-          </q-card-section>
-          </q-card>
           <!-- Listado de Torneos -->
           <div v-if="tournaments.length === 0" class="text-center text-black">
             <q-icon name="event_busy" size="64px" />
-            <p>No se encontraron torneos.</p>
+            <p>No se encontraron clases.</p>
           </div>
-          <div v-else class="tournaments-list">
+          <div v-else class="lessons-list">
             <q-card
               v-for="tournament in tournaments"
               :key="tournament.id"
