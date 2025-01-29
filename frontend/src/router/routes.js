@@ -156,6 +156,11 @@ const routes = [
     component: () => import("src/pages/player/ListTournaments.vue"),
     meta: { requiresAuth: true },
   },
+  { 
+    path: "/privacy", 
+    component: () => import("src/pages/support/PrivacyNotice.vue"),
+    meta: { requiresAuth: true },
+  },
   {
     path: "/tournamet/checkout",
     name: "TournamentCheckout",
