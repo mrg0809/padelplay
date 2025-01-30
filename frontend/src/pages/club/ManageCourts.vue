@@ -1,10 +1,14 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title class="text-white">Administrar Canchas</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" class="text-white" />
-      </q-toolbar>
+    <q-header elevated class="bg-primary text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+        </div>
+        <div class="header-icons">
+          <q-btn flat round icon="close" @click="goBack" />
+        </div>
+      </div>
     </q-header>
 
     <q-page-container>
@@ -287,5 +291,30 @@ export default {
 
   
 <style scoped>
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000; /* Fondo del encabezado */
+}
+
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
+}
+
+.logo-icon {
+  width: 60px; /* Ajusta el tamaño del logo */
+  height: 60px;
+}
 </style>
   
