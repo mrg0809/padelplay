@@ -1,124 +1,158 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark">
-      <!-- Encabezado -->
-      <q-header elevated class="bg-primary text-white">
-        <div class="header-content">
-          <!-- Saludo -->
-          <div class="greeting">
-            <img src="/src/assets/logo.jpeg" alt="Logo" class="logo-icon" />
-            {{ club_name }}
-          </div>
-          <!-- Iconos de la derecha -->
-          <div class="header-icons">
-            <NotificationBell />
-            <ClubTopMenu />
-          </div>
+  <q-layout view="hHh lpR fFf" class="body">
+    <!-- Encabezado -->
+    <q-header elevated class="text-white">
+      <div class="header-content">
+        <!-- Saludo -->
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          Bienvenido {{ club_name }}
         </div>
-      </q-header>
-  
-      <!-- Contenido Principal -->
-      <q-page-container>
-        <!-- Imagen al inicio -->
-        <div class="header-image">
-          <img src="/src/assets/padelplayletraslogo.png" alt="Header Image" />
+      
+        <div class="header-icons">
+          <NotificationBell />
+          <ClubTopMenu />
         </div>
-  
-        <!-- Línea divisora -->
-        <div class="divider"></div>
-        <div class="home">
-          <div class="options">
-            <div
-              v-for="option in options"
-              :key="option.name"
-              class="option-card"
-              @click="navigateTo(option.route)"
-            >
-              <img :src="option.image_url" alt="Option Image" class="option-image" />
-              <q-icon :name="option.icon" size="lg" class="option-icon" />
-              <h3>{{ option.name }}</h3>
-              <p>{{ option.description }}</p>
-            </div>
-          </div>
-        </div>
-      </q-page-container>
-      <ClubNavigationMenu />
-    </q-layout>
-  </template>
-  
-  <script>
-  import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
-  import ClubTopMenu from 'src/components/ClubTopMenu.vue';
-  import NotificationBell from 'src/components/NotificationBell.vue';
+      </div>
+      <BannerPromoScrolling />
+    </q-header>
 
-  export default {
-    name: "DashboardClub",
-    components: {
-      ClubNavigationMenu,
-      ClubTopMenu,
-      NotificationBell,
+    <q-page-container>
+      <div class="home">
+        <!-- Lista de iconos con nombres -->
+        <div class="icon-grid">
+          <div
+            v-for="option in options"
+            :key="option.name"
+            class="icon-item"
+            @click="navigateTo(option.route)"
+          >
+            <div class="icon-background">
+              <q-icon :name="option.icon" size="xl" class="icon" />
+            </div>
+            <span class="icon-name text-black">{{ option.name }}</span>
+          </div>
+        </div>
+      </div>
+    </q-page-container>
+    <ClubNavigationMenu />
+  </q-layout>
+</template>
+
+<script>
+import BannerPromoScrolling from 'src/components/BannerPromoScrolling.vue';
+import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
+import ClubTopMenu from 'src/components/ClubTopMenu.vue';
+import NotificationBell from 'src/components/NotificationBell.vue';
+
+export default {
+  name: "DashboardClub",
+  components: {
+    ClubNavigationMenu,
+    ClubTopMenu,
+    NotificationBell,
+    BannerPromoScrolling
+  },
+  data() {
+    return {
+      club_name: null,
+      options: [
+        {
+          name: "Agenda",
+          icon: "event",
+          route: "agenda",
+        },
+        {
+          name: "Reportes",
+          icon: "query_stats",
+          route: "reportes",
+        },
+        {
+          name: "Clases",
+          icon: "o_school",
+          route: "clases",
+        },
+        {
+          name: "Torneos",
+          icon: "o_emoji_events",
+          route: "creartorneos",
+        },
+        {
+          name: "Pagos",
+          icon: "o_payments",
+          route: "pagos",
+        },
+        {
+          name: "Clientes",
+          icon: "o_groups",
+          route: "clientes",
+        },
+        {
+          name: "Facturas",
+          icon: "o_receipt_long",
+          route: "facturas",
+        },
+        {
+          name: "Instructores",
+          icon: "o_settings_accessibility",
+          route: "instructores",
+        },
+        {
+          name: "Comunidad",
+          icon: "o_connect_without_contact",
+          route: "comunidad",
+        },
+        {
+          name: "Productos",
+          icon: "o_inventory_2",
+          route: "productos",
+        },
+        {
+          name: "Configuración",
+          icon: "o_settings",
+          route: "configuracion",
+        },
+        {
+          name: "Soporte",
+          icon: "support_agent",
+          route: "soporte",
+        },
+      ],
+    };
+  },
+  methods: {
+    navigateTo(route) {
+      this.$router.push(`/club/${route}`);
     },
-    data() {
-      return {
-        club_name: null, 
-        options: [
-          {
-            name: "Administrar reservas",
-            description: "Gestiona las reservas de tus canchas",
-            icon: "event",
-            image_url: "/src/assets/menu/administrareservas.jpg",
-            route: "reservas",
-          },
-          {
-            name: "Administrar tu club",
-            description: "Configura tus canchas y horarios",
-            icon: "sports_tennis",
-            image_url: "/src/assets/menu/administratuclub.jpg",
-            route: "admin",
-          },
-          {
-            name: "Crear torneos",
-            description: "Organiza torneos y eventos",
-            icon: "emoji_events",
-            image_url: "/src/assets/menu/creatorneos.jpg",
-            route: "creartorneos",
-          },
-        ],
-      };
+    fetchClubNameFromToken() {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const payload = JSON.parse(atob(base64));
+        this.club_name = payload.full_name || "Club";
+      }
     },
-    methods: {
-      navigateTo(route) {
-        this.$router.push(`/club/${route}`);
-      },
-      fetchClubNameFromToken() {
-        const token = localStorage.getItem("token");
-        if (token) {
-          const base64Url = token.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const payload = JSON.parse(atob(base64));
-          this.club_name = payload.full_name || "Club";
-        }
-      },
-    },
-    mounted() {
-      this.fetchClubNameFromToken();
-    },
-  };
-  </script>
-  
-  <style scoped>
-/* General */
-body {
-  background-color: #121212; /* Fondo oscuro */
-  color: #ffffff; /* Texto claro */
+  },
+  mounted() {
+    this.fetchClubNameFromToken();
+  },
+};
+</script>
+
+<style scoped>
+
+.body {
+  background-image: url("../assets/menu/padelcourt.jpeg");
+  background-size: cover;
 }
 
-/* Encabezado */
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background-color: #1e1e1e; /* Fondo del encabezado */
+  background-color: #000000; /* Fondo del encabezado */
 }
 
 .greeting {
@@ -131,96 +165,62 @@ body {
 
 .header-icons {
   display: flex;
-  gap: 8px;
-}
-
-.header-image img {
-  width: 100%; /* La imagen ocupará todo el ancho del contenedor */
-  height: auto;
-  border-radius: 8px; /* Opcional: bordes redondeados */
-  margin-bottom: 16px; /* Espacio debajo de la imagen */
-  margin-top: 16px;
-}
-
-.divider {
-  height: 2px;
-  background-color: #444; /* Color de la línea */
-  margin: 16px 0; /* Espaciado arriba y abajo */
+  gap: 2px;
 }
 
 .logo-icon {
-  width: 24px; /* Ajusta el tamaño del logo */
-  height: 24px;
-  margin-left: 8px; /* Espaciado entre texto y logo */
+  width: 60px; /* Ajusta el tamaño del logo */
+  height: 60px;
 }
 
-/* Opciones */
-.options {
+/* Cuadrícula de iconos */
+.icon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Columnas automáticas */
+  gap: 16px; /* Espacio entre iconos */
+  padding: 16px; /* Espaciado interno */
 }
 
-.option-card {
-  background: #1f1f1f; /* Fondo de tarjeta oscuro */
-  color: #ffffff; /* Texto blanco */
-  border-radius: 8px;
+.icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); /* Sombra */
-  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.icon-item:hover {
+  transform: scale(1.1); /* Efecto hover */
+  opacity: 0.9;
+}
+
+.icon-background {
+  background-image: url("../assets/texturafondo.png");
+  background-size: cover;
+  border-radius: 50px; /* Bordes redondeados */
+  padding: 16px; /* Espaciado interno */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px; /* Ancho del contenedor */
+  height: 80px; /* Alto del contenedor */
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.option-card:hover {
+.icon-background:hover {
   transform: scale(1.05); /* Efecto hover */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Sombra al hacer hover */
 }
 
-.option-image {
-  width: 100%;
-  height: 120px;
-  object-fit: cover; /* Ajuste de imagen */
+.icon {
+  color: #ffffff; /* Color del ícono */
 }
 
-.option-icon {
-  margin-top: 8px;
-  color: #ffd700; /* Ícono dorado */
-}
-
-.option-card h3 {
-  margin: 8px 0;
-  font-size: 1.2rem;
-}
-
-.option-card p {
+.icon-name {
   font-size: 0.9rem;
-  color: #bbbbbb; /* Texto más claro */
-}
-
-/* Clubs */
-.clubs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.club-card {
-  background: #1f1f1f;
-  padding: 8px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.club-card img {
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.bg-dark {
-  background-color: #121212 !important; /* Fondo oscuro */
-  color: #ffffff !important; /* Texto claro */
+  color: #ffffff; /* Color del texto */
+  margin-top: 8px; /* Espacio entre ícono y texto */
 }
 </style>
