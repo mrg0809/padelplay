@@ -1,9 +1,10 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+  <q-layout view="hHh lpR fFf" class="body">
     <q-header elevated class="bg-primary text-white">
       <div class="header-content">
         <div class="greeting">
           <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          Listado de canchas
         </div>
         <div class="header-icons">
           <q-btn flat round icon="close" @click="goBack" />
@@ -12,21 +13,24 @@
     </q-header>
 
     <q-page-container>
+      <!-- Espacio entre el header y la lista -->
+      <div class="q-mt-xl"></div>
+
       <!-- Lista de canchas -->
-      <q-list bordered dark>
+      <q-list class="court-list">
         <q-item
-          v-for="court in courts"
+          v-for="(court, index) in courts"
           :key="court.id"
           clickable
           @click="editCourt(court)"
-          class="text-white"
+          class="text-black court-item"
         >
           <q-item-section avatar>
-            <q-icon name="sports_tennis" color="white" />
+            <div class="row-number">{{ index + 1 }}</div>
           </q-item-section>
           <q-item-section>
             <q-item-label>{{ court.name }}</q-item-label>
-            <q-item-label caption>
+            <q-item-label caption class="text-black">
               PRECIOS:
               <template v-if="court.price_per_hour">1 hora: ${{ court.price_per_hour }}</template>
               <template v-if="court.price_per_hour_and_half"> | 1 1/2 hora: ${{ court.price_per_hour_and_half }}</template>
@@ -34,18 +38,25 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn flat icon="delete" color="red" @click.stop="confirmDelete(court.id)" />
+            <q-btn flat icon="o_delete" color="black" size="lg" @click.stop="confirmDelete(court.id)" />
           </q-item-section>
         </q-item>
       </q-list>
-      <div class="row justify-center q-mt-md">
-        <q-btn glossy rounded color="deep-orange" icon="add" @click="openCourtDialog" label="AGREGAR CANCHA" />
-      </div>
+
+      <q-btn
+        glossy
+        round
+        size="lg"
+        color="black"
+        icon="add"
+        @click="openCourtDialog"
+        class="fixed-bottom-right q-mb-xl"
+      />
     </q-page-container>
 
     <!-- Diálogo para agregar/editar cancha -->
     <q-dialog v-model="isDialogOpen">
-      <q-card class="bg-dark text-white" style="min-width: 400px">
+      <q-card class="bg-black text-white" style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">{{ dialogTitle }}</div>
         </q-card-section>
@@ -64,7 +75,7 @@
             v-model="form.enable_price_per_hour"
             label="¿Habilitar precio por hora?"
             dense
-            color="orange"
+            color="white"
           />
           <q-input
             v-model.number="form.price_per_hour"
@@ -81,7 +92,7 @@
             v-model="form.enable_price_per_hour_and_half"
             label="¿Habilitar precio por hora y media?"
             dense
-            color="orange"
+            color="white"
           />
           <q-input
             v-model.number="form.price_per_hour_and_half"
@@ -98,7 +109,7 @@
             v-model="form.enable_price_per_two_hour"
             label="¿Habilitar precio por dos horas?"
             dense
-            color="orange"
+            color="white"
           />
           <q-input
             v-model.number="form.price_per_two_hour"
@@ -114,13 +125,13 @@
             v-model="form.is_indoor"
             label="¿Es indoor?"
             dense
-            color="orange"
+            color="white"
           />
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="primary" v-close-popup />
-          <q-btn flat label="Guardar" color="secondary" @click="saveCourt" />
+          <q-btn flat label="Cancelar" color="red" v-close-popup />
+          <q-btn flat label="Guardar" color="green" @click="saveCourt" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -201,16 +212,14 @@ export default {
     },
     async saveCourt() {
       try {
-        // Crear el payload solo con los valores relevantes
         const payload = {
           name: this.form.name,
           price_per_hour: this.form.enable_price_per_hour ? this.form.price_per_hour : null,
           price_per_hour_and_half: this.form.enable_price_per_hour_and_half ? this.form.price_per_hour_and_half : null,
           price_per_two_hour: this.form.enable_price_per_two_hour ? this.form.price_per_two_hour : null,
           is_indoor: this.form.is_indoor,
-          club_id: this.form.club_id, // Esto puede ser relevante si el backend lo requiere
+          club_id: this.form.club_id, 
         };
-
 
         if (this.form.id) {
           // Editar cancha
@@ -289,7 +298,6 @@ export default {
 };
 </script>
 
-  
 <style scoped>
 .header-content {
   display: flex;
@@ -316,5 +324,33 @@ export default {
   width: 60px; /* Ajusta el tamaño del logo */
   height: 60px;
 }
+
+.body {
+  background-image: url(../../assets/menu/padelcourtfloor.jpg);
+  background-size: cover;
+}
+
+.court-list {
+  font-size: large;
+}
+
+.court-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12); /* Línea divisoria sutil */
+  background-color: rgba(255, 255, 255, 0.3); /* Fondo translúcido */
+  margin-bottom: 8px; /* Espacio entre elementos */
+  border-radius: 4px; /* Bordes redondeados */
+}
+
+.row-number {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #000000;
+}
+
+.fixed-bottom-right {
+  position: fixed;
+  bottom: 80px; /* Ajusta la posición para que esté arriba del ClubNavigationMenu */
+  right: 20px;
+  z-index: 1000; /* Asegura que el botón esté por encima de otros elementos */
+}
 </style>
-  

@@ -6,7 +6,7 @@
         <!-- Saludo -->
         <div class="greeting">
           <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-          Bienvenido {{ club_name }}
+          Bienvenido {{ userStore.fullName }}
         </div>
       
         <div class="header-icons">
@@ -44,6 +44,9 @@ import BannerPromoScrolling from 'src/components/BannerPromoScrolling.vue';
 import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
 import ClubTopMenu from 'src/components/ClubTopMenu.vue';
 import NotificationBell from 'src/components/NotificationBell.vue';
+import { useUserStore } from 'src/stores/userStore';
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router'; // Importa el router
 
 export default {
   name: "DashboardClub",
@@ -53,89 +56,37 @@ export default {
     NotificationBell,
     BannerPromoScrolling
   },
-  data() {
-    return {
-      club_name: null,
-      options: [
-        {
-          name: "Agenda",
-          icon: "event",
-          route: "agenda",
-        },
-        {
-          name: "Reportes",
-          icon: "query_stats",
-          route: "reportes",
-        },
-        {
-          name: "Clases",
-          icon: "o_school",
-          route: "clases",
-        },
-        {
-          name: "Torneos",
-          icon: "o_emoji_events",
-          route: "creartorneos",
-        },
-        {
-          name: "Pagos",
-          icon: "o_payments",
-          route: "pagos",
-        },
-        {
-          name: "Clientes",
-          icon: "o_groups",
-          route: "clientes",
-        },
-        {
-          name: "Facturas",
-          icon: "o_receipt_long",
-          route: "facturas",
-        },
-        {
-          name: "Instructores",
-          icon: "o_settings_accessibility",
-          route: "instructores",
-        },
-        {
-          name: "Comunidad",
-          icon: "o_connect_without_contact",
-          route: "comunidad",
-        },
-        {
-          name: "Productos",
-          icon: "o_inventory_2",
-          route: "productos",
-        },
-        {
-          name: "Configuración",
-          icon: "o_settings",
-          route: "configuracion",
-        },
-        {
-          name: "Soporte",
-          icon: "support_agent",
-          route: "soporte",
-        },
-      ],
+  setup() {
+    const userStore = useUserStore();
+    const router = useRouter(); // Obtén la instancia del router
+
+    const club_name = ref(null); // Usa ref para datos reactivos
+    const options = reactive([ // Usa reactive para arrays de objetos
+      { name: "Agenda", icon: "event", route: "agenda" },
+      { name: "Reportes", icon: "query_stats", route: "reportes" },
+      { name: "Clases", icon: "o_school", route: "clases" },
+      { name: "Torneos", icon: "o_emoji_events", route: "torneos" },
+      { name: "Pagos", icon: "o_payments", route: "pagos" },
+      { name: "Clientes", icon: "o_groups", route: "clientes" },
+      { name: "Facturas", icon: "o_receipt_long", route: "facturas" },
+      { name: "Instructores", icon: "o_settings_accessibility", route: "instructores" },
+      { name: "Comunidad", icon: "o_connect_without_contact", route: "comunidad" },
+      { name: "Productos", icon: "o_inventory_2", route: "productos" },
+      { name: "Configuración", icon: "o_settings", route: "configuracion" },
+      { name: "Soporte", icon: "support_agent", route: "soporte" },
+    ]);
+
+    const navigateTo = (route) => {
+      router.push(`/club/${route}`); // Usa la instancia del router
     };
-  },
-  methods: {
-    navigateTo(route) {
-      this.$router.push(`/club/${route}`);
-    },
-    fetchClubNameFromToken() {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const base64Url = token.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const payload = JSON.parse(atob(base64));
-        this.club_name = payload.full_name || "Club";
-      }
-    },
-  },
-  mounted() {
-    this.fetchClubNameFromToken();
+
+    // Si necesitas usar userStore en el template, debes retornarlo
+    return {
+      userStore,
+      club_name,
+      options,
+      navigateTo,
+    };
   },
 };
 </script>

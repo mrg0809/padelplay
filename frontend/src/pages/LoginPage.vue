@@ -37,11 +37,11 @@
   </q-layout>
 </template>
 
-
 <script>
 import api from "../api";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useUserStore } from "src/stores/userStore"; // Importa el store de Pinia
 
 export default {
   name: "LoginPage",
@@ -51,6 +51,7 @@ export default {
     const password = ref("");
     const error = ref(null);
     const router = useRouter();
+    const userStore = useUserStore(); // Usa el store de Pinia
 
     const login = async () => {
       error.value = null;
@@ -63,30 +64,32 @@ export default {
         const { access_token } = response.data;
         localStorage.setItem("token", access_token); // Guardar el token en localStorage
 
-        // Decodificar el token usando atob
+        // Decodificar el token y guardar los datos en el store
         const base64Url = access_token.split(".")[1]; // Extraer el payload
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
         const payload = JSON.parse(atob(base64));
-        const userType = payload.user_type;
+
+        // Guardar los datos del usuario en el store
+        userStore.setUserDataFromToken(access_token);
 
         // Redirigir al dashboard correspondiente
-        if (userType === "superuser") {
+        if (payload.user_type === "superuser") {
           router.push("/dashboard/superuser");
-        } else if (userType === "admin") {
+        } else if (payload.user_type === "admin") {
           router.push("/dashboard/admin");
-        } else if (userType === "club") {
+        } else if (payload.user_type === "club") {
           router.push("/dashboard/club");
         } else {
           router.push("/dashboard/player");
         }
       } catch (err) {
-    // Manejo del error
-    if (err.response && err.response.data && err.response.data.detail) {
-      error.value = err.response.data.detail; // Mostrar el mensaje del backend
-    } else {
-      error.value = "Ocurrió un error inesperado. Intenta de nuevo más tarde.";
-    }
-    console.error("Error al iniciar sesión:", err);
+        // Manejo del error
+        if (err.response && err.response.data && err.response.data.detail) {
+          error.value = err.response.data.detail; // Mostrar el mensaje del backend
+        } else {
+          error.value = "Ocurrió un error inesperado. Intenta de nuevo más tarde.";
+        }
+        console.error("Error al iniciar sesión:", err);
       }
     };
 
@@ -109,7 +112,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 /* Fondo negro para toda la pantalla */
@@ -168,5 +170,4 @@ export default {
   color: red;
   margin-top: 10px;
 }
-
 </style>

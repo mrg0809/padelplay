@@ -75,6 +75,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/productos", 
+    component: () => import("src/pages/club/ManageProducts.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/promociones", 
     component: () => import("src/pages/club/ManageDiscounts.vue"),
     meta: { requiresAuth: true },
@@ -85,8 +90,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/comunidad", 
+    component: () => import("src/pages/club/ClubCommunity.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/creartorneos", 
     component: () => import("src/pages/club/CreateTournament.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/soporte", 
+    component: () => import("src/pages/club/SupportOptions.vue"),
     meta: { requiresAuth: true },
   },
   { 

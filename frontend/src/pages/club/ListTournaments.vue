@@ -1,10 +1,15 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+  <q-layout view="hHh lpR fFf" class="body text-white">
     <q-header elevated class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Mis Torneos</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          Mis Torneos
+        </div>
+        <div class="header-icons">
+          <q-btn flat round icon="arrow_back" @click="goBack" />
+        </div>
+      </div>
     </q-header>
 
     <q-page-container>
@@ -18,8 +23,7 @@
           <q-card
             v-for="tournament in tournaments"
             :key="tournament.id"
-            class="q-mb-md"
-            bordered
+            class="q-mb-md transparent-card"
           >
             <q-card-section>
               <h4>{{ tournament.name }}</h4>
@@ -33,12 +37,14 @@
                   icon="edit"
                   label="Editar"
                   color="primary"
+                  size="sm"
                   @click="editTournament(tournament.id)"
                 />
                 <q-btn
                   icon="delete"
                   label="Eliminar"
                   color="negative"
+                  size="sm"
                   :disable="tournament.registered_teams > 0"
                   @click="openDeleteDialog(tournament.id)"
                 />
@@ -46,6 +52,7 @@
                   icon="block"
                   label="Cerrar Torneo"
                   color="orange"
+                  size="sm"
                   @click="openCloseDialog(tournament.id)"
                 />
               </div>
@@ -54,9 +61,33 @@
         </div>
       </q-page>
 
+      <!-- Botón flotante para agregar torneo -->
+      <q-btn
+        glossy
+        round
+        size="lg"
+        color="black"
+        icon="add"
+        class="fixed-bottom-right q-mb-xl"
+      >
+        <q-menu anchor="top end" self="bottom end">
+          <q-list style="min-width: 150px">
+            <q-item clickable v-close-popup @click="openCreateDialog('relampago')">
+              <q-item-section><strong>Torneo Relámpago</strong></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="openCreateDialog('liga')">
+              <q-item-section><strong>Torneo Liga</strong></q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="openCreateDialog('personalizado')">
+              <q-item-section><strong>Torneo Personalizado</strong></q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </q-btn>
+
       <!-- Diálogo de Confirmación para Eliminar -->
       <q-dialog v-model="deleteDialogVisible">
-        <q-card>
+        <q-card class="bg-black text-white">
           <q-card-section>
             <div class="text-h6">Confirmar eliminación</div>
             <div>¿Estás seguro de que deseas eliminar este torneo?</div>
@@ -70,7 +101,7 @@
 
       <!-- Diálogo de Confirmación para Cerrar -->
       <q-dialog v-model="closeDialogVisible">
-        <q-card>
+        <q-card class="bg-black text-white">
           <q-card-section>
             <div class="text-h6">Confirmar cierre</div>
             <div>
@@ -92,15 +123,17 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "src/services/supabase";
 import { useRouter } from "vue-router";
+import { useQuasar } from 'quasar';
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 
 export default {
   name: "ListTournaments",
-  components:{
+  components: {
     ClubNavigationMenu,
   },
   setup() {
     const router = useRouter();
+    const $q = useQuasar();
     const tournaments = ref([]);
     const clubId = ref(null);
 
@@ -155,10 +188,16 @@ export default {
           (tournament) => tournament.id !== selectedTournamentId.value
         );
         deleteDialogVisible.value = false;
-        alert("Torneo eliminado exitosamente.");
+        $q.notify({
+            type: "positive",
+            message: "Torneo eliminado exitosamente.",
+          });
       } catch (error) {
         console.error("Error al eliminar el torneo:", error.message);
-        alert("Error al eliminar el torneo.");
+        $q.notify({
+            type: "negative",
+            message: "Error al eliminar torneo.",
+          });
       }
     };
 
@@ -182,6 +221,10 @@ export default {
         console.error("Error al cerrar el torneo:", error.message);
         alert("Error al cerrar el torneo.");
       }
+    };
+
+    const openCreateDialog = (type) => {
+      router.push({ name: "CreateTournament", params: { type } });
     };
 
     const goBack = () => {
@@ -210,30 +253,70 @@ export default {
       closeDialogVisible,
       deleteTournament,
       closeTournament,
+      openCreateDialog,
     };
   },
 };
 </script>
 
 <style scoped>
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000;
+}
+
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
+}
+
+.logo-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.body {
+  background-image: url(../../assets/menu/padelcourtfloor.jpg);
+  background-size: cover;
+}
+
+.fixed-bottom-right {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.transparent-card {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+}
+
 .tournaments-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.q-card {
-  background-color: #1e1e1e;
-  color: white;
-}
-
-.q-card:hover {
-  background-color: #292929;
-}
-
 .actions {
   display: flex;
   gap: 10px;
   margin-top: 10px;
+}
+
+.q-btn {
+  font-size: 12px;
+  padding: 4px 8px;
 }
 </style>

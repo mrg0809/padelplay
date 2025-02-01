@@ -1,16 +1,22 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Gestionar Horarios</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
+  <q-layout view="hHh lpR fFf" class="body text-black">
+    <q-header elevated class="bg-primary text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          Horarios
+        </div>
+        <div class="header-icons">
+          <q-btn flat round icon="close" @click="goBack" />
+        </div>
+      </div>
     </q-header>
 
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-card class="bg-dark text-white">
+        <q-card class="courts-card text-black">
           <q-card-section>
+            <!-- Select con fondo negro y letras blancas -->
             <q-select
               v-model="selectedCourt"
               :options="courts"
@@ -20,6 +26,7 @@
               outlined
               dense
               @update:model-value="onCourtChange"
+              class="custom-select"
             />
           </q-card-section>
 
@@ -28,55 +35,50 @@
               <q-item v-for="(schedule, index) in generalSchedule" :key="index" class="q-mb-md">
                 <q-item-section>
                   <div class="text-bold">{{ daysOfWeek[index] }}</div>
+                  <!-- Toggle con color negro -->
                   <q-toggle
                     v-model="generalSchedule[index].is_open"
                     label="¿Abierto?"
                     dense
-                    color="orange"
+                    color="black"
                   />
                 </q-item-section>
                 <q-item-section v-if="generalSchedule[index].is_open">
+                  <!-- Inputs con color de texto negro -->
                   <q-input
                     v-model="generalSchedule[index].opening_time"
                     label="Hora de Apertura"
                     dense
                     outlined
+                    color="black"
+                    class="text-black"
                   />
                   <q-input
                     v-model="generalSchedule[index].closing_time"
                     label="Hora de Cierre"
                     dense
                     outlined
+                    color="black"
+                    class="text-black"
                   />
                 </q-item-section>
               </q-item>
             </q-list>
           </q-card-section>
 
-          <q-card-actions align="right">
+          <!-- Botón "Guardar Cambios" solo visible si hay una cancha seleccionada -->
+          <q-card-actions align="right" v-if="selectedCourt">
             <q-btn label="Guardar Cambios" color="primary" @click="saveOrUpdateSchedules" />
           </q-card-actions>
         </q-card>
-
-        <!-- Botones adicionales -->
-        <div class="q-mt-md">
-          <q-btn
-            label="Establecer bloqueos"
-            color="deep-orange"
-            class="full-width"
-            glossy
-            @click="goToBlockPage"
-          />
-        </div>  
       </q-page>
     </q-page-container>
     <ClubNavigationMenu />
   </q-layout>
 </template>
 
-  
-  <script>
- import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
+<script>
+import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 import api from "../../api";
 
 export default {
@@ -132,8 +134,8 @@ export default {
         const response = await api.get("/clubs/schedules", {
           params: { court_id: this.selectedCourt },
         });
-        const schedules =response.data.data.filter(schedule => schedule.court_id === this.selectedCourt.id);
-        
+        const schedules = response.data.data.filter(schedule => schedule.court_id === this.selectedCourt.id);
+
         if (schedules.length > 0) {
           schedules.forEach((schedule) => {
             const index = schedule.day_of_week;
@@ -150,7 +152,6 @@ export default {
     },
 
     async saveOrUpdateSchedules() {
-      
       if (!this.selectedCourt) {
         this.$q.notify({ type: "negative", message: "Por favor, selecciona una cancha" });
         return;
@@ -188,10 +189,6 @@ export default {
         this.$q.notify({ type: "negative", message: "Error al guardar los horarios" });
       }
     },
-
-    goToBlockPage() {
-      this.$router.push(`/club/bloqueos`);
-    },
     goBack() {
       this.$router.back();
     },
@@ -200,7 +197,66 @@ export default {
     this.fetchCourts();
   },
 };
+</script>
 
+<style scoped>
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000; /* Fondo del encabezado */
+}
 
-  </script>
-  
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
+}
+
+.logo-icon {
+  width: 60px; /* Ajusta el tamaño del logo */
+  height: 60px;
+}
+
+.body {
+  background-image: url(../../assets/menu/padelcourtfloor.jpg);
+  background-size: cover;
+}
+
+.courts-card {
+  background-color: rgba(255, 255, 255, 0.3); /* Fondo translúcido */
+}
+
+/* Estilos para el select con fondo negro y letras blancas */
+.custom-select {
+  background-color: black;
+  color: white;
+}
+
+.custom-select .q-field__native {
+  color: white;
+}
+
+.custom-select .q-field__label {
+  color: white;
+}
+
+.custom-select .q-field__marginal {
+  color: white;
+}
+
+/* Estilos para los inputs y toggles */
+.text-black .q-field__native,
+.text-black .q-field__label,
+.text-black .q-toggle__label {
+  color: black;
+}
+</style>
