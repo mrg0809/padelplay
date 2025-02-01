@@ -18,7 +18,7 @@ def send_email(recipient_email: str, subject: str, body: str):
     try:
         # Configuración del correo
         sender_email = "info@padelplay.mx"
-        sender_password = "PadelPla@y2025"
+        sender_password = "P@d3lplay"
         smtp_server = "smtp.zoho.com"
         smtp_port = 587
 

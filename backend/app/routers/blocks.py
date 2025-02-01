@@ -77,3 +77,29 @@ async def block_club(data: ClubBlock, current_user: dict = Depends(get_current_u
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al agregar bloqueo de club: {str(e)}")
+    
+
+@router.delete("/delete-block/{block_id}")
+async def delete_block(block_id: UUID, current_user: dict = Depends(get_current_user)):
+    try:
+        print(f"Intentando eliminar bloqueo con ID: {block_id}")  # Log para depuración
+        # Verificar si el bloqueo existe
+        response = supabase.table("court_blocks").select("*").eq("id", str(block_id)).execute()
+        if not response.data:
+            print("Bloqueo no encontrado en la base de datos")  # Log para depuración
+            raise HTTPException(status_code=404, detail="Bloqueo no encontrado.")
+
+        # Eliminar el bloqueo
+        delete_response = supabase.table("court_blocks").delete().eq("id", str(block_id)).execute()
+        handle_supabase_response(delete_response)
+
+        return {
+            "message": "Bloqueo eliminado exitosamente.",
+            "status": "success",
+        }
+
+    except HTTPException as e:
+        raise e  # Re-lanzar excepciones HTTP personalizadas
+    except Exception as e:
+        print(f"Error al eliminar el bloqueo: {str(e)}")  # Log para depuración
+        raise HTTPException(status_code=500, detail=f"Error al eliminar el bloqueo: {str(e)}")

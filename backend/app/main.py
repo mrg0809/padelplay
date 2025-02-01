@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth, blocks, courts, clubs, discounts, matches, notifications, players, reservations, tournaments
+from app.routers import auth, blocks, courts, clubs, discounts, matches, notifications, players, products, reservations, tournaments
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
@@ -22,6 +22,7 @@ app.include_router(discounts.router, prefix="/promo", tags=["Discounts"])
 app.include_router(matches.router, prefix="/matches", tags=["Matches"])
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(players.router, prefix="/players", tags=["Players"])
+app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(reservations.router, prefix="/reservations", tags=["Reservations"])
 app.include_router(tournaments.router, prefix="/tournaments", tags=["Tournaments"])
 
