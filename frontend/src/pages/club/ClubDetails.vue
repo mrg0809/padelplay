@@ -207,8 +207,53 @@
           </div>
 
           <div v-if="selectedTab === 'wall'">
-            <h4 class="text-center">Muro del Club</h4>
-            <p>Aquí se mostrarán las publicaciones del club.</p>
+            <q-list bordered class="q-mt-md">
+                <q-item v-for="post in posts" :key="post.id" class="q-mb-sm post">
+                  <q-item-section>
+                    <q-item-label>{{ post.content }}</q-item-label>
+                    <q-item-label caption>{{ formatDate(post.created_at) }}</q-item-label>
+                    <!-- Mostrar multimedia si existe -->
+                    <div v-if="post.media_url" class="q-mt-sm">
+                      <img
+                        :src="post.media_url"
+                        style="max-width: 100%; border-radius: 8px;"
+                        alt="Imagen del post"
+                      />
+                    </div>
+                    <!-- Mostrar reacciones -->
+                    <div class="q-mt-sm">
+                      <q-chip v-for="(count, type) in post.reactions" :key="type">
+                        <span>{{ reactionEmojis[type] }} {{ count }}</span>
+                      </q-chip>
+                    </div>
+                    <div>
+                      <!-- q-chip como el botón que abre el dropdown -->
+                      <q-chip
+                        :label="selectedReaction ? reactionEmojis[selectedReaction] : '😊'"
+                        color="primary"
+                        text-color="white"
+                        @click="toggleMenu"
+                        clickable
+                      />
+                      
+                      <!-- El menú dropdown de reacciones -->
+                      <q-menu v-model="menuVisible">
+                        <q-list>
+                          <q-item
+                            v-for="(emoji, type) in reactionEmojis"
+                            :key="type"
+                            clickable
+                            v-close-popup
+                            @click="setReaction(type)"
+                          >
+                            <q-item-section>{{ emoji }}</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-menu>
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
           </div>
             
         </div>
@@ -252,6 +297,7 @@ export default {
     const currentDate = ref(new Date());
     const selectedTab = ref("info");
     const availableCourts = ref([]);
+    const posts = ref([]);
     const selectedCourt = ref(null);
     const selectedDuration = ref(null);
     const timeOptions = ref([
@@ -261,8 +307,21 @@ export default {
     ]);
     const tournaments = ref([])
     const loadingCourts = ref(false);
+    const reactionEmojis = {
+        like: "👍",
+        love: "❤️",
+        laugh: "😂",
+        wow: "😮",
+        sad: "😢",
+        angry: "😡",
+        };
+    const selectedReaction = ref(null);
+    const menuVisible = ref(false);
 
     const clubId = route.params.clubId;
+    const toggleMenu = () => {
+      menuVisible.value = !menuVisible.value;
+    };
 
     const getCourtPrice = (court, duration) => {
       if (!court) return 0;
@@ -329,6 +388,7 @@ export default {
 
         generateDays();
         fetchAvailableTimes();
+        fetchPosts();
         await fetchTournaments();
 
         if (selectedTab.value === "info" && coordinates.value) {
@@ -366,6 +426,17 @@ export default {
         tournaments.value = data;
       } catch (err) {
         console.error("Error inesperado:", err.message);
+      }
+    };
+
+    // Obtener posts del club
+    const fetchPosts = async () => {
+      try {
+          const response = await api.get(`community/posts/club/${clubId}`);
+          console.log("Datos recibidos:", response.data);
+          posts.value = response.data.posts;
+      } catch (error) {
+          console.error("Error al obtener posts:", error);
       }
     };
 
@@ -564,7 +635,6 @@ export default {
       });
     };
 
-
     const openMaps = ({ lat, lng }) => {
       if (!lat || !lng) {
         console.error("Invalid coordinates:", { lat, lng });
@@ -586,6 +656,15 @@ export default {
         window.open(whatsappUrl, "_blank");
       }
     };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Fecha no disponible"; // Manejar casos donde dateString es null o undefined
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return "Fecha no disponible"; // Manejar fechas inválidas
+        }
+        return date.toLocaleString(); // Formatear la fecha
+        };
 
     return {
       clubDetails,
@@ -615,6 +694,13 @@ export default {
       openWhatsApp,
       tournaments,
       fetchTournaments,
+      fetchPosts,
+      posts,
+      formatDate,
+      reactionEmojis,
+      menuVisible,
+      selectedReaction,
+      toggleMenu,
     };
   },
   methods: {
@@ -759,5 +845,10 @@ export default {
 .tournament-card p {
   margin: 4px 0;
   color: #ccc;
+}
+
+.post {
+  background-image: url(../../assets/texturafondo.png);
+  background-size: cover;
 }
 </style>

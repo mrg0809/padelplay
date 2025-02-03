@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from app.db.connection import supabase
 from app.core.security import get_current_user
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+import uuid
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -148,3 +150,45 @@ async def get_posts_by_club(club_id: UUID, current_user=Depends(get_current_user
         return {"posts": posts_with_reactions}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+# Endpoint para subir imagen o video al post
+@router.post("/posts/upload-media")
+def upload_media(
+    post_id: str,  # Añadir post_id como parámetro
+    file: UploadFile = File(...), 
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Validar tipo de archivo (imagen o video)
+        if not (file.content_type.startswith("image/") or file.content_type.startswith("video/")):
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos de imagen o video")
+
+        # Ruta del archivo en el bucket
+        bucket_name = "club-logos"  
+        file_extension = file.filename.split(".")[-1]
+        file_name = f"posts/{post_id}/{uuid.uuid4()}.{file_extension}"
+
+        file_content = file.file.read()
+
+        # Subir el nuevo archivo
+        response = supabase.storage.from_(bucket_name).upload(
+            file_name,
+            file_content,
+            {"content-type": file.content_type}
+        )
+        if not response:
+            raise HTTPException(status_code=500, detail="Error al subir el archivo")
+
+        # Generar la URL de acceso público
+        media_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{bucket_name}/{file_name}"
+
+        # Actualizar el campo media_url en la tabla posts
+        data = supabase.table('posts').update({'media_url': media_url}).eq('id', post_id).execute()
+
+        if not data:
+            raise HTTPException(status_code=500, detail=f"Error al actualizar el post: {data.error}")
+
+        return {"success": True, "media_url": media_url}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud: {str(e)}")

@@ -80,8 +80,11 @@
                     <q-item-label caption>{{ formatDate(post.created_at) }}</q-item-label>
                     <!-- Mostrar multimedia si existe -->
                     <div v-if="post.media_url" class="q-mt-sm">
-                      <img v-if="post.media_url.includes('image')" :src="post.media_url" style="max-width: 100%; border-radius: 8px;" />
-                      <video v-else-if="post.media_url.includes('video')" :src="post.media_url" controls style="max-width: 100%; border-radius: 8px;"></video>
+                      <img
+                        :src="post.media_url"
+                        style="max-width: 100%; border-radius: 8px;"
+                        alt="Imagen del post"
+                      />
                     </div>
                     <!-- Mostrar reacciones -->
                     <div class="q-mt-sm">
@@ -122,7 +125,7 @@
           </q-card-section>
           <q-card-actions align="right">
             <q-btn flat label="Cancelar" color="negative" v-close-popup />
-            <q-btn flat label="Publicar" color="primary" @click="createPost" v-close-popup />
+            <q-btn flat label="Publicar" color="green" @click="createPost" v-close-popup />
           </q-card-actions>
         </q-card>
       </q-dialog>
@@ -274,6 +277,7 @@
       const fetchPosts = async () => {
         try {
             const response = await api.get(`community/posts/club/${userStore.clubId}`);
+            console.log("Datos recibidos:", response.data);
             posts.value = response.data.posts;
         } catch (error) {
             console.error("Error al obtener posts:", error);
@@ -281,19 +285,37 @@
         };
 
         // Crear un nuevo post
-       const createPost = async () => {
-        try {
-            const mediaUrl = null; // Aquí puedes implementar la subida de archivos si es necesario
-            const response = await api.post("community/posts", {
-            club_id: userStore.clubId,
-            content: newPostContent.value,
-            media_url: mediaUrl,
+        const createPost = async () => {
+          try {
+            let mediaUrl = null;
+
+            // Crear el post sin media_url inicialmente
+            const postResponse = await api.post("/community/posts", {
+              club_id: userStore.clubId,
+              content: newPostContent.value,
             });
-            posts.value.unshift(response.data); // Agregar el nuevo post al inicio de la lista
+            console.log(postResponse.data.data[0].id)
+            const postId = postResponse.data.data[0].id; // Obtener el ID del post recién creado
+
+            // Subir el archivo si existe
+            if (newPostMedia.value) {
+              const formData = new FormData();
+              formData.append("file", newPostMedia.value);
+
+              const uploadResponse = await api.post(`/community/posts/upload-media?post_id=${postId}`, formData, {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              });
+            }
+
+            // Agregar el nuevo post a la lista
+            posts.value.unshift(postResponse.data);
             newPostContent.value = ""; // Limpiar el campo de texto
-        } catch (error) {
+            newPostMedia.value = null; // Limpiar el archivo multimedia
+          } catch (error) {
             console.error("Error al crear post:", error);
-        }
+          }
         };
 
         // Eliminar un post
