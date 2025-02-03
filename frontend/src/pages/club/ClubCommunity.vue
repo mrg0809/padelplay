@@ -1,5 +1,6 @@
 <template>
     <q-layout view="hHh lpR fFf" class="body text-white">
+      <!-- Encabezado -->
       <q-header elevated class="bg-primary text-white">
         <div class="header-content">
           <div class="greeting">
@@ -68,13 +69,64 @@
             <!-- Pestaña: Wall -->
             <q-tab-panel name="wall">
               <div class="text-center q-pa-md">
-                <q-icon name="feed" size="2em" />
-                <p class="q-mt-sm">Aquí podrás crear contenido y anuncios para el club.</p>
+                <q-btn icon="add" color="black" class="q-mb-xl fixed-bottom-right" size="lg" glossy round @click="showCreatePostDialog = true" />
               </div>
+  
+              <!-- Lista de Posts -->
+              <q-list bordered class="q-mt-md">
+                <q-item v-for="post in posts" :key="post.id" class="q-mb-sm">
+                  <q-item-section>
+                    <q-item-label>{{ post.content }}</q-item-label>
+                    <q-item-label caption>{{ formatDate(post.created_at) }}</q-item-label>
+                    <!-- Mostrar multimedia si existe -->
+                    <div v-if="post.media_url" class="q-mt-sm">
+                      <img v-if="post.media_url.includes('image')" :src="post.media_url" style="max-width: 100%; border-radius: 8px;" />
+                      <video v-else-if="post.media_url.includes('video')" :src="post.media_url" controls style="max-width: 100%; border-radius: 8px;"></video>
+                    </div>
+                    <!-- Mostrar reacciones -->
+                    <div class="q-mt-sm">
+                      <q-chip v-for="(count, type) in post.reactions" :key="type">
+                        <span>{{ reactionEmojis[type] }} {{ count }}</span>
+                      </q-chip>
+                    </div>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-btn flat icon="delete" color="negative" @click="deletePost(post.id)" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
             </q-tab-panel>
           </q-tab-panels>
         </q-page>
       </q-page-container>
+  
+      <!-- Diálogo para crear un nuevo post -->
+      <q-dialog v-model="showCreatePostDialog">
+        <q-card class="q-pa-md bg-black" style="min-width: 300px">
+          <q-card-section>
+            <div class="text-h6">Nuevo Post</div>
+          </q-card-section>
+          <q-card-section>
+            <q-input
+              v-model="newPostContent"
+              type="textarea"
+              label="Escribe tu post"
+              autogrow
+            />
+            <q-file
+              v-model="newPostMedia"
+              label="Subir imagen o video"
+              accept="image/*, video/*"
+              class="q-mt-md"
+            />
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cancelar" color="negative" v-close-popup />
+            <q-btn flat label="Publicar" color="primary" @click="createPost" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+  
       <ClubNavigationMenu />
     </q-layout>
   </template>
@@ -84,8 +136,8 @@
   import { supabase } from "src/services/supabase";
   import { useRouter } from "vue-router";
   import { useUserStore } from "src/stores/userStore";
+  import api from "../../api";
   import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-
   
   export default {
     name: "ClubCommunity",
@@ -97,136 +149,182 @@
       const tab = ref("followed"); // Pestaña activa por defecto
       const followedUsers = ref([]); // Lista de usuarios seguidos
       const followers = ref([]); // Lista de seguidores
+      const posts = ref([]); // Lista de posts
       const userStore = useUserStore();
+      const newPostContent = ref(""); // Contenido del nuevo post
+      const newPostMedia = ref(null); // Archivo multimedia seleccionado
+      const showCreatePostDialog = ref(false); // Controlar visibilidad del diálogo
+      const reactionEmojis = {
+        like: "👍",
+        love: "❤️",
+        laugh: "😂",
+        wow: "😮",
+        sad: "😢",
+        angry: "😡",
+        };
   
       // Obtener los usuarios seguidos y seguidores
       const fetchFollowedUsers = async () => {
         try {
-            // Obtener los IDs de los usuarios seguidos
-            const { data: followedData, error: followedError } = await supabase
+          const { data: followedData, error: followedError } = await supabase
             .from("follows")
             .select("followed_id")
             .eq("follower_id", userStore.userId);
-
-            if (followedError) throw followedError;
-
-            // Extraer los IDs de los usuarios seguidos
-            const followedIds = followedData.map((follow) => follow.followed_id);
-
-            // Obtener los perfiles de los usuarios seguidos
-            const { data: profilesData, error: profilesError } = await supabase
+  
+          if (followedError) throw followedError;
+  
+          const followedIds = followedData.map((follow) => follow.followed_id);
+          const { data: profilesData, error: profilesError } = await supabase
             .from("profiles")
             .select("id, full_name, user_type, club_id")
             .in("id", followedIds);
-
-            if (profilesError) throw profilesError;
-
-            // Obtener los datos de los jugadores (si aplica)
-            const { data: playersData, error: playersError } = await supabase
+  
+          if (profilesError) throw profilesError;
+  
+          const { data: playersData, error: playersError } = await supabase
             .from("players")
             .select("user_id, photo_url")
             .in("user_id", followedIds);
-
-            if (playersError) throw playersError;
-
-            // Obtener los datos de los clubs (si aplica)
-            const clubIds = profilesData
+  
+          if (playersError) throw playersError;
+  
+          const clubIds = profilesData
             .filter((profile) => profile.user_type === "club")
             .map((profile) => profile.club_id);
-
-            const { data: clubsData, error: clubsError } = await supabase
+  
+          const { data: clubsData, error: clubsError } = await supabase
             .from("clubs")
             .select("id, logo_url")
             .in("id", clubIds);
-
-            if (clubsError) throw clubsError;
-
-            // Combinar los datos de perfiles, jugadores y clubs
-            followedUsers.value = profilesData.map((profile) => {
+  
+          if (clubsError) throw clubsError;
+  
+          followedUsers.value = profilesData.map((profile) => {
             const player = playersData.find((p) => p.user_id === profile.id);
             const club = clubsData.find((c) => c.id === profile.club_id);
-
+  
             return {
-                id: profile.id,
-                name: profile.full_name,
-                photo_url: profile.user_type === "player"
+              id: profile.id,
+              name: profile.full_name,
+              photo_url: profile.user_type === "player"
                 ? player?.photo_url
-                : club?.logo_url || "default-avatar.png", // Usar logo_url para clubs
-                type: profile.user_type,
+                : club?.logo_url || "default-avatar.png",
+              type: profile.user_type,
             };
-            });
+          });
         } catch (error) {
-            console.error("Error al obtener usuarios seguidos:", error);
+          console.error("Error al obtener usuarios seguidos:", error);
         }
-        };
-
-        const fetchFollowers = async () => {
+      };
+  
+      const fetchFollowers = async () => {
         try {
-            // Obtener los IDs de los seguidores
-            const { data: followersData, error: followersError } = await supabase
+          const { data: followersData, error: followersError } = await supabase
             .from("follows")
             .select("follower_id")
             .eq("followed_id", userStore.userId);
-
-            if (followersError) throw followersError;
-
-            // Extraer los IDs de los seguidores
-            const followerIds = followersData.map((follow) => follow.follower_id);
-
-            // Obtener los perfiles de los seguidores
-            const { data: profilesData, error: profilesError } = await supabase
+  
+          if (followersError) throw followersError;
+  
+          const followerIds = followersData.map((follow) => follow.follower_id);
+          const { data: profilesData, error: profilesError } = await supabase
             .from("profiles")
             .select("id, full_name, user_type, club_id")
             .in("id", followerIds);
-
-            if (profilesError) throw profilesError;
-
-            // Obtener los datos de los jugadores (si aplica)
-            const { data: playersData, error: playersError } = await supabase
+  
+          if (profilesError) throw profilesError;
+  
+          const { data: playersData, error: playersError } = await supabase
             .from("players")
             .select("user_id, photo_url")
             .in("user_id", followerIds);
-
-            if (playersError) throw playersError;
-
-            // Obtener los datos de los clubs (si aplica)
-            const clubIds = profilesData
+  
+          if (playersError) throw playersError;
+  
+          const clubIds = profilesData
             .filter((profile) => profile.user_type === "club")
             .map((profile) => profile.club_id);
-
-            const { data: clubsData, error: clubsError } = await supabase
+  
+          const { data: clubsData, error: clubsError } = await supabase
             .from("clubs")
             .select("id, logo_url")
             .in("id", clubIds);
-
-            if (clubsError) throw clubsError;
-
-            // Combinar los datos de perfiles, jugadores y clubs
-            followers.value = profilesData.map((profile) => {
+  
+          if (clubsError) throw clubsError;
+  
+          followers.value = profilesData.map((profile) => {
             const player = playersData.find((p) => p.user_id === profile.id);
             const club = clubsData.find((c) => c.id === profile.club_id);
-
+  
             return {
-                id: profile.id,
-                name: profile.full_name,
-                photo_url: profile.user_type === "player"
+              id: profile.id,
+              name: profile.full_name,
+              photo_url: profile.user_type === "player"
                 ? player?.photo_url
-                : club?.logo_url || "default-avatar.png", // Usar logo_url para clubs
-                type: profile.user_type,
+                : club?.logo_url || "default-avatar.png",
+              type: profile.user_type,
             };
-            });
+          });
         } catch (error) {
-            console.error("Error al obtener seguidores:", error);
+          console.error("Error al obtener seguidores:", error);
         }
+      };
+  
+      // Obtener posts del club
+      const fetchPosts = async () => {
+        try {
+            const response = await api.get(`community/posts/club/${userStore.clubId}`);
+            posts.value = response.data.posts;
+        } catch (error) {
+            console.error("Error al obtener posts:", error);
+        }
+        };
+
+        // Crear un nuevo post
+       const createPost = async () => {
+        try {
+            const mediaUrl = null; // Aquí puedes implementar la subida de archivos si es necesario
+            const response = await api.post("community/posts", {
+            club_id: userStore.clubId,
+            content: newPostContent.value,
+            media_url: mediaUrl,
+            });
+            posts.value.unshift(response.data); // Agregar el nuevo post al inicio de la lista
+            newPostContent.value = ""; // Limpiar el campo de texto
+        } catch (error) {
+            console.error("Error al crear post:", error);
+        }
+        };
+
+        // Eliminar un post
+       const deletePost = async (postId) => {
+        try {
+            await api.delete(`community/posts/${postId}`, {
+            data: { club_id: userStore.clubId },
+            });
+            posts.value = posts.value.filter((post) => post.id !== postId); // Eliminar el post de la lista
+        } catch (error) {
+            console.error("Error al eliminar post:", error);
+        }
+        };
+  
+      // Formatear fecha
+      const formatDate = (dateString) => {
+        if (!dateString) return "Fecha no disponible"; // Manejar casos donde dateString es null o undefined
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return "Fecha no disponible"; // Manejar fechas inválidas
+        }
+        return date.toLocaleString(); // Formatear la fecha
         };
   
       // Cargar datos al montar el componente
       onMounted(() => {
         fetchFollowedUsers();
         fetchFollowers();
+        fetchPosts();
       });
-  
-      // Función para regresar
+
       const goBack = () => {
         router.back();
       };
@@ -235,13 +333,21 @@
         tab,
         followedUsers,
         followers,
+        posts,
+        newPostContent,
+        showCreatePostDialog,
+        createPost,
+        deletePost,
+        formatDate,
         goBack,
+        reactionEmojis,
+        newPostMedia,
       };
     },
   };
   </script>
   
-  <style scoped>
+<style scoped>
   .header-content {
     display: flex;
     justify-content: space-between;
@@ -292,4 +398,11 @@
     border-radius: 8px;
     margin-bottom: 8px;
   }
-  </style>
+
+  .fixed-bottom-right {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 1000;
+  }
+</style>
