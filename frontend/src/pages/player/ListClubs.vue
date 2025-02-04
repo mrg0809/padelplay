@@ -91,7 +91,6 @@
       onMounted(async () => {
         try {
             const userLocation = await getUserLocation(); // Obtener la ubicación del usuario
-            console.log("User Location:", userLocation);
             await searchClubs("", userLocation); // Carga inicial con geolocalización
         } catch (error) {
             console.error("Geolocation error:", error.message);
@@ -175,7 +174,6 @@ watch(searchQuery, (newQuery) => {
     };
 
     const viewClubDetails = (clubId, tabName = "reservations") => {
-      console.log("Navigating to Club:", clubId);
       router.push({ path: `/club/${clubId}`, query: { tab: tabName } }); // Navegar usando router.push
     };
 
@@ -242,7 +240,6 @@ watch(searchQuery, (newQuery) => {
     max-width: 800px;
     margin: 0 auto;
   }
-
 
   .clubs-list .club-card {
     padding: 16px;

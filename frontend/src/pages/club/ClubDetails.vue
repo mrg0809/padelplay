@@ -18,7 +18,6 @@
           <q-spinner-dots color="primary" size="xl" />
         </div>
         <div v-else>
-          <!-- Información del club -->
           <div class="q-mb-md text-center">
             <img
               v-if="clubDetails?.logo_url"
@@ -29,239 +28,57 @@
           </div>
           <q-card class="tabs-section">
             <q-card-section>
-          <!-- Pestañas del Club -->
-          <q-tabs v-model="selectedTab" align="justify" class="text-white">
-            <q-tab name="info" label="Info" icon="info" />
-            <q-tab name="reservations" label="Reservas" icon="event" />
-            <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
-            <q-tab name="wall" label="Muro" icon="chat" />
-          </q-tabs>
-        </q-card-section>
+              <q-tabs v-model="selectedTab" align="justify" class="text-white">
+                <q-tab name="info" label="Info" icon="info" />
+                <q-tab name="reservations" label="Reservas" icon="event" />
+                <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
+                <q-tab name="wall" label="Muro" icon="chat" />
+              </q-tabs>
+            </q-card-section>
           </q-card>
           <q-separator />
-
-          <!-- Contenido de las pestañas -->
-          <!-- Pestaña Info -->
-          
-          <div v-if="selectedTab === 'info'">
-            <q-card class="tabs-section">
-              <q-card-section>
-            <p><strong>Dirección:</strong> {{ clubDetails?.address || "No disponible" }}</p>
-            <p v-if="clubDetails?.city"><strong>Ciudad:</strong> {{ clubDetails.city }}, {{ clubDetails.state }}, {{ clubDetails.country }}</p>
-
-            <div id="map" style="height: 200px;" v-if="coordinates"></div>
-            
-            <div v-if="clubDetails">
-              <div class="q-mt-md text-center">
-                <q-btn
-                  v-if="coordinates"
-                  flat
-                  round
-                  icon="mdi-google-maps"
-                  color="blue"
-                  class="q-my-md"
-                  size="xl"
-                  @click="openMaps(coordinates)"
-                />
-                <q-btn
-                  v-if="clubDetails.facebook_url"
-                  flat
-                  round
-                  icon="mdi-facebook"
-                  color="blue"
-                  class="q-mx-sm"
-                  size="xl"
-                  @click="openSocialLink(clubDetails.facebook_url)"
-                />
-                <q-btn
-                  v-if="clubDetails.instagram_url"
-                  flat
-                  round
-                  icon="mdi-instagram"
-                  color="purple"
-                  class="q-mx-sm"
-                  size="xl"
-                  @click="openSocialLink(clubDetails.instagram_url)"
-                />
-                <q-btn
-                  v-if="clubDetails.tiktok_url"
-                  flat
-                  round
-                  icon="mdi-tiktok"
-                  color="white"
-                  class="q-mx-sm"
-                  size="xl"
-                  @click="openSocialLink(clubDetails.tiktok_url)"
-                />
-                <q-btn
-                  v-if="clubDetails.whatsapp_number"
-                  flat
-                  round
-                  icon="mdi-whatsapp"
-                  color="green"
-                  class="q-mx-sm"
-                  size="xl"
-                  @click="openWhatsApp(clubDetails.whatsapp_number)"
-                />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-          </div>
-          <!-- Pestaña reservas -->
-          <div v-if="selectedTab === 'reservations'">
-            <q-card class="tabs-section">
-              <q-card-section>
-            <!-- Muestra fechas -->
-            <div class="q-mt-lg days-container">
-              <q-btn flat icon="arrow_back" @click="previousWeek" />
-              <div class="days-scroll">
-                <q-btn
-                  v-for="(day, index) in days"
-                  :key="index"
-                  :outline="selectedDay !== day.date"
-                  color="grey"
-                  class="day-button"
-                  @click="selectDay(day.date)"
-                >
-                  <div>{{ day.label }}</div>
-                  <div class="month-label">{{ day.month }}</div>
-                </q-btn>
-              </div>
-              <q-btn flat icon="arrow_forward" @click="nextWeek" />
-            </div>
-            <!-- Muestra horarios disponibles -->
-            <div class="available-times q-mt-lg">
-              <div v-if="loadingTimes" class="text-center">
-                <q-spinner-dots color="white" size="xl" />
-              </div>
-              <div v-else class="time-grid">
-                <q-btn
-                  v-for="time in consolidatedTimes"
-                  :key="time"
-                  :label="time"
-                  :color="time === selectedTime ? 'green' : 'grey'"
-                  class="time-slot"
-                  @click="selectTime(time)"
-                />
-              </div>
-            </div>
-            <!-- Canchas disponibles y selección de tiempo -->
-            <div v-if="selectedTime" class="q-mt-lg">
-              <h5>Canchas disponibles para {{ selectedTime }}:</h5>
-              <div v-if="loadingCourts" class="text-center">
-                <q-spinner-dots color="white" size="lg" />
-              </div>
-              <div v-else>
-                <q-list bordered separator>
-                  <q-expansion-item
-                    v-for="court in availableCourts"
-                    :key="court.id"
-                    expand-separator
-                    :label="court.name"
-                    :caption="`${court.is_indoor ? 'Techada' : 'Aire libre'}`" 
-                    class="court-expansion-item"
-                  >
-                    <q-card class="court-card">
-                      <q-card-section class="row q-gutter-sm justify-center">
-                        <q-btn
-                          v-for="option in timeOptions"
-                          :key="option.duration"
-                          color="primary"
-                          @click="selectDuration(option, court)"
-                          class="time-option-btn" 
-                        >
-                          <div class="time-option-label">
-                            <span>${{ getCourtPrice(court, option.duration) }}</span>
-                            <br>
-                            <span class="duration">{{ option.duration }} min</span>
-                          </div>
-                        </q-btn>
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </q-list>
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-          </div>
-          <!-- Seccion Torneos -->
-          <div v-if="selectedTab === 'tournaments'">
-            <div class="q-mt-md tournament-list">
-              <div
-                v-for="tournament in tournaments"
-                :key="tournament.id"
-                class="tournament-card"
-                @click="goToTournamentDetails(tournament.id)"
-              >
-                <h5>{{ tournament.name }}</h5>
-                <p>Fecha: {{ tournament.start_date }}</p>
-                <p>Categoría: {{ tournament.category }}</p>
-                <p>Género: {{ tournament.gender }}</p>
-              </div>
-              <p v-if="!tournaments.length" class="text-center q-mt-md">
-                No hay torneos disponibles en este club.
-              </p>
-            </div>
-          </div>
-
-          <div v-if="selectedTab === 'wall'">
-            <q-list bordered class="q-mt-md">
-                <q-item v-for="post in posts" :key="post.id" class="q-mb-sm post">
-                  <q-item-section>
-                    <q-item-label>{{ post.content }}</q-item-label>
-                    <q-item-label caption>{{ formatDate(post.created_at) }}</q-item-label>
-                    <!-- Mostrar multimedia si existe -->
-                    <div v-if="post.media_url" class="q-mt-sm">
-                      <img
-                        :src="post.media_url"
-                        style="max-width: 100%; border-radius: 8px;"
-                        alt="Imagen del post"
-                      />
-                    </div>
-                    <!-- Mostrar reacciones -->
-                    <div class="q-mt-sm">
-                      <q-chip v-for="(count, type) in post.reactions" :key="type">
-                        <span>{{ reactionEmojis[type] }} {{ count }}</span>
-                      </q-chip>
-                    </div>
-                    <div>
-                      <!-- q-chip como el botón que abre el dropdown -->
-                      <q-chip
-                        :label="selectedReaction ? reactionEmojis[selectedReaction] : '😊'"
-                        color="primary"
-                        text-color="white"
-                        @click="toggleMenu"
-                        clickable
-                      />
-                      
-                      <!-- El menú dropdown de reacciones -->
-                      <q-menu v-model="menuVisible">
-                        <q-list>
-                          <q-item
-                            v-for="(emoji, type) in reactionEmojis"
-                            :key="type"
-                            clickable
-                            v-close-popup
-                            @click="setReaction(type)"
-                          >
-                            <q-item-section>{{ emoji }}</q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-menu>
-                    </div>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-          </div>
-            
+          <ClubInfoComponent
+            v-if="selectedTab === 'info'"
+            :clubDetails="clubDetails"
+            :coordinates="coordinates"
+          />
+          <ReservationsComponent
+            v-if="selectedTab === 'reservations'"
+            :days="days"
+            :selectedDay="selectedDay"
+            :consolidatedTimes="consolidatedTimes"
+            :selectedTime="selectedTime"
+            :loadingTimes="loadingTimes"
+            :availableCourts="availableCourts"
+            :loadingCourts="loadingCourts"
+            :timeOptions="timeOptions"
+            @previous-week="previousWeek"
+            @next-week="nextWeek"
+            @select-day="selectDay"
+            @select-time="selectTime"
+            @select-duration="selectDuration"
+          />
+          <TournamentsClubListComponent
+            v-if="selectedTab === 'tournaments'"
+            :tournaments="tournaments"
+            @go-to-tournament-details="goToTournamentDetails"
+          />
+          <ClubWallComponent
+            v-if="selectedTab === 'wall'"
+            :posts="posts"
+            :reactionEmojis="reactionEmojis"
+            :selectedReaction="selectedReaction"
+            :playerId="userStore.userId"
+            :menuVisible="menuVisible"
+            @update:posts="updatePosts"
+          />
         </div>
       </q-page>
     </q-page-container>
     <PlayerNavigationMenu />
   </q-layout>
 </template>
+
 
 <script>
 import { ref, onMounted, watch } from "vue";
@@ -274,12 +91,21 @@ import L from "leaflet";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+import ClubWallComponent from "src/components/ClubWallComponent.vue";
+import TournamentsClubListComponent from "src/components/TournamentsClubListComponent.vue";
+import ReservationsComponent from "src/components/ReservationsComponent.vue";
+import ClubInfoComponent from "src/components/ClubInfoComponent.vue";
+import { useUserStore } from "src/stores/userStore";
 
 export default {
   components: {
     BannerPromoScrolling,
     NotificationBell,
     PlayerNavigationMenu,
+    ClubWallComponent,
+    ReservationsComponent,
+    TournamentsClubListComponent,
+    ClubInfoComponent,
   },
   setup() {
     const route = useRoute();
@@ -288,6 +114,7 @@ export default {
     const clubDetails = ref(null);
     const coordinates = ref(null);
     const loading = ref(false);
+    const userStore = useUserStore();
     const days = ref([]);
     const selectedDay = ref("");
     const availableTimes = ref([]);
@@ -319,8 +146,9 @@ export default {
     const menuVisible = ref(false);
 
     const clubId = route.params.clubId;
-    const toggleMenu = () => {
-      menuVisible.value = !menuVisible.value;
+
+    const updatePosts = (updatedPosts) => {
+      posts.value = updatedPosts;
     };
 
     const getCourtPrice = (court, duration) => {
@@ -433,7 +261,6 @@ export default {
     const fetchPosts = async () => {
       try {
           const response = await api.get(`community/posts/club/${clubId}`);
-          console.log("Datos recibidos:", response.data);
           posts.value = response.data.posts;
       } catch (error) {
           console.error("Error al obtener posts:", error);
@@ -635,28 +462,6 @@ export default {
       });
     };
 
-    const openMaps = ({ lat, lng }) => {
-      if (!lat || !lng) {
-        console.error("Invalid coordinates:", { lat, lng });
-        return;
-      }
-      const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-      window.open(mapsUrl, "_blank");
-    };
-
-    const openSocialLink = (url) => {
-      if (url) {
-        window.open(url, "_blank");
-      }
-    };
-
-    const openWhatsApp = (number) => {
-      if (number) {
-        const whatsappUrl = `https://wa.me/${number}`;
-        window.open(whatsappUrl, "_blank");
-      }
-    };
-
     const formatDate = (dateString) => {
         if (!dateString) return "Fecha no disponible"; // Manejar casos donde dateString es null o undefined
         const date = new Date(dateString);
@@ -670,7 +475,6 @@ export default {
       clubDetails,
       coordinates,
       loading,
-      openMaps,
       days,
       selectedDay,
       availableTimes,
@@ -690,8 +494,6 @@ export default {
       nextWeek,
       selectedTab,
       getCourtPrice,
-      openSocialLink,
-      openWhatsApp,
       tournaments,
       fetchTournaments,
       fetchPosts,
@@ -700,7 +502,8 @@ export default {
       reactionEmojis,
       menuVisible,
       selectedReaction,
-      toggleMenu,
+      updatePosts,
+      userStore,
     };
   },
   methods: {
@@ -727,9 +530,7 @@ export default {
   justify-content: center;
   margin-top: 16px;
 }
-.available-times {
-  margin-top: 16px;
-}
+
 .logo-icon {
     width: 60px; /* Ajusta el tamaño del logo */
     height: 60px;
@@ -754,101 +555,12 @@ export default {
     display: flex;
     gap: 2px;
   }
-.time-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-  gap: 8px;
-  justify-content: center;
-}
-.time-slot {
-  text-align: center;
-  font-size: 0.9rem;
-  padding: 6px;
-  height: 40px;
-}
-.day-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.month-label {
-  font-size: 0.75rem;
-  color: #aaa;
-}
-.days-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.days-scroll {
-  display: flex;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  gap: 8px;
-}
-.days-scroll::-webkit-scrollbar {
-  display: none;
-}
-.q-list {
-  margin-top: 16px;
-}
-.q-expansion-item {
-  background-color: #333;
-  color: #fff;
-}
-.court-expansion-item {
-  background-color: #222; 
-  color: #fff; 
-}
-.court-card {
-  background-color: #222; 
-  padding: 10px; 
-  border-radius: 5px; 
-}
+
 .tabs-section {
   margin-bottom: 10px;
   background-image: url(../../assets/texturafondo.png);
   background-size: cover;
   border-radius: 20px;
 }
-.time-option-btn {
-  width: 88px; 
-  margin: 3px; 
-}
-.tournament-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
 
-.tournament-card {
-  background-image: url(../../assets/texturafondo.png);
-  background-size: cover;
-  padding: 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.tournament-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-.tournament-card h5 {
-  margin: 0 0 8px;
-  color: #ffd700;
-}
-
-.tournament-card p {
-  margin: 4px 0;
-  color: #ccc;
-}
-
-.post {
-  background-image: url(../../assets/texturafondo.png);
-  background-size: cover;
-}
 </style>
