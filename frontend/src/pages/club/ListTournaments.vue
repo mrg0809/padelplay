@@ -72,14 +72,11 @@
       >
         <q-menu anchor="top end" self="bottom end">
           <q-list style="min-width: 150px">
-            <q-item clickable v-close-popup @click="openCreateDialog('relampago')">
-              <q-item-section><strong>Torneo Relámpago</strong></q-item-section>
+            <q-item clickable v-close-popup @click="openCreateTournament">
+              <q-item-section><strong>Retas</strong></q-item-section>
             </q-item>
-            <q-item clickable v-close-popup @click="openCreateDialog('liga')">
-              <q-item-section><strong>Torneo Liga</strong></q-item-section>
-            </q-item>
-            <q-item clickable v-close-popup @click="openCreateDialog('personalizado')">
-              <q-item-section><strong>Torneo Personalizado</strong></q-item-section>
+            <q-item clickable v-close-popup @click="openCreateTournament">
+              <q-item-section><strong>Torneo</strong></q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -223,8 +220,8 @@ export default {
       }
     };
 
-    const openCreateDialog = (type) => {
-      router.push({ name: "CreateTournament", params: { type } });
+    const openCreateTournament = (type) => {
+      router.push("/club/creartorneos");
     };
 
     const goBack = () => {
@@ -253,7 +250,7 @@ export default {
       closeDialogVisible,
       deleteTournament,
       closeTournament,
-      openCreateDialog,
+      openCreateTournament,
     };
   },
 };

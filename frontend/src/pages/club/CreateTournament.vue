@@ -1,17 +1,22 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Crear Torneo</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
+  <q-layout view="hHh lpR fFf" class="body text-white">
+    <q-header elevated class="bg-primary text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+          Crear Torneo
+        </div>
+        <div class="header-icons">
+          <q-btn flat round icon="arrow_back" @click="goBack" />
+        </div>
+      </div>
     </q-header>
 
     <q-page-container>
       <q-page class="q-pa-md">
         <q-form @submit.prevent="createTournament">
           <!-- Sección de Detalles del Torneo -->
-          <q-card flat bordered class="q-mb-lg bg-dark text-white">
+          <q-card flat bordered class="q-mb-lg bg-transparent text-white">
             <q-card-section>
               <h3>Detalles del Torneo</h3>
             </q-card-section>
@@ -19,6 +24,8 @@
               <q-input v-model="form.name" label="Nombre del Torneo" outlined dense class="q-mb-md" />
               <q-input v-model="form.start_date" label="Fecha de Inicio" type="date" outlined dense class="q-mb-md" />
               <q-input v-model="form.start_time" label="Hora de Inicio" type="time" outlined dense class="q-mb-md" />
+              <q-input v-model="form.end_date" label="Fecha de Fin" type="date" outlined dense class="q-mb-md" />
+              <q-input v-model="form.end_time" label="Hora de Fin" type="time" outlined dense class="q-mb-md" />
               <q-select v-model="form.category" :options="categories" label="Categoría" outlined dense class="q-mb-md" />
               <q-select v-model="form.gender" :options="genders" label="Género" outlined dense class="q-mb-md" />
               <q-select v-model="form.system" :options="systems" label="Sistema de Competencia" outlined dense class="q-mb-md" />
@@ -28,7 +35,7 @@
           </q-card>
 
           <!-- Sección de Canchas -->
-          <q-card flat bordered class="q-mb-lg bg-dark text-white">
+          <q-card flat bordered class="q-mb-lg bg-transparent text-white">
             <q-card-section>
               <h3>Canchas</h3>
               <div class="q-mb-sm">
@@ -54,7 +61,7 @@
           </q-card>
 
           <!-- Sección de Detalles Financieros -->
-          <q-card flat bordered class="q-mb-lg bg-dark text-white">
+          <q-card flat bordered class="q-mb-lg bg-transparent text-white">
             <q-card-section>
               <h3>Detalles Financieros</h3>
             </q-card-section>
@@ -101,6 +108,8 @@ export default {
         name: "",
         start_date: "",
         start_time: "",
+        end_date: "",
+        end_time: "",
         category: "",
         gender: "",
         system: "",
@@ -171,6 +180,36 @@ export default {
 
 
 <style scoped>
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000;
+}
+
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
+}
+
+.logo-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.body {
+  background-image: url(../../assets/menu/padelcourtfloor.jpg);
+  background-size: cover;
+}
 .q-layout {
   min-height: 100vh;
 }

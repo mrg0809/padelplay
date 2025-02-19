@@ -34,7 +34,7 @@
               <!-- Mostrar el nombre del jugador -->
               <q-item-label>{{ client.player_name }}</q-item-label>
               <q-item-label caption class="text-black">
-                VISITAS: {{ client.visits }}
+                {{ client.visits }} Visitas a tu club
               </q-item-label>
             </q-item-section>
             <q-item-section side>
