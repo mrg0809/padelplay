@@ -45,6 +45,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/clientes", 
+    component: () => import("src/pages/club/ClubClients.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/perfil", 
     component: () => import("src/pages/club/EditClubInfo.vue"),
     meta: { requiresAuth: true },
