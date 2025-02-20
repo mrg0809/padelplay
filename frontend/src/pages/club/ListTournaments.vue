@@ -205,15 +205,18 @@ export default {
     };
 
     const closeTournament = async () => {
+      let tournament = ''
       try {
+          tournament = selectedTournamentId.value
+          console.log('torneo:', tournament)
           // Generar el preview del rol de juegos
-          const response = await api.get(`/tournaments/${selectedTournamentId.value}/preview`);
+          const response = await api.get(`/tournaments/${tournament}/preview`);
           const matches = response.data.matches;
 
           // Navegar a la página de preview
           router.push({
             name: "PreviewTournament",
-            params: { tournament : selectedTournamentId.value, matches },
+            params: { tournament, matches },
           });
         } catch (error) {
           console.error("Error generating preview:", error);
