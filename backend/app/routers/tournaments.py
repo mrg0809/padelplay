@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
+from typing import List, Dict
 from app.db.connection import supabase
 from app.core.security import get_current_user
 from app.utils.supabase_utils import handle_supabase_response
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from app.utils.email_utils import send_tournament_invitation_email
+from app.utils.tournament_utils import generate_tournament_preview
 
 
 router = APIRouter()
@@ -19,6 +19,8 @@ async def create_tournament(data: dict, current_user: dict = Depends(get_current
             "club_id": club_id,
             "start_date": data["start_date"],
             "start_time": data["start_time"],
+            "end_date": data["end_date"],
+            "end_time": data["end_time"],
             "category": data["category"],
             "gender": data["gender"],
             "system": data["system"],
@@ -82,7 +84,7 @@ async def register_team(tournament_id: str, data: dict, current_user: dict = Dep
             player2_id = player2_data["data"][0]["user_id"]
         else:
             # Si el jugador no está registrado, enviar invitación
-            send_invitation_email(player2_email, tournament_data[0]["name"])
+            send_tournament_invitation_email(player2_email, tournament_data[0]["name"])
 
         # Preparar datos para insertar en la tabla `tournament_teams`
         team_data = {
@@ -105,56 +107,6 @@ async def register_team(tournament_id: str, data: dict, current_user: dict = Dep
     except Exception as e:
         print(f"Unexpected Exception: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al registrar el equipo: {str(e)}")
-
-
-
-
-
-def send_invitation_email(recipient_email: str, tournament_name: str):
-    """
-    Enviar un correo de invitación para registrarse en el torneo.
-    """
-    try:
-        # Configuración del correo
-        sender_email = "info@padelplay.mx"
-        sender_password = "PadelPla@y2025"
-        smtp_server = "smtp.zoho.com"
-        smtp_port = 587
-
-        subject = f"Te han invitado a un torneo: {tournament_name}"
-        body = f"""
-        Hola,
-
-        Has sido invitado a participar en el torneo "{tournament_name}".
-        Para unirte, regístrate en nuestra plataforma a través del siguiente enlace:
-
-        [ENLACE A TU SITIO DE REGISTRO]
-
-        ¡Esperamos verte pronto!
-
-        Saludos,
-        El equipo de PadelPlay.
-        """
-
-        # Crear el mensaje de correo
-        msg = MIMEMultipart()
-        msg["From"] = sender_email
-        msg["To"] = recipient_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
-
-        # Conexión al servidor SMTP
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, msg.as_string())
-        server.quit()
-
-        print(f"Correo enviado exitosamente a {recipient_email}")
-
-    except Exception as e:
-        print(f"Error al enviar el correo: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"No se pudo enviar la invitación a {recipient_email}.")
     
     
 
@@ -181,3 +133,29 @@ async def update_tournament(tournament_id: str, data: dict, current_user: dict =
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar el torneo: {str(e)}")
+    
+
+@router.get("/{tournament_id}/preview")
+async def get_tournament_preview(tournament_id: str):
+    """
+    Genera un preview del rol de juegos para un torneo.
+    """
+    matches = generate_tournament_preview(tournament_id)
+    return {"matches": matches}
+
+
+@router.post("/{tournament_id}/save-matches")
+async def save_matches(tournament_id: str, matches: List[Dict]):
+    """
+    Guarda los partidos generados en la tabla matches.
+    """
+    for match in matches:
+        supabase.from_("matches").insert({
+            "tournament_id": tournament_id,
+            "team1_players": [match["team1"]],
+            "team2_players": [match["team2"]],
+            "match_date": match["match_date"],
+            "match_time": match["match_time"],
+            "court_id": match.get("court_id"),  # Asignar cancha si es necesario
+        }).execute()
+    return {"message": "Partidos guardados exitosamente."}

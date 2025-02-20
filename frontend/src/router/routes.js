@@ -104,6 +104,15 @@ const routes = [
     component: () => import("src/pages/club/CreateTournament.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/club/preview-tournament",
+    name: "PreviewTournament",
+    component: () => import("src/pages/club/PreviewTournament.vue"),
+    props: (route) => ({
+      tournament: route.params.tournament,
+      matches: route.params.matches,
+    }),
+  },
   { 
     path: "/club/soporte", 
     component: () => import("src/pages/club/SupportOptions.vue"),

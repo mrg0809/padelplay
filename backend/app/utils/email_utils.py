@@ -18,7 +18,7 @@ def send_email(recipient_email: str, subject: str, body: str):
     try:
         # Configuración del correo
         sender_email = "info@padelplay.mx"
-        sender_password = "P@d3lplay"
+        sender_password = "PadelPla@y2025"
         smtp_server = "smtp.zoho.com"
         smtp_port = 587
 
@@ -62,12 +62,13 @@ def send_match_invitation_email(recipient_email, data):
     send_email(recipient_email, subject, body)
 
 
-def send_tournament_invitation_email(recipient_email):
-    subject = f"Te han invitado a un torneo: {recipient_email}"
+
+def send_tournament_invitation_email(recipient_email: str, tournament_name: str):
+    subject = f"Te han invitado al torneo: {tournament_name}"
     body = f"""
     Hola,
 
-    Has sido invitado a participar en el torneo "{recipient_email}".
+    Has sido invitado a participar en el torneo "{tournament_name}".
     Para unirte, regístrate en nuestra plataforma a través del siguiente enlace:
 
     [ENLACE A TU SITIO DE REGISTRO]

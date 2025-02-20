@@ -106,8 +106,8 @@
             </div>
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat label="Cancelar" color="primary" v-close-popup />
-            <q-btn flat label="Cerrar Torneo" color="orange" @click="closeTournament" />
+            <q-btn flat label="Cancelar" color="red" v-close-popup />
+            <q-btn flat label="Cerrar Torneo" color="green" @click="closeTournament" />
           </q-card-actions>
         </q-card>
       </q-dialog>
@@ -121,6 +121,7 @@ import { ref, onMounted } from "vue";
 import { supabase } from "src/services/supabase";
 import { useRouter } from "vue-router";
 import { useQuasar } from 'quasar';
+import api from "../../api";
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 
 export default {
@@ -205,20 +206,19 @@ export default {
 
     const closeTournament = async () => {
       try {
-        const { error } = await supabase
-          .from("tournaments")
-          .update({ status: "closed" })
-          .eq("id", selectedTournamentId.value);
-        if (error) throw error;
+          // Generar el preview del rol de juegos
+          const response = await api.get(`/tournaments/${selectedTournamentId.value}/preview`);
+          const matches = response.data.matches;
 
-        closeDialogVisible.value = false;
-        alert("Torneo cerrado exitosamente.");
-        fetchTournaments();
-      } catch (error) {
-        console.error("Error al cerrar el torneo:", error.message);
-        alert("Error al cerrar el torneo.");
-      }
-    };
+          // Navegar a la página de preview
+          router.push({
+            name: "PreviewTournament",
+            params: { tournament : selectedTournamentId.value, matches },
+          });
+        } catch (error) {
+          console.error("Error generating preview:", error);
+        }
+      };
 
     const openCreateTournament = (type) => {
       router.push("/club/creartorneos");
