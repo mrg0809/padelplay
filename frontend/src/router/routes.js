@@ -65,8 +65,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/club/clases", 
+    component: () => import("src/pages/club/ManageLessons.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
     path: "/club/configuracion", 
     component: () => import("src/pages/club/ClubSettings.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/facturas", 
+    component: () => import("src/pages/club/ClubInvoices.vue"),
     meta: { requiresAuth: true },
   },
   { 
@@ -77,6 +87,16 @@ const routes = [
   { 
     path: "/club/inicio", 
     component: () => import("src/pages/DashboardClub.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/instructores", 
+    component: () => import("src/pages/club/ManageCoaches.vue"),
+    meta: { requiresAuth: true },
+  },
+  { 
+    path: "/club/pagos", 
+    component: () => import("src/pages/club/ClubPayments.vue"),
     meta: { requiresAuth: true },
   },
   { 
@@ -108,10 +128,11 @@ const routes = [
     path: "/club/preview-tournament",
     name: "PreviewTournament",
     component: () => import("src/pages/club/PreviewTournament.vue"),
-    props: (route) => ({
-      tournament: route.params.tournament,
-      matches: route.params.matches,
-    }),
+  },
+  { 
+    path: "/club/reportes", 
+    component: () => import("src/pages/club/ClubReporting.vue"),
+    meta: { requiresAuth: true },
   },
   { 
     path: "/club/soporte", 

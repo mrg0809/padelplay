@@ -53,7 +53,7 @@
                   label="Cerrar Torneo"
                   color="orange"
                   size="sm"
-                  @click="openCloseDialog(tournament.id)"
+                  @click="openCloseDialog(tournament)"
                 />
               </div>
             </q-card-section>
@@ -139,6 +139,7 @@ export default {
     const deleteDialogVisible = ref(false);
     const closeDialogVisible = ref(false);
     const selectedTournamentId = ref(null);
+    const selectedTournament = ref(null);
 
     const fetchTournaments = async () => {
       try {
@@ -199,27 +200,35 @@ export default {
       }
     };
 
-    const openCloseDialog = (id) => {
-      selectedTournamentId.value = id;
+    const openCloseDialog = (tournament) => {
+      selectedTournament.value = tournament;
       closeDialogVisible.value = true;
     };
 
     const closeTournament = async () => {
-      let tournament = ''
       try {
-          tournament = selectedTournamentId.value
-          console.log('torneo:', tournament)
+          console.log('torneo:', selectedTournament.value.id)
           // Generar el preview del rol de juegos
-          const response = await api.get(`/tournaments/${tournament}/preview`);
+          const response = await api.get(`/tournaments/${selectedTournament.value.id}/preview`);
           const matches = response.data.matches;
 
           // Navegar a la página de preview
+          console.log("Passing tournament:", selectedTournament.value);
+          console.log("Passing matches:", matches);
+
+          setTimeout(() => {
           router.push({
+            route: "/preview-tournament",
             name: "PreviewTournament",
-            params: { tournament, matches },
+            state: { tournament: selectedTournament.value, matches: matches },
           });
+        }, 1000);
         } catch (error) {
           console.error("Error generating preview:", error);
+          $q.notify({
+          type: 'negative',
+          message: 'Error al generar la vista previa.'
+        });
         }
       };
 
