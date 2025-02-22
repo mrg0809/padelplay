@@ -88,7 +88,7 @@
                     </div>
                     <!-- Mostrar reacciones -->
                     <div class="q-mt-sm">
-                      <q-chip v-for="(count, type) in post.reactions" :key="type">
+                      <q-chip color="transparent" v-for="(count, type) in post.reactions" :key="type">
                         <span>{{ reactionEmojis[type] }} {{ count }}</span>
                       </q-chip>
                     </div>

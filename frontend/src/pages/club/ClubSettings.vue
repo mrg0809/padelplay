@@ -58,23 +58,23 @@
         options: [
           {
             name: "Canchas",
-            icon: "event",
+            icon: "grid_view",
             route: "canchas",
           },
           {
             name: "Horarios",
-            icon: "query_stats",
+            icon: "schedule",
             route: "horarios",
           },
           {
             name: "Bloqueos",
-            icon: "o_school",
+            icon: "block",
             route: "bloqueos",
           },
           {
             name: "Perfil",
-            icon: "o_emoji_events",
-            route: "creartorneos",
+            icon: "o_account_circle",
+            route: "perfil",
           },
           {
             name: "Cuentas",

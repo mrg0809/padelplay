@@ -1,16 +1,21 @@
 <template>
-  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-    <q-header class="bg-primary text-white">
-      <q-toolbar>
-        <q-toolbar-title>Editar Club</q-toolbar-title>
-        <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-      </q-toolbar>
-    </q-header>
+  <q-layout view="hHh lpR fFf" class="body text-white">
+    <q-header elevated class="bg-primary text-white">
+        <div class="header-content">
+          <div class="greeting">
+            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+            Perfil del club
+          </div>
+          <div class="header-icons">
+            <q-btn flat round icon="arrow_back" @click="goBack" />
+          </div>
+        </div>
+      </q-header>
     <q-page-container>
-      <q-page class="bg-dark text-white q-pa-md">
-        <q-card class="q-pa-lg bg-dark text-white">
+      <q-page class="text-white q-pa-md">
+        <q-card class="q-pa-lg bg-transparent text-white">
           <q-card-section>
-            <div class="text-h6">Editar Información del Club</div>
+            <div class="text-h6">Información del Club</div>
           </q-card-section>
 
           <!-- Mostrar logo o ícono con botón a un lado -->
@@ -314,3 +319,37 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000;
+  }
+  
+  .greeting {
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .header-icons {
+    display: flex;
+    gap: 2px;
+  }
+  
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .body {
+    background-image: url(../../assets/menu/padelcourtfloor.jpg);
+    background-size: cover;
+  }
+  
+</style>

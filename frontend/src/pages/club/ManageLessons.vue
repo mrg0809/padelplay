@@ -15,6 +15,19 @@
       <q-page-container>
         <q-page class="q-pa-md">
          
+
+
+
+          <!-- Botón flotante para agregar producto -->
+          <q-btn
+            glossy
+            round
+            size="lg"
+            color="black"
+            icon="add"
+            class="fixed-bottom-right q-mb-xl"
+            @click="openLessonDialog"
+          />
         </q-page>
   
 
@@ -84,6 +97,13 @@
   .body {
     background-image: url(../../assets/menu/padelcourtfloor.jpg);
     background-size: cover;
+  }
+
+  .fixed-bottom-right {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 1000;
   }
   
   </style>
