@@ -7,13 +7,22 @@ import uuid
 
 router = APIRouter()
 
+class Availability(BaseModel):
+    day: str 
+    start_time: str
+    end_time: str
+
 class CoachCreate(BaseModel):
     user_id: str  # ID del jugador que se agregará como coach
     club_id: str  # ID del club que lo agrega
+    name: str
     price_for_one: Optional[float] = None
     price_for_two: Optional[float] = None
     price_for_three: Optional[float] = None
     price_for_four: Optional[float] = None
+    coach_resume: str
+    coach_focus: str
+    availability: List[Availability]
 
 class CoachResponse(BaseModel):
     user_id: str
@@ -60,10 +69,11 @@ def add_coach(data: CoachCreate, current_user: dict = Depends(get_current_user))
     if response.data:
         raise HTTPException(status_code=400, detail="Este jugador ya está registrado como coach en un club.")
 
+    print(data.user_id)
     # Obtener la información del jugador
     player_response = supabase.from_("players") \
         .select("first_name, last_name") \
-        .eq("id", data.user_id) \
+        .eq("user_id", data.user_id) \
         .execute()
 
     if not player_response.data:
@@ -71,6 +81,8 @@ def add_coach(data: CoachCreate, current_user: dict = Depends(get_current_user))
 
     player = player_response.data[0]
     coach_name = f"{player['first_name']} {player['last_name']}"
+
+    availability_dict = [availability.model_dump() for availability in data.availability]
 
     # Insertar el coach en la tabla coaches
     new_coach = {
@@ -83,11 +95,14 @@ def add_coach(data: CoachCreate, current_user: dict = Depends(get_current_user))
         "price_for_three": data.price_for_three,
         "price_for_four": data.price_for_four,
         "is_active": True,
+        "coach_resume": data.coach_resume,
+        "coach_focus": data.coach_focus,
+        "availability": availability_dict,
     }
 
     insert_response = supabase.from_("coaches").insert(new_coach).execute()
 
-    if insert_response.error:
+    if not insert_response:
         raise HTTPException(status_code=500, detail="Error al agregar el coach")
 
     return {"message": "Coach agregado exitosamente"}

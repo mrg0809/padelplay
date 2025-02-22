@@ -22,10 +22,15 @@
               <q-card-section v-if="coaches.length > 0">
                 <q-list bordered separator>
                   <q-item v-for="coach in coaches" :key="coach.id">
-                    <q-item-section>
+                    <q-item-section avatar>
+                      <q-avatar>
+                        <img :src="coach.photo_url || 'default-avatar.png'" />
+                      </q-avatar>
+                    </q-item-section>
+                    <q-item-section>     
                       <q-item-label>{{ coach.name }}</q-item-label>
-                      <q-item-label caption v-if="coach.coach_resume">
-                        {{ coach.coach_resume }}
+                      <q-item-label caption v-if="coach.coach_focus">
+                        {{ coach.coach_focus }}
                       </q-item-label>
                     </q-item-section>
                   </q-item>
@@ -54,34 +59,90 @@
   
       <ClubNavigationMenu />
   
-      <!-- Diálogo para agregar coach -->
-      <q-dialog v-model="isCoachDialogOpen" persistent full-width>
-        <q-card class="bg-black">
-          <q-card-section>
-            <div class="text-h6">Agregar Coach</div>
-          </q-card-section>
-  
-          <q-card-section>
-            <q-select
-              v-model="selectedCoach"
-              :options="availableCoaches"
-              option-label="name"
-              option-value="user_id"
-              label="Selecciona un jugador"
-              filled
-            />
-            <q-input v-model="priceForOne" label="Precio por una persona" filled type="number" />
-            <q-input v-model="priceForTwo" label="Precio por dos personas" filled type="number" />
-            <q-input v-model="priceForThree" label="Precio por tres personas" filled type="number" />
-            <q-input v-model="priceForFour" label="Precio por cuatro personas" filled type="number" />
-          </q-card-section>
-  
-          <q-card-actions align="right">
-            <q-btn flat label="Cancelar" color="red" v-close-popup />
-            <q-btn flat label="Agregar" color="green" @click="addCoach" />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
+    <!-- Diálogo para agregar coach -->
+    <q-dialog v-model="isCoachDialogOpen" persistent full-width>
+      <q-card class="bg-black">
+        <q-card-section>
+          <div class="text-h6">Agregar Coach</div>
+        </q-card-section>
+
+        <!-- Paso 1: Selección del Jugador -->
+        <q-card-section v-if="currentStep === 1">
+          <q-select
+            v-model="selectedCoach"
+            :options="filteredAvailableCoaches"
+            option-label="name"
+            option-value="user_id"
+            label="Buscar jugador"
+            filled
+            use-input
+            @filter="filterCoaches"
+          />
+        </q-card-section>
+
+        <!-- Paso 2: Información Financiera -->
+        <q-card-section v-if="currentStep === 2">
+          <q-input v-model="priceForOne" label="Precio por una persona" filled type="number" />
+          <q-input v-model="priceForTwo" label="Precio por dos personas" filled type="number" />
+          <q-input v-model="priceForThree" label="Precio por tres personas" filled type="number" />
+          <q-input v-model="priceForFour" label="Precio por cuatro personas" filled type="number" />
+        </q-card-section>
+
+        <!-- Paso 3: Información del Coach -->
+        <q-card-section v-if="currentStep === 3">
+          <q-input v-model="coachResume" label="Resumen del Coach" filled type="textarea" />
+          <q-input v-model="coachFocus" label="Enfoque del Coach" filled type="textarea" />
+        </q-card-section>
+
+        <!-- Paso 4: Disponibilidad -->
+        <q-card-section v-if="currentStep === 4">
+          <q-list bordered>
+            <q-item v-for="(schedule, index) in generalSchedule" :key="index" class="q-mb-md">
+              <q-item-section>
+                <div class="text-bold">{{ daysOfWeek[index] }}</div>
+                <!-- Toggle para activar/desactivar el día -->
+                <q-toggle
+                  v-model="generalSchedule[index].is_open"
+                  label="¿Disponible?"
+                  dense
+                  color="black"
+                />
+              </q-item-section>
+              <q-item-section v-if="generalSchedule[index].is_open">
+                <!-- Inputs para la hora de inicio y fin -->
+                <q-input
+                  v-model="generalSchedule[index].start_time"
+                  label="Hora de inicio"
+                  dense
+                  outlined
+                  color="black"
+                  class="text-black"
+                  mask="time"
+                  :rules="['time']"
+                />
+                <q-input
+                  v-model="generalSchedule[index].end_time"
+                  label="Hora de fin"
+                  dense
+                  outlined
+                  color="black"
+                  class="text-black"
+                  mask="time"
+                  :rules="['time']"
+                />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="red" v-close-popup />
+          <q-btn flat label="Anterior" color="blue" @click="previousStep" v-if="currentStep > 1" />
+          <q-btn flat label="Siguiente" color="green" @click="nextStep" v-if="currentStep < 4" />
+          <q-btn flat label="Agregar" color="green" @click="addCoach" v-if="currentStep === 4" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
     </q-layout>
   </template>
   
@@ -103,14 +164,29 @@
       const userStore = useUserStore();
       const coaches = ref([]);
       const availableCoaches = ref([]);
+      const filteredAvailableCoaches = ref([]);
       const isCoachDialogOpen = ref(false);
       const selectedCoach = ref(null);
       const priceForOne = ref(null);
       const priceForTwo = ref(null);
       const priceForThree = ref(null);
       const priceForFour = ref(null);
+      const coachResume = ref("");
+      const coachFocus = ref("");
+      const currentStep = ref(1);
 
-  
+      // Disponibilidad
+      const daysOfWeek = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+      const generalSchedule = ref(
+        Array(7).fill(null).map(() => ({
+          is_open: false,
+          start_time: "09:00",
+          end_time: "13:00",
+        }))
+      );
+
+
+
       const goBack = () => {
         router.back();
       };
@@ -122,7 +198,7 @@
             .select(`
                 id, 
                 name, 
-                coach_resume, 
+                coach_focus, 
                 players(gender, photo_url, category)
             `)
             .eq("club_id", userStore.clubId)
@@ -133,7 +209,7 @@
           coaches.value = data.map((coach) => ({
             id: coach.id,
             name: coach.name,
-            coach_resume: coach.coach_resume,
+            coach_focus: coach.coach_focus,
             gender: coach.players?.gender || "Desconocido",
             photo_url: coach.players?.photo_url || null,
             category: coach.players?.category || "No especificado",
@@ -144,65 +220,103 @@
       };
   
       const fetchAvailableCoaches = async () => {
-        try {
-          const { data, error } = await api.get("/lessons/search-coaches");
-          if (error) throw error;
-          availableCoaches.value = data;
-        } catch (err) {
-          console.error("Error obteniendo coaches disponibles:", err.message);
-        }
-      };
-  
-      const openCoachDialog = async () => {
-        await fetchAvailableCoaches();
-        isCoachDialogOpen.value = true;
-      };
-  
-      const addCoach = async () => {
-        if (!selectedCoach.value) {
-          console.error("Debes seleccionar un jugador.");
-          return;
-        }
-  
-        try {
-          const payload = {
-            user_id: selectedCoach.value.user_id,
-            club_id: userStore.clubId,
-            price_for_one: priceForOne.value,
-            price_for_two: priceForTwo.value,
-            price_for_three: priceForThree.value,
-            price_for_four: priceForFour.value,
-          };
-  
-          const { data, error } = await api.post("/lessons/add-coach", payload);
-          if (error) throw error;
-  
-          console.log("Coach agregado:", data);
-          fetchCoaches();
-          isCoachDialogOpen.value = false;
-        } catch (err) {
-          console.error("Error agregando coach:", err.message);
-        }
-      };
-  
-      onMounted(fetchCoaches);
-  
-      return {
-        goBack,
-        coaches,
-        isCoachDialogOpen,
-        openCoachDialog,
-        availableCoaches,
-        selectedCoach,
-        priceForOne,
-        priceForTwo,
-        priceForThree,
-        priceForFour,
-        addCoach,
-      };
-    },
-  };
-  </script>
+      try {
+        const { data, error } = await api.get("/lessons/search-coaches");
+        if (error) throw error;
+        availableCoaches.value = data;
+        filteredAvailableCoaches.value = data;
+      } catch (err) {
+        console.error("Error obteniendo coaches disponibles:", err.message);
+      }
+    };
+
+    const filterCoaches = (val, update) => {
+      update(() => {
+        const needle = val.toLowerCase();
+        filteredAvailableCoaches.value = availableCoaches.value.filter(
+          (coach) => coach.name.toLowerCase().indexOf(needle) > -1
+        );
+      });
+    };
+
+    const openCoachDialog = async () => {
+      await fetchAvailableCoaches();
+      isCoachDialogOpen.value = true;
+      currentStep.value = 1;
+    };
+
+    const nextStep = () => {
+      currentStep.value++;
+    };
+
+    const previousStep = () => {
+      currentStep.value--;
+    };
+
+    const addCoach = async () => {
+      if (!selectedCoach.value) {
+        console.error("Debes seleccionar un jugador.");
+        return;
+      }
+
+      try {
+        const payload = {
+          user_id: selectedCoach.value.user_id,
+          club_id: userStore.clubId,
+          name: selectedCoach.value.name,
+          price_for_one: priceForOne.value,
+          price_for_two: priceForTwo.value,
+          price_for_three: priceForThree.value,
+          price_for_four: priceForFour.value,
+          coach_resume: coachResume.value,
+          coach_focus: coachFocus.value,
+          availability: generalSchedule.value
+            .filter((day) => day.is_open)
+            .map((day, index) => ({
+              day: daysOfWeek[index],
+              start_time: day.start_time,
+              end_time: day.end_time,
+            })),
+        };
+
+        const { data, error } = await api.post("/lessons/add-coach", payload);
+        if (error) throw error;
+
+        console.log("Coach agregado:", data);
+        fetchCoaches();
+        isCoachDialogOpen.value = false;
+      } catch (err) {
+        console.error("Error agregando coach:", err.message);
+      }
+    };
+
+    onMounted(fetchCoaches);
+
+    return {
+      goBack,
+      coaches,
+      isCoachDialogOpen,
+      openCoachDialog,
+      availableCoaches,
+      filteredAvailableCoaches,
+      selectedCoach,
+      priceForOne,
+      priceForTwo,
+      priceForThree,
+      priceForFour,
+      coachResume,
+      coachFocus,
+      currentStep,
+      nextStep,
+      previousStep,
+      addCoach,
+      filterCoaches,
+      daysOfWeek,
+      generalSchedule,
+    };
+  },
+};
+</script>
   
   
   <style scoped>
