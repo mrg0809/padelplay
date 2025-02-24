@@ -183,9 +183,9 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/players/club/:clubId",
+    path: "/player/lessons/:clubId",
     name: "ClubLessons",
-    component: () => import("src/pages/club/ClubLessons.vue"),
+    component: () => import("src/pages/player/ClubLessons.vue"),
   },
   { 
     path: "/player/community", 
