@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from app.routers import auth, blocks, community, courts, clubs, discounts, lessons, matches, notifications, players, products, reservations, tournaments
+from app.routers import auth, blocks, coaches, community, courts, clubs, discounts, lessons, matches, notifications, players, products, reservations, tournaments
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+
 
 #logging.basicConfig(level=logging.DEBUG)
 app = FastAPI()
@@ -17,6 +18,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(blocks.router, prefix="/block", tags=["Blocks"])
 app.include_router(clubs.router, prefix="/clubs", tags=["Clubs"])
+app.include_router(coaches.router, prefix="/coaches", tags=["Coaches"])
 app.include_router(courts.router, prefix="/courts", tags=["Courts"])
 app.include_router(community.router, prefix="/community", tags=["Community"])
 app.include_router(discounts.router, prefix="/promo", tags=["Discounts"])

@@ -4,105 +4,101 @@ from typing import List, Optional
 from app.core.security import get_current_user
 from app.db.connection import supabase
 import uuid
+from datetime import date, time, timedelta, datetime
 
 router = APIRouter()
 
-class Availability(BaseModel):
-    day: str 
-    start_time: str
-    end_time: str
-
-class CoachCreate(BaseModel):
-    user_id: str  # ID del jugador que se agregará como coach
-    club_id: str  # ID del club que lo agrega
+class LessonCreate(BaseModel):
+    club_id: str
+    court_id: str
+    lesson_date: date
+    lesson_time: time
+    duration: int
+    coach: str
+    lesson_type: str
     name: str
-    price_for_one: Optional[float] = None
-    price_for_two: Optional[float] = None
-    price_for_three: Optional[float] = None
-    price_for_four: Optional[float] = None
-    coach_resume: str
-    coach_focus: str
-    availability: List[Availability]
+    description: Optional[str] = None
+    price: float
 
-class CoachResponse(BaseModel):
-    user_id: str
+class LessonResponse(BaseModel):
+    id: str
+    club_id: str
+    court_id: str
+    lesson_date: date
+    lesson_time: time
+    duration: int
+    coach: str
+    lesson_type: str
     name: str
-    gender: Optional[str]
-    photo_url: Optional[str]
-    category: Optional[str]
+    description: Optional[str] = None
 
-@router.get("/search-coaches", response_model=List[CoachResponse])
-def search_coaches(current_user: dict = Depends(get_current_user)):
+@router.get("/", response_model=List[LessonResponse])
+def get_lessons(club_id: str, current_user: dict = Depends(get_current_user)):
     """
-    Devuelve la lista de jugadores que tienen is_coach=True y aún no están en un club como coach.
+    Obtiene la lista de lecciones públicas de un club.
     """
-    response = supabase.from_("players") \
-        .select("user_id, first_name, last_name, gender, photo_url, category") \
-        .eq("is_coach", True) \
+    response = supabase.from_("lessons") \
+        .select("*") \
+        .eq("club_id", club_id) \
+        .eq("lesson_type", "public") \
         .execute()
 
     if not response.data:
         return []
 
-    return [
-        {
-            "user_id": player["user_id"],
-            "name": f"{player['first_name']} {player['last_name']}",
-            "gender": player["gender"],
-            "photo_url": player["photo_url"],
-            "category": player["category"],
-        }
-        for player in response.data
-    ]
+    return response.data
 
-@router.post("/add-coach")
-def add_coach(data: CoachCreate, current_user: dict = Depends(get_current_user)):
+from datetime import datetime, timedelta
+
+@router.post("/")
+def create_lesson(data: LessonCreate, current_user: dict = Depends(get_current_user)):
     """
-    Permite que un club agregue un jugador como coach con sus precios establecidos.
+    Crea una nueva lección y bloquea la cancha durante el tiempo de la lección.
     """
-    # Verificar si el jugador ya es coach en otro club
-    response = supabase.from_("coaches") \
-        .select("id") \
-        .eq("user_id", data.user_id) \
-        .execute()
-
-    if response.data:
-        raise HTTPException(status_code=400, detail="Este jugador ya está registrado como coach en un club.")
-
-    print(data.user_id)
-    # Obtener la información del jugador
-    player_response = supabase.from_("players") \
-        .select("first_name, last_name") \
-        .eq("user_id", data.user_id) \
-        .execute()
-
-    if not player_response.data:
-        raise HTTPException(status_code=404, detail="Jugador no encontrado")
-
-    player = player_response.data[0]
-    coach_name = f"{player['first_name']} {player['last_name']}"
-
-    availability_dict = [availability.model_dump() for availability in data.availability]
-
-    # Insertar el coach en la tabla coaches
-    new_coach = {
+    # Crear la lección
+    new_lesson = {
         "id": str(uuid.uuid4()),
         "club_id": data.club_id,
-        "user_id": data.user_id,
-        "name": coach_name,
-        "price_for_one": data.price_for_one,
-        "price_for_two": data.price_for_two,
-        "price_for_three": data.price_for_three,
-        "price_for_four": data.price_for_four,
-        "is_active": True,
-        "coach_resume": data.coach_resume,
-        "coach_focus": data.coach_focus,
-        "availability": availability_dict,
+        "court_id": data.court_id,
+        "lesson_date": data.lesson_date.isoformat(),
+        "lesson_time": data.lesson_time.isoformat(),
+        "duration": data.duration,
+        "coach": data.coach,
+        "lesson_type": data.lesson_type,
+        "name": data.name,
+        "description": data.description,
+        "price": data.price,
     }
 
-    insert_response = supabase.from_("coaches").insert(new_coach).execute()
+    # Insertar la lección en la tabla lessons
+    insert_response = supabase.from_("lessons").insert(new_lesson).execute()
 
     if not insert_response:
-        raise HTTPException(status_code=500, detail="Error al agregar el coach")
+        raise HTTPException(status_code=500, detail="Error al crear la lección")
 
-    return {"message": "Coach agregado exitosamente"}
+    # Calcular el end_time de la lección
+    lesson_datetime = datetime.combine(data.lesson_date, data.lesson_time)
+    end_datetime = lesson_datetime + timedelta(minutes=data.duration)
+    end_time = end_datetime.time()
+
+    # Crear el bloqueo de la cancha
+    new_block = {
+        "id": str(uuid.uuid4()),
+        "club_id": data.club_id,
+        "court_id": data.court_id,
+        "start_date": data.lesson_date.isoformat(),
+        "start_time": data.lesson_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "end_date": data.lesson_date.isoformat(),  # Asumimos que el bloqueo es para un solo día
+        "reason": f"Lección: {new_lesson['name']}",  # Razón del bloqueo
+    }
+
+    # Insertar el bloqueo en la tabla court_blocks
+    block_response = supabase.from_("court_blocks").insert(new_block).execute()
+
+    if not block_response:
+        # Si falla el bloqueo, eliminar la lección creada (rollback)
+        supabase.from_("lessons").delete().eq("id", new_lesson["id"]).execute()
+        raise HTTPException(status_code=500, detail="Error al bloquear la cancha")
+
+    return {"message": "Lección creada y cancha bloqueada exitosamente"}

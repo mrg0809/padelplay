@@ -27,7 +27,7 @@
                         <img :src="coach.photo_url || 'default-avatar.png'" />
                       </q-avatar>
                     </q-item-section>
-                    <q-item-section>     
+                    <q-item-section @click="goToCoachProfile(coach.id)">     
                       <q-item-label>{{ coach.name }}</q-item-label>
                       <q-item-label caption v-if="coach.coach_focus">
                         {{ coach.coach_focus }}
@@ -77,15 +77,16 @@
             filled
             use-input
             @filter="filterCoaches"
+            class="custom-select"
           />
         </q-card-section>
 
         <!-- Paso 2: Información Financiera -->
         <q-card-section v-if="currentStep === 2">
-          <q-input v-model="priceForOne" label="Precio por una persona" filled type="number" />
-          <q-input v-model="priceForTwo" label="Precio por dos personas" filled type="number" />
-          <q-input v-model="priceForThree" label="Precio por tres personas" filled type="number" />
-          <q-input v-model="priceForFour" label="Precio por cuatro personas" filled type="number" />
+          <q-input v-model="priceForOne" label="Entrenamiento individual" filled type="number" />
+          <q-input v-model="priceForTwo" label="Entrenamiento pareja" filled type="number" />
+          <q-input v-model="priceForThree" label="Entrenamiento 3 jugadores" filled type="number" />
+          <q-input v-model="priceForFour" label="Entrenamiento 4 jugadores" filled type="number" />
         </q-card-section>
 
         <!-- Paso 3: Información del Coach -->
@@ -185,7 +186,10 @@
         }))
       );
 
-
+      const goToCoachProfile = (coachId) => {
+        console.log('ir al coach')
+        router.push({ name: "CoachProfile", params: { id: coachId }})
+      }
 
       const goBack = () => {
         router.back();
@@ -221,7 +225,7 @@
   
       const fetchAvailableCoaches = async () => {
       try {
-        const { data, error } = await api.get("/lessons/search-coaches");
+        const { data, error } = await api.get("/coaches/search-coaches");
         if (error) throw error;
         availableCoaches.value = data;
         filteredAvailableCoaches.value = data;
@@ -279,7 +283,7 @@
             })),
         };
 
-        const { data, error } = await api.post("/lessons/add-coach", payload);
+        const { data, error } = await api.post("/coaches/add-coach", payload);
         if (error) throw error;
 
         console.log("Coach agregado:", data);
@@ -313,6 +317,7 @@
       filterCoaches,
       daysOfWeek,
       generalSchedule,
+      goToCoachProfile,
     };
   },
 };
@@ -369,5 +374,13 @@
   .text-grey {
     color: #aaa;
   }
+
+  .custom-select .q-select__dialog {
+  background-color: #ffcc00; /* Color de fondo personalizado */
+}
+
+.custom-select .q-select__dialog.q-select__dialog--dark {
+  background-color: #333333; /* Color de fondo para el modo oscuro */
+}
   </style>
   

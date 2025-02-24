@@ -104,6 +104,12 @@ const routes = [
     component: () => import("src/pages/club/ClubPayments.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/club/coach-profile/:id',
+    name: 'CoachProfile',
+    component: () => import("src/pages/club/CoachProfile.vue"),
+    meta: { requiresAuth: true },
+  },
   { 
     path: "/club/productos", 
     component: () => import("src/pages/club/ManageProducts.vue"),
