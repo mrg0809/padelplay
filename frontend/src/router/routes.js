@@ -178,6 +178,16 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { 
+    path: "/player/clases", 
+    component: () => import("src/pages/player/ListLessonsClubs.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/players/club/:clubId",
+    name: "ClubLessons",
+    component: () => import("src/pages/club/ClubLessons.vue"),
+  },
+  { 
     path: "/player/community", 
     component: () => import("src/pages/player/PlayerCommunity.vue"),
     meta: { requiresAuth: true },
@@ -190,11 +200,6 @@ const routes = [
   { 
     path: "/player/inicio", 
     component: () => import("src/pages/DashboardPlayer.vue"),
-    meta: { requiresAuth: true },
-  },
-  { 
-    path: "/player/lessons", 
-    component: () => import("src/pages/player/ListLessons.vue"),
     meta: { requiresAuth: true },
   },
   { 

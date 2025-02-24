@@ -4,6 +4,7 @@
         <div class="header-content">
           <div class="greeting">
             <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+            Clubs
           </div>
       <!-- Iconos de la derecha -->
           <div class="header-icons">
@@ -173,8 +174,8 @@ watch(searchQuery, (newQuery) => {
       }
     };
 
-    const viewClubDetails = (clubId, tabName = "reservations") => {
-      router.push({ path: `/club/${clubId}`, query: { tab: tabName } });
+    const viewClubDetails = (clubId, tabName = "clases") => {
+      router.push({ path: `/player/clubs/${clubId}`, query: { tab: tabName } });
     };
 
     const goBack = () => {

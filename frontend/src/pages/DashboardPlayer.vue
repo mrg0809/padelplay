@@ -101,15 +101,15 @@
           },
           {
             name: "Inscríbete a torneos",
-            icon: "emoji_events",
+            icon: "o_emoji_events",
             image_url: "/src/assets/menu/torneos.jpeg",
             route: "torneos"
           },
           {
             name: "Clases de Pádel",
-            icon: "school",
+            icon: "o_school",
             image_url: "/src/assets/menu/clases.jpeg",
-            route: "lessons"
+            route: "clases"
           },
         ],
         matches: [], // Aquí se almacenan los partidos próximos
