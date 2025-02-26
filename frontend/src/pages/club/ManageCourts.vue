@@ -158,8 +158,8 @@
 </template>
 
 <script>
-import { getUserFromToken } from "src/api";
-import api from "../../api";
+import { getUserFromToken } from "src/services/api";
+import api from "../../services/api";
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 
 export default {

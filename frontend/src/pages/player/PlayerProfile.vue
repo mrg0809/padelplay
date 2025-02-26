@@ -49,7 +49,7 @@
               </q-item>
 
               <q-item>
-                  <q-item-label>Fecha de nacimiento:  {{ formatDate(player.birth_date) }} </q-item-label>
+                  <q-item-label>Fecha de nacimiento:  {{ formatLongDate(player.birth_date) }} </q-item-label>
               </q-item>
 
               <q-item>
@@ -122,136 +122,66 @@
   </q-layout>
 </template>
 
-<script>
+
+<script setup>
 import { ref, onMounted } from "vue";
-import api from "../../api";
-import { supabase } from "../../services/supabase";
-import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
+import { fetchPlayer } from "../../services/supabase/players";
+import { formatLongDate } from "../../helpers/dateUtils";
+import { uploadPhoto } from "../../helpers/uploadFileUtils";
+import { shareProfile } from "../../helpers/shareUtils";
+
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 
-export default {
-  components: {
-    BannerPromoScrolling,
-    NotificationBell,
-    PlayerNavigationMenu,
-    PlayerTopMenu,
-  },
+const router = useRouter();
+const fileInput = ref(null);
 
-  data() {
-    return {
-      player: {
-        first_name: "",
-        last_name: "",
-        birth_date: "",
-        phone: "",
-        gender: "",
-        preferred_hand: "",
-        position: "",
-        photo_url: null,
-        category: "sexta",
-      },
-      categories: ["primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "profesional"],
-    };
-  },
-  methods: {
-    async fetchPlayer() {
-      try {
-        const { data, error } = await supabase.from("players").select("*").single();
-        if (error) throw error;
-        this.player = data;
-      } catch (err) {
-        console.error("Error al obtener datos del jugador:", err.message);
-      }
-    },
-    formatDate(date) {
-      if (!date) return "No especificado";
-      const options = { year: "numeric", month: "long", day: "numeric" };
-      return new Date(date).toLocaleDateString("es-MX", options);
-    },
-    editProfile() {
-      this.$router.push("/player/editarinfo");
-    },
-    async shareProfile() {
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `Perfil de ${this.player.first_name}`,
-            text: `Mira el perfil de ${this.player.first_name}, categoría ${this.player.category}.`,
-            url: window.location.href,
-          });
-          console.log("Perfil compartido exitosamente");
-        } catch (err) {
-          console.error("Error al compartir el perfil:", err.message);
-        }
-      } else {
-        alert("La funcionalidad de compartir no es compatible con este dispositivo.");
-      }
-    },
-    triggerFileUpload() {
-      this.$refs.fileInput.click(); // Simula el clic en el input de archivo
-    },
-    async handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        if (file.size > 2 * 1024 * 1024) {
-          this.$q.notify({
-            type: "negative",
-            message: "El archivo es demasiado grande (máximo 2MB).",
-          });
-          return;
-        }
-        if (!file.type.startsWith("image/")) {
-          this.$q.notify({
-            type: "negative",
-            message: "El archivo debe ser una imagen.",
-          });
-          return;
-        }
+const player = ref({
+  first_name: "",
+  last_name: "",
+  birth_date: "",
+  phone: "",
+  gender: "",
+  preferred_hand: "",
+  position: "",
+  photo_url: null,
+  category: "sexta",
+});
 
-        this.uploadPhoto(file);
-      }
-    },
-    async uploadPhoto(file) {
-      const formData = new FormData();
-      formData.append("file", file);
+const categories = ["primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "profesional"];
 
-      try {
-        const response = await api.post("/players/upload-photo", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Incluye el token
-          },
-        });
-
-        this.player.photo_url = response.data.photo_url;
-
-        this.$q.notify({
-          type: "positive",
-          message: "Foto de perfil actualizada exitosamente",
-        });
-      } catch (error) {
-        console.error("Error al subir foto de perfil:", error.message);
-        this.$q.notify({
-          type: "negative",
-          message: "Error al subir foto de perfil",
-        });
-      }
-    },
-    goBack() {
-      this.$router.back();
-    },
-    goToCommunity() {
-      this.$router.push("/player/community");
-    },
-  },
-  mounted() {
-    this.fetchPlayer();
-  },
+const loadPlayer = async () => {
+  const playerData = await fetchPlayer();
+  if (playerData) player.value = playerData;
 };
+
+const triggerFileUpload = () => {
+  fileInput.value.click();
+};
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) uploadPhoto(file, player.value);
+};
+
+const editProfile = () => {
+  router.push("/player/editarinfo");
+};
+
+const goBack = () => {
+  router.go(-1);
+};
+
+const goToCommunity = () => {
+  router.push("/player/community");
+};
+
+onMounted(loadPlayer);
 </script>
+
 
 <style scoped>
   .q-list {

@@ -70,7 +70,7 @@
   import { ref, onMounted } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
-  import api from "../../api";
+  import api from "../../services/api";
   
   export default {
     setup() {

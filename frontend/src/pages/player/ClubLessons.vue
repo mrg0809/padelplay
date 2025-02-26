@@ -59,7 +59,7 @@
   import { supabase } from "../../services/supabase";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
-  import api from "../../api";
+  import api from "../../services/api";
   import "leaflet/dist/leaflet.css";
   import L from "leaflet";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";

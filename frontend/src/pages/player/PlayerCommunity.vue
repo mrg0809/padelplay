@@ -46,11 +46,11 @@
                 <q-item v-for="player in following" :key="player.user_id" clickable @click="viewPlayerProfile(player.user_id)">
                   <q-item-section avatar>
                     <q-avatar>
-                      <img :src="player.photo_url || '/src/assets/logo.jpeg'" />
+                      <img :src="getPlayerAvatar(player.photo_url)" />
                     </q-avatar>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label>{{ player.first_name }} {{ player.last_name }}</q-item-label>
+                    <q-item-label>{{ formatPlayerName(player) }}</q-item-label>
                     <q-item-label caption>{{ player.category }}</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -63,11 +63,11 @@
                 <q-item v-for="player in followers" :key="player.user_id" clickable @click="viewPlayerProfile(player.user_id)">
                   <q-item-section avatar>
                     <q-avatar>
-                      <img :src="player.photo_url || '/src/assets/logo.jpeg'" />
+                      <img :src="getPlayerAvatar(player.photo_url)" />
                     </q-avatar>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label>{{ player.first_name }} {{ player.last_name }}</q-item-label>
+                    <q-item-label>{{ formatPlayerName(player) }}</q-item-label>
                     <q-item-label caption>{{ player.category }}</q-item-label>
                   </q-item-section>
                 </q-item>
@@ -80,11 +80,11 @@
                 <q-item v-for="player in suggestedPlayers" :key="player.user_id" clickable @click="viewPlayerProfile(player.user_id)">
                   <q-item-section avatar>
                     <q-avatar>
-                      <img :src="player.photo_url || '/src/assets/logo.jpeg'" />
+                      <img :src="getPlayerAvatar(player.photo_url)" />
                     </q-avatar>
                   </q-item-section>
                   <q-item-section>
-                    <q-item-label>{{ player.first_name }} {{ player.last_name }}</q-item-label>
+                    <q-item-label>{{ formatPlayerName(player) }}</q-item-label>
                     <q-item-label caption>{{ player.category }}</q-item-label>
                   </q-item-section>
                   <q-item-section side>
@@ -112,11 +112,12 @@
   <script>
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { supabase } from "../../services/supabase";
-import { useUser } from 'src/composables/useUser'; // Importa el composable del usuario
+import { useUserStore } from "src/stores/userStore";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+import { fetchFollowing, fetchFollowers, fetchSuggestedPlayers, searchPlayersByName, isFollowingPlayer, unfollowPlayerSupabase, followPlayerSupabase } from 'src/services/supabase/community';
+import { getPlayerAvatar, formatPlayerName } from 'src/helpers/communityUtils';
 
 export default {
   components: {
@@ -129,102 +130,52 @@ export default {
     const searchQuery = ref("");
     const searching = ref(false);
     const selectedTab = ref("following"); // Pestaña seleccionada por defecto
+    const userStore = useUserStore();
     const following = ref([]);
     const followers = ref([]);
     const suggestedPlayers = ref([]);
-    const { user, isLoading } = useUser(); 
+    const isLoading = ref(true);
 
-    // Función para obtener la lista de jugadores a los que sigue el usuario actual
-    const fetchFollowing = async () => {
+    // Load following players
+    const loadFollowing = async () => {
       try {
-        const { data, error } = await supabase
-          .from("follows")
-          .select(`
-            followed_id:followed_id (
-              user_id,
-              first_name,
-              last_name,
-              photo_url,
-              category
-            )
-          `)
-          .eq("follower_id", user.value.id);
-
-        if (error) throw error;
-        following.value = data.map(item => item.followed_id);
+        console.log("Loading following for user:", userStore.userId);
+        following.value = await fetchFollowing(userStore.userId);
       } catch (error) {
-        console.error("Error fetching following:", error);
+        console.error("Error loading following:", error);
       }
     };
 
-    // Función para obtener la lista de seguidores del usuario actual
-    const fetchFollowers = async () => {
+    // Load followers
+    const loadFollowers = async () => {
       try {
-        const { data, error } = await supabase
-          .from("follows")
-          .select(`
-            follower_id:follower_id (
-              user_id,
-              first_name,
-              last_name,
-              photo_url,
-              category
-            )
-          `)
-          .eq("followed_id", user.value.id);
-
-        if (error) throw error;
-        followers.value = data.map(item => item.follower_id);
+        followers.value = await fetchFollowers(userStore.userId);
       } catch (error) {
-        console.error("Error fetching followers:", error);
+        console.error("Error loading followers:", error);
       }
     };
 
-    // Función para obtener sugerencias de jugadores para seguir
-    const fetchSuggestedPlayers = async () => {
+    // Load suggested players
+    const loadSuggestedPlayers = async () => {
       searching.value = true;
       try {
-        // Obtener los IDs de los jugadores que el usuario actual ya sigue
-        const { data: followingIdsData, error: followingIdsError } = await supabase
-          .from("follows")
-          .select("followed_id")
-          .eq("follower_id", user.value.id);
-
-        if (followingIdsError) throw followingIdsError;
-        const followingIds = followingIdsData.map((f) => f.followed_id);
-
-        // Obtener todos los jugadores excepto los que el usuario actual ya sigue y el usuario actual
-        const { data: players, error } = await supabase
-          .from("players")
-          .select("*")
-          .neq("user_id", user.value.id)
-          .not("user_id", "in", `(${followingIds.join(",")})`);
-
-        if (error) throw error;
-
-        suggestedPlayers.value = players;
+        suggestedPlayers.value = await fetchSuggestedPlayers(userStore.userId);
       } catch (error) {
-        console.error("Error fetching suggested players:", error);
+        console.error("Error loading suggested players:", error);
       } finally {
         searching.value = false;
       }
     };
 
-    // Busca jugadores basado en el texto ingresado
+    // Search players by name
     const searchPlayers = async () => {
       searching.value = true;
       try {
-        // Modifica la consulta para buscar por nombre
-        const { data, error } = await supabase
-          .from("players")
-          .select("*")
-          .ilike("first_name", `%${searchQuery.value}%`); // Búsqueda insensible a mayúsculas/minúsculas
-
-        if (error) throw error;
-
-        // Si la pestaña de sugerencias está activa, actualiza la lista de sugerencias
+        const players = await searchPlayersByName(searchQuery.value.trim());
+        
+        // Update the appropriate list based on active tab
         if (selectedTab.value === "suggestions") {
-          suggestedPlayers.value = data;
+          suggestedPlayers.value = players;
         }
       } catch (error) {
         console.error("Error searching players:", error);
@@ -233,83 +184,59 @@ export default {
       }
     };
 
-    // Función para determinar si el usuario actual sigue a otro jugador
+    // Check if current user is following a player
     const isFollowing = (playerId) => {
-      return following.value.some((p) => p.user_id === playerId);
+      return following.value && isFollowingPlayer(following.value, playerId);
     };
 
-    // Observar cambios en la pestaña seleccionada y cargar datos en consecuencia
+    // Observe changes in the selected tab and load data accordingly
     watch(selectedTab, (newTab) => {
       if (newTab === "following") {
-        fetchFollowing();
+        loadFollowing();
       } else if (newTab === "followers") {
-        fetchFollowers();
+        loadFollowers();
       } else if (newTab === "suggestions") {
-        fetchSuggestedPlayers();
+        loadSuggestedPlayers();
       }
     });
 
-    // Cargar datos al montar el componente
+    // Load data when the component mounts
     onMounted(() => {
-        if (!isLoading.value && user.value) {
-            fetchFollowing();
-            fetchFollowers();
-            fetchSuggestedPlayers();
+        if (userStore.userId) {
+            isLoading.value = false;
+            loadFollowing();
+            loadFollowers();
+            loadSuggestedPlayers();
+        } else {
+            console.error("No user ID found in userStore");
+            isLoading.value = false;
         }
     });
 
-    watch(isLoading, (newIsLoading) => {
-         if (!newIsLoading && user.value) {
-             console.log("isLoading changed to false, user.value:", user.value);
-             fetchFollowing();
-             fetchFollowers();
-             fetchSuggestedPlayers();
-         }
-     });
-    
-    //Funcion para seguir
+    // Follow a player
     const followPlayer = async (playerId) => {
-        try {
-            const response = await fetch('/.netlify/functions/follow-player', {
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ followed_id: playerId }),
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al seguir al jugador');
-            }
-            const data = await response.json();
-            console.log('Follow successful:', data);
-            // Recargar las listas después de seguir
-            fetchFollowing();
-            fetchFollowers();
-            fetchSuggestedPlayers();
-
-        } catch (error) {
-            console.error('Error following player:', error);
-            // Manejar el error, por ejemplo, mostrando un mensaje al usuario
-        }
+      try {
+        await followPlayerSupabase(userStore.userId, playerId);
+        // Reload lists after following
+        loadFollowing();
+        loadFollowers();
+        loadSuggestedPlayers();
+      } catch (error) {
+        console.error('Error following player:', error);
+        // Handle error, e.g., show a message to the user
+      }
     };
 
-    // Función para dejar de seguir a un jugador
+    // Unfollow a player
     const unfollowPlayer = async (playerId) => {
-      const { error } = await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', user.value.id)
-        .eq('followed_id', playerId);
-
-      if (error) {
+      try {
+        await unfollowPlayerSupabase(userStore.userId, playerId);
+        // Reload lists after unfollowing
+        loadFollowing();
+        loadFollowers();
+        loadSuggestedPlayers();
+      } catch (error) {
         console.error("Error unfollowing player:", error);
-      } else {
-        // Recargar las listas después de dejar de seguir
-        fetchFollowing();
-        fetchFollowers();
-        fetchSuggestedPlayers();
       }
     };
 
@@ -327,14 +254,15 @@ export default {
         router.push(`/player/${playerId}`);
       },
       followPlayer,
-      unfollowPlayer
+      unfollowPlayer,
+      getPlayerAvatar,
+      formatPlayerName
     };
   },
 };
 </script>
   
 <style>
-
     .home {
         background-color: #dddddd;
     }
@@ -377,7 +305,4 @@ export default {
   max-width: 800px;
   margin: 0 auto;
 }
-
-
 </style>
-  

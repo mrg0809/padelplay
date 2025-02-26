@@ -1,12 +1,11 @@
 <template>
     <q-layout view="hHh lpR fFf">
-      <!-- Encabezado -->
       <q-header elevated class="text-white">
         <div class="header-content">
       <!-- Saludo -->
           <div class="greeting">
             <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-            Bienvenido {{full_name}}
+            Bienvenido {{userStore.fullName}}
           </div>
       <!-- Iconos de la derecha -->
           <div class="header-icons">
@@ -18,9 +17,7 @@
       </q-header>
   
       <q-page-container>
-      
         
-  
         <div class="home">
           <div class="options">
             <div v-for="option in options" :key="option.name" class="option-card" @click="navigateTo(option.route)"> 
@@ -67,12 +64,15 @@
   </template>
   
   <script>
+  import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import NotificationBell from "../components/NotificationBell.vue";
-  import api from "../api";
   import NavigationMenu from "../components/PlayerNavigationMenu.vue";
   import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
-  import { ref } from 'vue';
+  import { useUserStore } from "src/stores/userStore";
+  import { fetchUpcomingPlayerMatches } from "src/services/api/matches";
+  import { formatDate } from 'src/helpers/dateUtils';
 
   export default {
     name: "DashboardPlayer",
@@ -82,87 +82,72 @@
       PlayerTopMenu,
       BannerPromoScrolling,
     },
-    data() {
-      return {
-        full_name: null,
-        options: [
-          {
-            name: "Reserva tu cancha",
-            description: "Encuentra tu club favorito",
-            icon: "edit_calendar",
-            image_url: "/src/assets/menu/reserva.jpeg",
-            route: "reservas",
-          },
-          {
-            name: "Únete a un partido",
-            icon: "sports_tennis",
-            image_url: "/src/assets/menu/unete.jpeg",
-            route: "unete",
-          },
-          {
-            name: "Inscríbete a torneos",
-            icon: "o_emoji_events",
-            image_url: "/src/assets/menu/torneos.jpeg",
-            route: "torneos"
-          },
-          {
-            name: "Clases de Pádel",
-            icon: "o_school",
-            image_url: "/src/assets/menu/clases.jpeg",
-            route: "clases"
-          },
-        ],
-        matches: [], // Aquí se almacenan los partidos próximos
-        activeMatch: null,
-      };
-    },
     setup() {
+      const router = useRouter();
       const isLoading = ref(true);
-      return { isLoading }
-    },
-    methods: {
-      async fetchMatches() {
+      const matches = ref([]);
+      const full_name = ref(null);
+      const userStore = useUserStore();
+
+      const options = [
+        {
+          name: "Reserva tu cancha",
+          icon: "edit_calendar",
+          image_url: "/src/assets/menu/reserva.jpeg",
+          route: "reservas",
+        },
+        {
+          name: "Únete a un partido",
+          icon: "sports_tennis",
+          image_url: "/src/assets/menu/unete.jpeg",
+          route: "unete",
+        },
+        {
+          name: "Inscríbete a torneos",
+          icon: "o_emoji_events",
+          image_url: "/src/assets/menu/torneos.jpeg",
+          route: "torneos",
+        },
+        {
+          name: "Clases de Pádel",
+          icon: "o_school",
+          image_url: "/src/assets/menu/clases.jpeg",
+          route: "clases",
+        },
+      ];
+
+      const fetchMatches = async () => {
         try {
-          const response = await api.get("/matches/upcoming");
-          this.matches = response.data.matches;
+          matches.value = await fetchUpcomingPlayerMatches();
         } catch (error) {
           console.error("Error al cargar partidos:", error);
-          this.$q.notify({
-            type: "negative",
-            message: "No se pudieron cargar los partidos.",
-          });
         } finally {
-          this.isLoading = false;
+          isLoading.value = false;
         }
-      },
-      formatDate(date) {
-        const [year, month, day] = date.split('-').map(Number); 
-        const localDate = new Date(year, month - 1, day); // Crear fecha en zona horaria local
-        return localDate.toLocaleDateString("es-MX", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        });
-      },
-      navigateToMatch(matchId) {
-        this.$router.push(`/player/match/${matchId}`);
-      },
-      navigateTo(route) {
-        this.$router.push(`/player/${route}`);
-      },
-      fetchUserNameFromToken() {
-        const token = localStorage.getItem("token");
-        if (token) {
-          const base64Url = token.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const payload = JSON.parse(atob(base64));
-          this.full_name = payload.full_name || "Usuario";
-        }
-      },
-    },
-    mounted() {
-      this.fetchUserNameFromToken();
-      this.fetchMatches();
+      };
+
+      const navigateToMatch = (matchId) => {
+        router.push(`/player/match/${matchId}`);
+      };
+
+      const navigateTo = (route) => {
+        router.push(`/player/${route}`);
+      };
+
+      onMounted(() => {
+        fetchMatches();
+      });
+
+      return {
+        full_name,
+        options,
+        matches,
+        isLoading,
+        formatDate,
+        navigateToMatch,
+        navigateTo,
+        userStore,
+      };
     },
   };
   </script>

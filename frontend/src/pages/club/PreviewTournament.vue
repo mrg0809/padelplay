@@ -62,7 +62,7 @@
   
   <script>
   import { supabase } from "src/services/supabase";
-  import api from "src/api";
+  import api from "src/services/api";
   import { useRoute, useRouter } from "vue-router"; 
   import { ref, onMounted } from 'vue';
   import { useQuasar } from 'quasar'; 

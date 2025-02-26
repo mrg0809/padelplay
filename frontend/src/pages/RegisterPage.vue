@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import api from "../api";
+import api from "../services/api";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 

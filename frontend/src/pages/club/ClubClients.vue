@@ -56,7 +56,7 @@
   
   <script>
   import { supabase } from "src/services/supabase";
-  import api from "../../api";
+  import api from "../../services/api";
   import { useUserStore } from "src/stores/userStore";
   import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
   

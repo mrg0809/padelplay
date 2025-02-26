@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import api from "../api";
+import api from "../services/api";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore } from "src/stores/userStore"; // Importa el store de Pinia

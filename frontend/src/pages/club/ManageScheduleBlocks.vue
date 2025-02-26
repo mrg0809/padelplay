@@ -266,9 +266,9 @@
 
 <script>
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-import api from "../../api";
+import api from "../../services/api";
 import { supabase } from "src/services/supabase";
-import { getUserFromToken } from "src/api";
+import { getUserFromToken } from "src/services/api";
 
 export default {
   data() {

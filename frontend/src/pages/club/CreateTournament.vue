@@ -97,7 +97,7 @@
 
 <script>
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-import api from "../../api"; // Asegúrate de importar tu configuración de API
+import api from "../../services/api"; // Asegúrate de importar tu configuración de API
 import { supabase } from "src/services/supabase";
 
 export default {

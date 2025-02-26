@@ -207,7 +207,7 @@
 </template>
 
 <script>
-import api from "../../api";
+import api from "../../services/api";
 import dayjs from "dayjs";
 import 'dayjs/locale/es-mx'
 import { ref, onMounted } from "vue";

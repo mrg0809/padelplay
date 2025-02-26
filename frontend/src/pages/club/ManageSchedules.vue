@@ -79,7 +79,7 @@
 
 <script>
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-import api from "../../api";
+import api from "../../services/api";
 
 export default {
   data() {

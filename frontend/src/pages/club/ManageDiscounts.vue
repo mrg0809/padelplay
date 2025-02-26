@@ -154,7 +154,7 @@
   import { onMounted, reactive, ref } from 'vue';
   import ClubNavigationMenu from 'src/components/ClubNavigationMenu.vue';
   import { useQuasar } from "quasar";
-  import api from "../../api";
+  import api from "../../services/api";
   
   export default {
     components: { ClubNavigationMenu },

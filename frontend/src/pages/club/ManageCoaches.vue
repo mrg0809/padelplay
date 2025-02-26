@@ -153,7 +153,7 @@
   import { useRouter } from "vue-router";
   import { useUserStore } from "src/stores/userStore";
   import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-  import api from "../../api";
+  import api from "../../services/api";
   
   export default {
     name: "ManageCoaches",

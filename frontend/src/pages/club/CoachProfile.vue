@@ -177,7 +177,7 @@
   import { ref, onMounted } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
-  import api from "../../api"; 
+  import api from "../../services/api"; 
   import { supabase } from "src/services/supabase";
   
   export default {

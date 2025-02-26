@@ -71,7 +71,7 @@ import { supabase } from "src/services/supabase";
 import { useRouter } from "vue-router";
 import { useQuasar } from 'quasar';
 import { useUserStore } from "src/stores/userStore";
-import api from "../../api";
+import api from "../../services/api";
 import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
 
 export default {
