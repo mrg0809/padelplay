@@ -1,5 +1,5 @@
 <template>
-    <q-card class="tabs-section">
+    <q-card class="tabs-section" v-if="days && days.length > 0">
       <q-card-section>
         <div class="q-mt-lg days-container">
           <q-btn flat icon="arrow_back" @click="previousWeek" />
@@ -19,10 +19,10 @@
           <q-btn flat icon="arrow_forward" @click="nextWeek" />
         </div>
         <div class="available-times q-mt-lg">
-          <div v-if="loadingTimes" class="text-center">
+          <div v-if="loadingTimes === true" class="text-center">
             <q-spinner-dots color="white" size="xl" />
           </div>
-          <div v-else class="time-grid">
+          <div v-else-if="consolidatedTimes.length > 0" class="time-grid">
             <q-btn
               v-for="time in consolidatedTimes"
               :key="time"
@@ -32,13 +32,16 @@
               @click="selectTime(time)"
             />
           </div>
+          <div v-else class="text-center">
+            No available times for the selected day.
+          </div>
         </div>
         <div v-if="selectedTime" class="q-mt-lg">
           <h5>Canchas disponibles para {{ selectedTime }}:</h5>
-          <div v-if="loadingCourts" class="text-center">
+          <div v-if="loadingCourts === true" class="text-center">
             <q-spinner-dots color="white" size="lg" />
           </div>
-          <div v-else>
+          <div v-else-if="availableCourts.length > 0">
             <q-list bordered separator>
               <q-expansion-item
                 v-for="court in availableCourts"
@@ -68,6 +71,9 @@
               </q-expansion-item>
             </q-list>
           </div>
+          <div v-else class="text-center">
+            No available courts for the selected time.
+          </div>
         </div>
       </q-card-section>
     </q-card>
@@ -76,14 +82,14 @@
   <script>
   export default {
     props: {
-      days: Array,
-      selectedDay: String,
-      consolidatedTimes: Array,
-      selectedTime: String,
-      loadingTimes: Boolean,
-      availableCourts: Array,
-      loadingCourts: Boolean,
-      timeOptions: Array,
+      days: { type: Array, default: () => [] },
+      selectedDay: { type: String, default: "" },
+      consolidatedTimes: { type: Array, default: () => [] },
+      selectedTime: { type: String, default: "" },
+      loadingTimes: { type: Boolean, default: false },
+      availableCourts: { type: Array, default: () => [] },
+      loadingCourts: { type: Boolean, default: false },
+      timeOptions: { type: Array, default: () => [] },
     },
     methods: {
       previousWeek() {
@@ -96,7 +102,7 @@
         this.$emit('select-day', day);
       },
       selectTime(time) {
-        this.$emit('select-time', time);
+        this.$emit('select-time', time || "");
       },
       selectDuration(option, court) {
         this.$emit('select-duration', { option, court });

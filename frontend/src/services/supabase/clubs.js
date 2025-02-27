@@ -1,6 +1,5 @@
 import { supabase } from "../supabase";
 
-
 //Buscar clubs por geolocation o por nombre
 export const searchClubs = async (query, userLocation = null) => {
   try {
@@ -41,15 +40,29 @@ export const searchClubs = async (query, userLocation = null) => {
   }
 };
 
+export async function getClubDetails(clubId) {
+  try {
+    console.log("Fetching club details for ID:", clubId);
+    const { data: clubData, error } = await supabase
+      .from('clubs')
+      .select("*")
+      .eq("id", clubId)
+      .single();
 
-// Obtener detalles del club
-export const getClubDetails = async (clubId) => {
-    const { data, error } = await supabase
-    .from("clubs")
-    .select("*, geolocation, latitude, longitude, city, state, country")
-    .eq("id", clubId)
-    .single();
+    if (error) {
+      console.error("Error fetching club details:", error);
+      throw error;
+    }
 
-  if (error) throw Error(error.message);
-  return data;
-};
+    if (clubData && Object.keys(clubData).length > 0) {
+      console.log("Club details fetched successfully:", clubData);
+      return clubData;
+    } else {
+      console.log("No club details found for ID:", clubId);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching club details:", error);
+    throw error;
+  }
+}

@@ -20,7 +20,7 @@
   <script>
   export default {
     props: {
-      tournaments: Array,
+      tournaments: { type: Array, default: () => [] },
     },
     methods: {
       goToTournamentDetails(tournamentId) {

@@ -1,16 +1,16 @@
 <template>
   <q-card class="tabs-section">
     <q-card-section>
-      <p><strong>Dirección:</strong> {{ clubDetails?.address || "No disponible" }}</p>
-      <p v-if="clubDetails?.city">
+      <p v-if="clubDetails"><strong>Dirección:</strong> {{ clubDetails.address || "No disponible" }}</p>
+      <p v-if="clubDetails && clubDetails.city">
         <strong>Ciudad:</strong> {{ clubDetails.city }}, {{ clubDetails.state }}, {{ clubDetails.country }}
       </p>
 
-      <div id="map" style="height: 200px;" v-if="coordinates"></div>
+      <div id="map" style="height: 200px;" v-if="coordinates && coordinates.lat"></div>
 
       <div v-if="clubDetails" class="q-mt-md text-center">
         <q-btn
-          v-if="coordinates"
+          v-if="coordinates && coordinates.lat"
           flat round size="xl"
           icon="mdi-google-maps"
           color="blue"
@@ -26,7 +26,7 @@
           @click="openSocialLink(clubDetails.facebook_url)"
         />
         <q-btn
-          v-if="clubDetails.instagram_url"
+          v-if="clubDetails && clubDetails.instagram_url"
           flat round size="xl"
           icon="mdi-instagram"
           color="purple"
@@ -34,7 +34,7 @@
           @click="openSocialLink(clubDetails.instagram_url)"
         />
         <q-btn
-          v-if="clubDetails.tiktok_url"
+          v-if="clubDetails && clubDetails.tiktok_url"
           flat round size="xl"
           icon="mdi-tiktok"
           color="white"
@@ -42,7 +42,7 @@
           @click="openSocialLink(clubDetails.tiktok_url)"
         />
         <q-btn
-          v-if="clubDetails.whatsapp_number"
+          v-if="clubDetails && clubDetails.whatsapp_number"
           flat round size="xl"
           icon="mdi-whatsapp"
           color="green"
@@ -62,6 +62,7 @@ defineProps({
   clubDetails: Object,
   coordinates: Object,
 });
+
 </script>
 
 <style scoped>

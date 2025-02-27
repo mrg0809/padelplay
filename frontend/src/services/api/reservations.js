@@ -1,7 +1,7 @@
 import api from "../api"
 
 export const fetchAvailableTimes = async (clubId, selectedDay) => {
-  if (!clubId || !selectedDay) return [];
+  if (!clubId || !selectedDay) return []; // Return empty array if no club or day selected
 
   try {
     const response = await api.get(`/reservations/available-times`, {
@@ -54,6 +54,7 @@ export const fetchAvailableTimes = async (clubId, selectedDay) => {
       allTimes = allTimes.filter((time) => time >= currentTimeRounded);
     }
 
+    console.log("Fetched times:", allTimes);
     return allTimes;
   } catch (error) {
     console.error("Error fetching available times:", error.message);
@@ -63,7 +64,7 @@ export const fetchAvailableTimes = async (clubId, selectedDay) => {
 
 
 export const fetchAvailableCourts = async (clubId, selectedDay, selectedTime) => {
-  if (!clubId || !selectedDay || !selectedTime) return [];
+  if (!clubId || !selectedDay || !selectedTime) return []; // Return empty array if any required param is missing
 
   try {
     const response = await api.get(`/reservations/available-courts`, {
@@ -73,6 +74,7 @@ export const fetchAvailableCourts = async (clubId, selectedDay, selectedTime) =>
         time: selectedTime,
       },
     });
+    console.log("Fetched courts:", response.data.available_courts);
     return response.data.available_courts;
   } catch (error) {
     console.error("Error fetching available courts:", error.message);

@@ -36,7 +36,7 @@ export const fetchTournaments = async (filters) => {
 
 export const fetchCities = async () => {
   const { data, error } = await supabase
-    .from("tournaments")
+    .from("clubs")
     .select("city", { distinct: true });
 
   if (error) {

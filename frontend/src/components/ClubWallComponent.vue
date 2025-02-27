@@ -50,7 +50,7 @@ import { formatDateString } from "src/helpers/dateUtils";
 
 export default {
   props: {
-    posts: Array,
+    posts: { type: Array, default: () => [] },
     reactionEmojis: Object,
     selectedReaction: String,
     playerId: String,

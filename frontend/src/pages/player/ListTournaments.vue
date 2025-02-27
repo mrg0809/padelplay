@@ -63,9 +63,9 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { fetchTournaments, fetchCities } from "src/supabase/tournaments";
-import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+import { fetchTournaments, fetchCities } from "../../services/supabase/tournaments";
+import PlayerNavigationMenu from "../../components/PlayerNavigationMenu.vue";
+import BannerPromoScrolling from "../../components/BannerPromoScrolling.vue";
 
 export default {
   name: "ListTournaments",

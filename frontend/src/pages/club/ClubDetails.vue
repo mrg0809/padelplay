@@ -14,74 +14,74 @@
 
     <q-page-container>
       <q-page class="q-pa-md">
-        <div v-if="club.loading" class="text-center">
+        <div v-if="club.loading.value === true" class="text-center">
           <q-spinner-dots color="primary" size="xl" />
         </div>
         <div v-else>
           <!-- Club logo -->
           <div class="q-mb-md text-center">
-            <img
-              v-if="club.clubDetails?.logo_url"
-              :src="club.clubDetails.logo_url"
-              alt="Club Logo"
-              style="max-width: 150px; border-radius: 8px;"
-            />
-          </div>
-          
-          <!-- Tabs navigation -->
-          <q-card class="tabs-section">
-            <q-card-section>
-              <q-tabs v-model="selectedTab" align="justify" class="text-white">
-                <q-tab name="info" label="Info" icon="info" />
-                <q-tab name="reservations" label="Reservas" icon="event" />
-                <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
-                <q-tab name="wall" label="Muro" icon="chat" />
-              </q-tabs>
-            </q-card-section>
-          </q-card>
-          <q-separator />
-          
-          <!-- Tab content components -->
-          <ClubInfoComponent
-            v-if="selectedTab === 'info'"
-            :clubDetails="club.clubDetails"
-            :coordinates="club.coordinates"
-          />
-          <ReservationsComponent
-            v-if="selectedTab === 'reservations'"
-            :days="reservations.days"
-            :selectedDay="reservations.selectedDay"
-            :consolidatedTimes="reservations.consolidatedTimes"
-            :selectedTime="reservations.selectedTime"
-            :loadingTimes="reservations.loadingTimes"
-            :availableCourts="reservations.availableCourts"
-            :loadingCourts="reservations.loadingCourts"
-            :timeOptions="reservations.timeOptions"
-            @previous-week="reservations.previousWeek"
-            @next-week="reservations.nextWeek"
-            @select-day="reservations.selectDay"
-            @select-time="reservations.selectTime"
-            @select-duration="selectDuration"
-          />
-          <TournamentsClubListComponent
-            v-if="selectedTab === 'tournaments'"
-            :tournaments="club.tournaments"
-            @go-to-tournament-details="goToTournamentDetails"
-          />
-          <ClubWallComponent
-            v-if="selectedTab === 'wall'"
-            :posts="club.posts"
-            :reactionEmojis="reactionEmojis"
-            :selectedReaction="selectedReaction"
-            :playerId="userStore.userId"
-            :menuVisible="menuVisible"
-            @update:posts="updatePosts"
-          />
-        </div>
-      </q-page>
-    </q-page-container>
-    <PlayerNavigationMenu />
-  </q-layout>
+            <img 
+              v-if="clubLogoUrl" 
+              :src="clubLogoUrl" 
+              alt="Club Logo" 
+             style="max-width: 150px; border-radius: 8px;"
+           />
+         </div>
+         
+         <!-- Tabs navigation -->
+         <q-card class="tabs-section">
+           <q-card-section>
+             <q-tabs v-model="selectedTab" align="justify" class="text-white">
+               <q-tab name="info" label="Info" icon="info" />
+               <q-tab name="reservations" label="Reservas" icon="event" />
+               <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
+               <q-tab name="wall" label="Muro" icon="chat" />
+             </q-tabs>
+           </q-card-section>
+         </q-card>
+         <q-separator />
+         
+         <!-- Tab content components -->
+         <ClubInfoComponent
+           v-if="selectedTab === 'info'"
+           :clubDetails="unwrappedClubDetails"
+           :coordinates="club.coordinates.value"
+         />
+         <ReservationsComponent
+           v-if="selectedTab === 'reservations'"
+           :days="reservations.days.value"
+           :selectedDay="reservations.selectedDay.value"
+           :consolidatedTimes="reservations.consolidatedTimes.value"
+           :selectedTime="reservations.selectedTime.value || ''"
+           :loadingTimes="reservations.loadingTimes.value"
+           :availableCourts="reservations.availableCourts.value"
+           :loadingCourts="Boolean(reservations.loadingCourts.value)"
+           :timeOptions="reservations.timeOptions.value"
+           @previous-week="reservations.previousWeek"
+           @next-week="reservations.nextWeek"
+           @select-day="reservations.selectDay"
+           @select-time="reservations.selectTime"
+           @select-duration="selectDuration"
+         />
+         <TournamentsClubListComponent
+           v-if="selectedTab === 'tournaments'"
+           :tournaments="club.tournaments.value"
+           @go-to-tournament-details="goToTournamentDetails"
+         />
+         <ClubWallComponent
+           v-if="selectedTab === 'wall'"
+           :posts="club.posts.value"
+           :reactionEmojis="reactionEmojis"
+           :selectedReaction="selectedReaction"
+           :playerId="userStore.userId"
+           :menuVisible="menuVisible"
+           @update:posts="updatePosts"
+         />
+       </div>
+     </q-page>
+   </q-page-container>
+   <PlayerNavigationMenu />
+ </q-layout>
 </template>
 
 <script>
@@ -90,6 +90,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { useUserStore } from "src/stores/userStore";
 import { useClub } from "src/composables/useClub";
+import { useReactions } from "src/composables/useReactions";
 import { useReservations } from "src/composables/useReservations";
 import "leaflet/dist/leaflet.css";
 
@@ -123,6 +124,7 @@ export default {
     // Composables
     const club = useClub();
     const reservations = useReservations(clubId);
+    const { toggleReaction } = useReactions();
     
     // Reaction state
     const reactionEmojis = {
@@ -137,22 +139,31 @@ export default {
     const menuVisible = ref(false);
 
     const updatePosts = (updatedPosts) => {
-      club.posts = updatedPosts;
+      club.posts.value = updatedPosts;
     };
+
+    // Computed property to unwrap the ref value for passing to components
+    const unwrappedClubDetails = computed(() => {
+      return club.clubDetails.value;
+    });
+
+    const clubLogoUrl = computed(() => {
+      return club.clubDetails.value?.logo_url || null; // Usa encadenamiento opcional
+    });
 
     // Watch for tab changes to initialize map when info tab is selected
     watch(selectedTab, (newTab) => {
-      if (newTab === "info" && club.coordinates) {
+      if (newTab === "info" && club.coordinates.value) {
         club.initMap();
       }
     });
 
     // Handle reservation selection
     const selectDuration = (option, court) => {
-      if (!court || !reservations.selectedDay || !reservations.selectedTime) {
+      if (!court || !reservations.selectedDay.value || !reservations.selectedTime.value) {
         console.error("Datos incompletos para la reserva");
         $q.notify({
-          type: "negative",
+          color: "negative",
           message: "No se pudo completar la reserva. Por favor, verifica los datos.",
         });
         return;
@@ -163,8 +174,8 @@ export default {
         clubName: club.clubDetails?.name || "Nombre de club no especificado",
         courtId: court.id || "ID de cancha no especificado",
         courtName: court.name || "Nombre de cancha no especificado",
-        date: reservations.selectedDay || "Fecha no especificada",
-        time: reservations.selectedTime || "Hora no especificada",
+        date: reservations.selectedDay.value || "Fecha no especificada",
+        time: reservations.selectedTime.value || "Hora no especificada",
         duration: option.duration || 0,
         price: reservations.getCourtPrice(court, option.duration) || 0,
       };
@@ -175,14 +186,20 @@ export default {
       });
     };
 
+    const goToTournamentDetails = (tournamentId) => {
+      router.push({ name: "TournamentDetails", params: { tournamentId } });
+    }
+
     // Initialize data on component mount
     onMounted(async () => {
       if (!clubId) {
+        club.loading.value = false;
         console.error("Club ID is undefined");
         return;
       }
 
       try {
+        console.log("Club ID:", clubId);
         // Set initial tab from route params or query
         if (route.params.tab) {
           selectedTab.value = route.params.tab;
@@ -192,18 +209,25 @@ export default {
 
         // Fetch club data
         await club.fetchClubData(clubId);
+        console.log("Club details after fetch:", club.clubDetails.value);
+        console.log("Club coordinates after fetch:", club.coordinates.value);
+        
+        console.log("Club data loaded, loading state:", club.loading.value);
         
         // Initialize reservations
         await reservations.fetchTimes();
+        console.log("Reservations times loaded");
 
         // Initialize map if on info tab
-        if (selectedTab.value === "info" && club.coordinates) {
+        console.log("Selected tab:", selectedTab.value);
+        if (selectedTab.value === "info" && club.coordinates.value) {
           club.initMap();
         }
       } catch (error) {
+        club.loading.value = false;
         console.error("Error initializing club details:", error);
         $q.notify({
-          type: "negative",
+          color: "negative",
           message: "Error al cargar detalles del club.",
         });
       }
@@ -217,15 +241,14 @@ export default {
       menuVisible,
       selectedReaction,
       updatePosts,
-      userStore,
-      selectDuration
+      unwrappedClubDetails,
+      toggleReaction,
+      userStore, 
+      selectDuration,
+      clubLogoUrl,
+      goToTournamentDetails,
     };
   },
-  methods: {
-    goToTournamentDetails(tournamentId) {
-      this.$router.push({ name: "TournamentDetails", params: { tournamentId } });
-    }
-  }
 };
 </script>
 
