@@ -29,9 +29,9 @@
             <q-card class="tabs-section">
               <q-card-section>
                 <q-tabs v-model="selectedTab" align="justify" class="text-white">
-                  <q-tab name="info" label="Info" icon="info" />
+                  <q-tab name="info" label="Info" icon="o_info" />
                   <q-tab name="publiclessons" label="Sesiones" icon="event" />
-                  <q-tab name="privatelessons" label="Coaches" icon="emoji_events" />
+                  <q-tab name="privatelessons" label="Coaches" icon="o_school" />
                 </q-tabs>
               </q-card-section>
             </q-card>
@@ -41,10 +41,13 @@
               :clubDetails="clubDetails"
               :coordinates="coordinates"
             />
-            <TournamentsClubListComponent
-              v-if="selectedTab === 'tournaments'"
-              :tournaments="tournaments"
-              @go-to-tournament-details="goToTournamentDetails"
+            <LessonsComponent
+              v-if="selectedTab === 'publiclessons'"
+              :clubDetails="clubDetails"
+            />
+            <CoachesComponent
+              v-if="selectedTab === 'privatelessons'"
+              :clubDetails="clubDetails"
             />
           </div>
         </q-page>
@@ -55,27 +58,29 @@
   
   
   <script>
-  import { ref, onMounted, watch } from "vue";
+  import { ref, onMounted, watchEffect, watch } from "vue";
   import { supabase } from "../../services/supabase";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
-  import api from "../../services/api";
   import "leaflet/dist/leaflet.css";
   import L from "leaflet";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   import NotificationBell from "src/components/NotificationBell.vue";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-  import TournamentsClubListComponent from "src/components/TournamentsClubListComponent.vue";
   import ClubInfoComponent from "src/components/ClubInfoComponent.vue";
+  import LessonsComponent from "src/components/LessonsComponent.vue";
+  import CoachesComponent from "src/components/CoachesComponent.vue";
   import { useUserStore } from "src/stores/userStore";
+
   
   export default {
     components: {
       BannerPromoScrolling,
       NotificationBell,
       PlayerNavigationMenu,
-      TournamentsClubListComponent,
       ClubInfoComponent,
+      LessonsComponent,
+      CoachesComponent,
     },
     setup() {
       const route = useRoute();
@@ -90,26 +95,11 @@
       const availableTimes = ref([]);
       const consolidatedTimes = ref([]);
       const selectedTime = ref(null);
-      const loadingTimes = ref(false);
-      const currentDate = ref(new Date());
-      const selectedTab = ref("info");
+      const selectedTab = ref("privatelessons");
       const availableCourts = ref([]);
-      const posts = ref([]);
       const menuVisible = ref(false);
   
       const clubId = route.params.clubId;
-  
-
-      watch(selectedTab, (newTab) => {
-        if (newTab === "info" && coordinates.value) {
-          setTimeout(() => {
-            const mapElement = document.getElementById("map");
-            if (mapElement && !mapElement._leaflet_id) {
-              initMap(coordinates.value);
-            }
-          }, 100); // Espera a que el contenedor del mapa esté completamente renderizado
-        }
-      });
   
       onMounted(async () => {
         if (!clubId) {
@@ -171,7 +161,6 @@
           loading.value = false;
         }
       });
-  
 
   
       const initMap = ({ lat, lng }) => {
@@ -190,21 +179,21 @@
           .bindPopup(clubDetails.value.name)
           .openPopup();
       };
-  
-  
-      const formatDate = (dateString) => {
-          if (!dateString) return "Fecha no disponible"; 
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) {
-              return "Fecha no disponible"; 
-          }
-          return date.toLocaleString(); 
-        };
 
       const goBack = () => {
         router.back()
       };
 
+      watch(selectedTab, (newTab) => {
+        if (newTab === "info" && coordinates.value) {
+          setTimeout(() => {
+            const mapElement = document.getElementById("map");
+            if (mapElement && !mapElement._leaflet_id) {
+              initMap(coordinates.value);
+            }
+          }, 100);
+        }
+      });
 
   
       return {
@@ -218,7 +207,6 @@
         selectedTime,
         availableCourts,
         selectedTab,
-        formatDate,
         menuVisible,
         userStore,
       };

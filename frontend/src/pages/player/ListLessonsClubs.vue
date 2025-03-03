@@ -174,7 +174,7 @@ watch(searchQuery, (newQuery) => {
       }
     };
 
-    const viewClubDetails = (clubId, tabName = "clases") => {
+    const viewClubDetails = (clubId, tabName = "privatelessons") => {
       router.push({ path: `/player/lessons/${clubId}`, query: { tab: tabName } });
     };
 
