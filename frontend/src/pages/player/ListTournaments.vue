@@ -63,7 +63,8 @@
 <script>
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { fetchTournaments, fetchCities } from "../../services/supabase/tournaments";
+import { fetchTournaments } from "../../services/supabase/tournaments";
+import { fetchCities } from "../../services/supabase/commun"
 import PlayerNavigationMenu from "../../components/PlayerNavigationMenu.vue";
 import BannerPromoScrolling from "../../components/BannerPromoScrolling.vue";
 

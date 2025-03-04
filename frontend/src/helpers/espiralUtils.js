@@ -1,5 +1,3 @@
-javascript
-Copy
 import api from "../services/api"; // Importa tu servicio de API
 
 /**

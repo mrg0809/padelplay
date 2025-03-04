@@ -34,15 +34,3 @@ export const fetchTournaments = async (filters) => {
   return data;
 };
 
-export const fetchCities = async () => {
-  const { data, error } = await supabase
-    .from("clubs")
-    .select("city", { distinct: true });
-
-  if (error) {
-    console.error("Error fetching cities:", error);
-    return [];
-  }
-
-  return data.map((t) => t.city).filter(Boolean);
-};

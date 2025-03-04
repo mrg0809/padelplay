@@ -204,7 +204,11 @@
           <div v-else-if="searching" class="text-center">Buscando...<br>
             <q-spinner-dots color="black" size="xl" />
           </div>
-          <div v-else class="text-center text-black">No se encontraron juegos.</div>
+          <div v-else class="text-center text-black">
+            <p>No se encontraron juegos.</p>
+
+
+          </div>
         </div>
       </q-page>
     </q-page-container>
@@ -216,6 +220,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../../services/supabase";
+import { fetchCities } from "src/services/supabase/commun";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
@@ -251,23 +256,6 @@ export default {
 
     const games = ref([]);
     const searching = ref(false);
-
-    // Fetch cities from Supabase
-    const fetchCities = async () => {
-      try {
-        const { data, error } = await supabase.rpc("get_unique_cities");
-        if (error) {
-          console.error("Error fetching cities:", error.message);
-          return;
-        }
-        cityOptions.value = data.map((city) => ({
-          label: city,
-          value: city,
-        }));
-      } catch (error) {
-        console.error("Unexpected error fetching cities:", error.message);
-      }
-    };
 
     // Format the timestamp to a readable date string
     const formatTimestamp = (timestamp) => {
