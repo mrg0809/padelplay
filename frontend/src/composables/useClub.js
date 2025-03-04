@@ -15,10 +15,8 @@ export function useClub() {
 
   const fetchClubData = async (clubId) => {
     loading.value = true;
-    console.log("Starting to fetch club data, loading:", loading.value);
     try {
       const data = await getClubDetails(clubId);
-      console.log("Raw club details received:", data);
       clubDetails.value = data;
       
       const tournamentData = await getTournamentsByClub(clubId);
@@ -29,7 +27,6 @@ export function useClub() {
     } catch (error) {
       console.error("Error fetching club data:", error);
     } finally {
-      console.log("Finished fetching club data, setting loading to false");
       // Extract coordinates after all data is loaded
       coordinates.value = extractCoordinates(clubDetails.value);
       loading.value = false;

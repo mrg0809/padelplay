@@ -37,7 +37,7 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
-import api from "../services/api";
+import { createEspiralPayment } from "../helpers/espiralUtils"; // Importa la utilidad
 
 export default {
   setup() {
@@ -56,66 +56,84 @@ export default {
       price: parseFloat(route.query.price) || 0,
     });
 
-    const commission = ref(4); // Comision porcentaje
-    const subtotal = ref(reservationDetails.value.price + (commission.value*reservationDetails.value.price/100));
+    const commission = ref(4); // Comisión porcentaje
+    const subtotal = ref(
+      reservationDetails.value.price + (commission.value * reservationDetails.value.price) / 100
+    );
 
     const confirmReservation = async () => {
-  try {
-    $q.loading.show();
+      try {
+        $q.loading.show();
 
-    const reservationData = {
-      court_id: reservationDetails.value.courtId,
-      reservation_date: reservationDetails.value.date,
-      start_time: reservationDetails.value.time,
-      end_time: calculateEndTime(
-        reservationDetails.value.time,
-        reservationDetails.value.duration
-      ),
-      total_price: parseFloat(reservationDetails.value.price),
-      club_id: reservationDetails.value.clubId,
-    };
+        // Datos del pago
+        const paymentData = {
+          cardHolder: {
+            name: "Nombre del titular", // Obtén estos datos del formulario
+            email: "titular@example.com",
+            phone: "+521234567890",
+          },
+          address: {
+            country: "MX", // Código de país
+            state: "JA", // Estado
+            city: "Zapopan", // Ciudad
+            numberExt: "123", // Número exterior
+            numberInt: "", // Número interior (opcional)
+            zipCode: "45180", // Código postal
+            street: "Calle Falsa 123", // Calle
+          },
+          transaction: {
+            items: [
+              {
+                name: "Reserva de cancha",
+                price: subtotal.value.toFixed(2),
+                description: `Reserva en ${reservationDetails.value.clubName}`,
+                quantity: 1,
+              },
+            ],
+            total: subtotal.value.toFixed(2),
+            currency: "MXN",
+          },
+          linkDetails: {
+            name: "Reserva de cancha",
+            email: "cliente@example.com",
+            reusable: false,
+            enableCard: true,
+            enableReference: true,
+            securityType3D: true,
+            bank: 1, // 1 para tarjeta, 2 para transferencia
+          },
+          webhook: {
+            redirectUrl: `${window.location.origin}/payment-success`, // URL de éxito
+            redirectErrorUrl: `${window.location.origin}/payment-error`, // URL de error
+            backPage: `${window.location.origin}/`, // Página de regreso
+            redirectData: {
+              url: `${window.location.origin}/api/webhook/espiral`, // URL para guardar datos
+              redirectMethod: "POST",
+            },
+            redirectErrorData: {
+              url: `${window.location.origin}/api/webhook/espiral`, // URL para guardar datos de error
+              redirectMethod: "POST",
+            },
+          },
+          metadata: {
+            reservationId: reservationDetails.value.clubId, // Metadatos adicionales
+          },
+        };
 
-    const response = await api.post("/reservations", reservationData);
+        // Crear el pago a través de tu backend
+        const espiralResponse = await createEspiralPayment(paymentData);
 
-    // Verifica si la respuesta es correcta
-    if (response.status === 200 && response.data) {
-      const match = response.data.match?.[0]; // Obtener el primer elemento de la lista de matches
-
-      if (match?.id) {
+        // Redirigir al usuario a la página de pago de Espiral
+        window.location.href = espiralResponse.url;
+      } catch (error) {
+        console.error("Error al confirmar la reserva:", error);
         $q.notify({
-          type: "positive",
-          message: response.data.message || "Reserva confirmada exitosamente.",
+          type: "negative",
+          message: "Error al confirmar la reserva.",
         });
-
-        // Redirigir al detalle del partido
-        router.push(`/player/match/${match.id}`);
-      } else {
-        throw new Error("No se pudo obtener el ID del partido.");
+      } finally {
+        $q.loading.hide();
       }
-    } else {
-      throw new Error(response.data.message || "Error desconocido.");
-    }
-  } catch (error) {
-    console.error("Error al confirmar la reserva:", error);
-    $q.notify({
-      type: "negative",
-      message: error.response?.data?.detail || "Error al confirmar la reserva.",
-    });
-  } finally {
-    $q.loading.hide();
-  }
-};
-
-
-    const calculateEndTime = (startTime, duration) => {
-      const [hours, minutes] = startTime.split(":").map(Number);
-      const totalMinutes = hours * 60 + minutes + Number(duration);
-      const endHours = Math.floor(totalMinutes / 60);
-      console.log(endHours)
-      const endMinutes = totalMinutes % 60;
-      console.log(endMinutes)
-      console.log(`${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`);
-      return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
     };
 
     const goBack = () => {
@@ -151,6 +169,4 @@ export default {
 .q-card-section {
   padding: 16px;
 }
-
-
 </style>

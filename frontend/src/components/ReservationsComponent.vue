@@ -91,6 +91,11 @@
       loadingCourts: { type: Boolean, default: false },
       timeOptions: { type: Array, default: () => [] },
     },
+    data() {
+      return {
+        selectedCourt: null, // Ensure selected court is stored
+      };
+    },
     methods: {
       previousWeek() {
         this.$emit('previous-week');
@@ -105,7 +110,7 @@
         this.$emit('select-time', time || "");
       },
       selectDuration(option, court) {
-        this.$emit('select-duration', { option, court });
+        this.$emit('select-duration', { option, court }); // Ensure court is emitted
       },
       getCourtPrice(court, duration) {
         if (!court) return 0;

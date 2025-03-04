@@ -42,7 +42,6 @@ export const searchClubs = async (query, userLocation = null) => {
 
 export async function getClubDetails(clubId) {
   try {
-    console.log("Fetching club details for ID:", clubId);
     const { data: clubData, error } = await supabase
       .from('clubs')
       .select("*")
@@ -55,7 +54,6 @@ export async function getClubDetails(clubId) {
     }
 
     if (clubData && Object.keys(clubData).length > 0) {
-      console.log("Club details fetched successfully:", clubData);
       return clubData;
     } else {
       console.log("No club details found for ID:", clubId);

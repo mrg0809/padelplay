@@ -54,7 +54,6 @@ export const fetchAvailableTimes = async (clubId, selectedDay) => {
       allTimes = allTimes.filter((time) => time >= currentTimeRounded);
     }
 
-    console.log("Fetched times:", allTimes);
     return allTimes;
   } catch (error) {
     console.error("Error fetching available times:", error.message);
@@ -74,7 +73,6 @@ export const fetchAvailableCourts = async (clubId, selectedDay, selectedTime) =>
         time: selectedTime,
       },
     });
-    console.log("Fetched courts:", response.data.available_courts);
     return response.data.available_courts;
   } catch (error) {
     console.error("Error fetching available courts:", error.message);

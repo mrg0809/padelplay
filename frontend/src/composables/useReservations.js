@@ -53,13 +53,13 @@ export function useReservations(clubId) {
   const selectTime = (time) => {
     selectedTime.value = time || "";
     fetchCourts();
+    selectedCourt.value = null; // Reset selected court when selecting a new time
   };
 
   const fetchTimes = async () => {
     loadingTimes.value = true;
     try {
       consolidatedTimes.value = await fetchAvailableTimes(clubId, selectedDay.value);
-      console.log("Fetched times:", consolidatedTimes.value);
       selectedTime.value = ""; // Reset selected time when fetching new times
     } catch (error) {
       console.error("Error fetching available times:", error);
@@ -72,7 +72,6 @@ export function useReservations(clubId) {
     loadingCourts.value = true;
     try {
       availableCourts.value = await fetchAvailableCourts(clubId, selectedDay.value, selectedTime.value);
-      console.log("Fetched courts:", availableCourts.value);
       selectedCourt.value = null; // Reset selected court when fetching new courts
     } catch (error) {
       console.error("Error fetching available courts:", error);

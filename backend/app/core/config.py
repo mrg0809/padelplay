@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 360
+    ESPIRAL_API_URL: str = os.getenv("ESPIRAL_API_URL")
+    ESPIRAL_API_KEY: str = os.getenv("ESPIRAL_API_KEY")
+
 
     class Config:
         env_file = ".env"

@@ -48,21 +48,21 @@
            :coordinates="club.coordinates.value"
          />
          <ReservationsComponent
-           v-if="selectedTab === 'reservations'"
-           :days="reservations.days.value"
-           :selectedDay="reservations.selectedDay.value"
-           :consolidatedTimes="reservations.consolidatedTimes.value"
-           :selectedTime="reservations.selectedTime.value || ''"
-           :loadingTimes="reservations.loadingTimes.value"
-           :availableCourts="reservations.availableCourts.value"
-           :loadingCourts="Boolean(reservations.loadingCourts.value)"
-           :timeOptions="reservations.timeOptions.value"
-           @previous-week="reservations.previousWeek"
-           @next-week="reservations.nextWeek"
-           @select-day="reservations.selectDay"
-           @select-time="reservations.selectTime"
-           @select-duration="selectDuration"
-         />
+          v-if="selectedTab === 'reservations'"
+          :days="reservations.days.value"
+          :selectedDay="reservations.selectedDay.value"
+          :consolidatedTimes="reservations.consolidatedTimes.value"
+          :selectedTime="reservations.selectedTime.value || ''"
+          :loadingTimes="reservations.loadingTimes.value"
+          :availableCourts="reservations.availableCourts.value"
+          :loadingCourts="Boolean(reservations.loadingCourts.value)"
+          :timeOptions="reservations.timeOptions.value"
+          @previous-week="reservations.previousWeek"
+          @next-week="reservations.nextWeek"
+          @select-day="reservations.selectDay"
+          @select-time="reservations.selectTime"
+          @select-duration="onSelectDuration"
+        />
          <TournamentsClubListComponent
            v-if="selectedTab === 'tournaments'"
            :tournaments="club.tournaments.value"
@@ -159,19 +159,27 @@ export default {
     });
 
     // Handle reservation selection
-    const selectDuration = (option, court) => {
+    const onSelectDuration = (payload) => {
+      const { option, court} = payload;
+
       if (!court || !reservations.selectedDay.value || !reservations.selectedTime.value) {
-        console.error("Datos incompletos para la reserva");
+        const missingFields = [];
+        if (!court) missingFields.push("cancha");
+        if (!reservations.selectedDay.value) missingFields.push("día");
+        if (!reservations.selectedTime.value) missingFields.push("hora");
+
         $q.notify({
           color: "negative",
-          message: "No se pudo completar la reserva. Por favor, verifica los datos.",
+          message: `Datos incompletos: ${missingFields.join(", ")}`,
         });
         return;
       }
 
+      const clubDetails = club.clubDetails.value
+
       const reservationDetails = {
-        clubId: club.clubDetails?.id || "ID de club no especificado",
-        clubName: club.clubDetails?.name || "Nombre de club no especificado",
+        clubId: clubDetails.id || "ID de club no especificado",
+        clubName: clubDetails.name || "Nombre de club no especificado",
         courtId: court.id || "ID de cancha no especificado",
         courtName: court.name || "Nombre de cancha no especificado",
         date: reservations.selectedDay.value || "Fecha no especificada",
@@ -199,8 +207,6 @@ export default {
       }
 
       try {
-        console.log("Club ID:", clubId);
-        // Set initial tab from route params or query
         if (route.params.tab) {
           selectedTab.value = route.params.tab;
         } else if (route.query.tab) {
@@ -209,17 +215,11 @@ export default {
 
         // Fetch club data
         await club.fetchClubData(clubId);
-        console.log("Club details after fetch:", club.clubDetails.value);
-        console.log("Club coordinates after fetch:", club.coordinates.value);
-        
-        console.log("Club data loaded, loading state:", club.loading.value);
         
         // Initialize reservations
         await reservations.fetchTimes();
-        console.log("Reservations times loaded");
 
         // Initialize map if on info tab
-        console.log("Selected tab:", selectedTab.value);
         if (selectedTab.value === "info" && club.coordinates.value) {
           club.initMap();
         }
@@ -244,7 +244,7 @@ export default {
       unwrappedClubDetails,
       toggleReaction,
       userStore, 
-      selectDuration,
+      onSelectDuration,
       clubLogoUrl,
       goToTournamentDetails,
     };
