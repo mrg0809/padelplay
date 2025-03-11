@@ -64,3 +64,14 @@ export async function getClubDetails(clubId) {
     throw error;
   }
 }
+
+
+export const fetchScheduleHours = async (clubId) => {
+  const { data, error } = await supabase
+    .from("schedules")
+    .select("opening_time, closing_time")
+    .eq("club_id", clubId);
+
+  if (error) throw new Error(error.message);
+  return data;
+};

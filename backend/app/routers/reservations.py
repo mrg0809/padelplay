@@ -17,7 +17,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             if field not in data:
                 raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {field}")
 
-        player_id = current_user["id"]
+        player_id = data.get("player_id", current_user["id"])
         club_id = data["club_id"]
         court_id = data["court_id"]
         reservation_date = data["reservation_date"]

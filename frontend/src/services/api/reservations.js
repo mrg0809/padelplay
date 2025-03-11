@@ -79,3 +79,15 @@ export const fetchAvailableCourts = async (clubId, selectedDay, selectedTime) =>
     throw error;
   }
 };
+
+
+
+export const createReservation = async (reservationData) => {
+  try {
+      const response = await api.post('/reservations', reservationData);
+      return response.data; 
+  } catch (error) {
+      console.error("Error al crear la reserva:", error);
+      throw error; 
+  }
+};

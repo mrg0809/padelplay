@@ -1,9 +1,7 @@
 <template>
   <q-layout view="hHh lpR fFf" class="body">
-    <!-- Encabezado -->
     <q-header elevated class="text-white">
       <div class="header-content">
-        <!-- Saludo -->
         <div class="greeting">
           <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
           Bienvenido {{ userStore.fullName }}

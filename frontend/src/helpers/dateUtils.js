@@ -17,11 +17,13 @@ export function formatDateString(dateString) {
     return date.toLocaleString();
   };
   
+  
 export function formatLongDate(date) {
     if (!date) return "No especificado";
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(date).toLocaleDateString("es-MX", options);
 };
+
 
 export function generateDays(currentDate) {
     let days = [];

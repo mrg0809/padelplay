@@ -116,7 +116,8 @@ import { useUserStore } from "src/stores/userStore";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
-import { fetchFollowing, fetchFollowers, fetchSuggestedPlayers, searchPlayersByName, isFollowingPlayer, unfollowPlayerSupabase, followPlayerSupabase } from 'src/services/supabase/community';
+import { fetchFollowing, fetchFollowers, fetchSuggestedPlayers, isFollowingPlayer, unfollowPlayerSupabase, followPlayerSupabase } from 'src/services/supabase/community';
+import { searchPlayersByName } from 'src/services/supabase/commun';
 import { getPlayerAvatar, formatPlayerName } from 'src/helpers/communityUtils';
 
 export default {

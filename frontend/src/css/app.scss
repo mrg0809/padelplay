@@ -1,13 +1,28 @@
 @import 'quasar/src/css/index.sass';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'quasar.variables';
 
+body, h1, h2, h3, p, ul, li {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Fuentes y colores globales */
 body {
-    background-color: #DDDDDD; /* Color de fondo deseado */
-  }
+  font-family: 'Roboto', sans-serif;
+  background-color: #dddddd;
+  color: #333;
+}
 
-global-card {
-  background-image: url(../assets/texturafondo.png);
-  background-size: cover;
+/* Estilos para enlaces */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Contenedor principal */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
 }

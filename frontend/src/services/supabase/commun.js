@@ -17,3 +17,19 @@ export const fetchCities = async () => {
       return []; 
   }
 };
+
+export const searchPlayersByName = async (searchQuery) => {
+    try {
+      if (!searchQuery || searchQuery.trim() === '') return [];
+      const { data, error } = await supabase
+        .from("players")
+        .select("user_id, first_name, last_name, photo_url, category")
+        .ilike("first_name", `%${searchQuery}%`);
+  
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error searching players:", error);
+      throw error;
+    }
+  };

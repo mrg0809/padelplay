@@ -13,14 +13,21 @@
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
 $primary   : #111111;
-$secondary : #26A69A;
-$accent    : #9C27B0;
+$secondary : #ffffff;
+$accent    : #ffc400;
 
 $dark      : #DDDDDD;
 $dark-page : #DDDDDD;
 
 $positive  : #21BA45;
 $negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #e6a800;
+$info      : #ffffff;
+$warning   : #f7b502;
 
+:root {
+    --primary-color: #{$primary};
+    --secondary-color: #{$secondary};
+    --text-color: #ffffff;
+    --background-color: #dddddd;
+    --font-family: 'Roboto', sans-serif;
+  }

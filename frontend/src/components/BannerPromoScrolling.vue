@@ -7,14 +7,13 @@
   </template>
   
   <style scoped>
-  /* Contenedor de la barra promocional */
   .promo-bar {
-    background-color: #ffffff; /* Fondo blanco */
+    background-color: #ffffff; 
     color: #333333; /* Texto oscuro */
     width: 100%;
     overflow: hidden; /* Oculta contenido fuera del área visible */
-    height: 30px; /* Altura de la barra */
-    border-bottom: 1px solid #e0e0e0; /* Línea sutil para separar */
+    height: 30px; 
+    border-bottom: 1px solid #e0e0e0; 
     display: flex;
     align-items: center;
   }
@@ -23,16 +22,16 @@
   .promo-text {
     white-space: nowrap; /* Evita que el texto se divida en líneas */
     display: inline-block;
-    animation: scroll-text 10s linear infinite; /* Animación continua */
+    animation: scroll-text 10s linear infinite; 
   }
   
   /* Animación de desplazamiento */
   @keyframes scroll-text {
     0% {
-      transform: translateX(100%); /* Empieza fuera del área visible */
+      transform: translateX(100%); 
     }
     100% {
-      transform: translateX(-100%); /* Termina fuera del área visible por la izquierda */
+      transform: translateX(-100%); 
     }
   }
   </style>
