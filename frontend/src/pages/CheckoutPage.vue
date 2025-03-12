@@ -68,6 +68,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <PlayerNavigationMenu />
   </q-layout>
 </template>
 
@@ -79,12 +80,14 @@ import { createEspiralPayment } from "../helpers/espiralUtils"; // Importa la ut
 import { getProductsByClub } from "src/services/supabase/products";
 import NotificationBell from "../components/NotificationBell.vue";
 import BannerPromoScrolling from "../components/BannerPromoScrolling.vue";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 
 
 export default {
   components: {
     NotificationBell,
     BannerPromoScrolling,
+    PlayerNavigationMenu,
   },
   setup() {
     const route = useRoute();
