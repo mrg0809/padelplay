@@ -76,9 +76,9 @@ def create_reservation_and_payments(data: dict, current_user: dict = Depends(get
 
         split_payment_response = supabase.from_("split_payments").insert({
             "payment_order_id": payment_order_id,
-            "player_id": player_id,
+            "user_id": player_id,
             "amount": amount,
-            "status": "pending",
+            "payment_status": "pending",
         }).execute()
 
         if not split_payment_response or not split_payment_response.data:

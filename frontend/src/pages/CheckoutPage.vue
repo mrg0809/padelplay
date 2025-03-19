@@ -130,11 +130,6 @@ export default {
       return subtotal.value + productTotal;
     });
 
-    onMounted(async () => {
-      products.value = await getProductsByClub(reservationDetails.value.clubId);
-      products.value.forEach(product => productQuantities.value[product.id] = 0);
-    });
-
     const showProductDialog = () => {
       productDialog.value = true;
     };
@@ -149,26 +144,36 @@ export default {
 
     const stripe = ref(null);
     const elements = ref(null);
+    const clientSecretRef = ref(null);
 
-    const setupStripe = async () => {
+
+    const getClientSecret = async (reservationData, amount) => {
       try {
-        stripe.value = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-        elements.value = stripe.value.elements();
-        const paymentElement = elements.value.create("payment");
-        paymentElement.mount("#stripe-payment-element");
+        const response = await api.post("payments/create-payment-intent", {
+          payment_order_id: reservationData.payment_order_id,
+          amount: amount,
+        });
+        return response.data.clientSecret;
       } catch (error) {
-        console.error("Error al cargar Stripe:", error);
+        console.error("Error al obtener clientSecret:", error);
+        $q.notify({
+          type: "negative",
+          message: "Error al obtener clientSecret.",
+        });
+        return null;
       }
     };
 
-    const confirmReservation = async () => {
+    const setupStripe = async () => {
       try {
-        $q.loading.show();
+        stripe.value = await loadStripe(
+          import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+        );
 
-        const additionalItems = selectedProducts.value.map(item => ({
+        const additionalItems = selectedProducts.value.map((item) => ({
           name: item.product.name,
           price: item.product.price,
-          quantity: item.quantity
+          quantity: item.quantity,
         }));
 
         const reservationData = {
@@ -176,7 +181,67 @@ export default {
           court_id: reservationDetails.value.courtId,
           reservation_date: reservationDetails.value.date,
           start_time: reservationDetails.value.time,
-          end_time: `${parseInt(reservationDetails.value.time.split(':')[0]) + (reservationDetails.value.duration / 60)}:00`,
+          end_time: `${
+            parseInt(reservationDetails.value.time.split(":")[0]) +
+            reservationDetails.value.duration / 60
+          }:00`,
+          total_price: total.value,
+          pay_total: paymentOption.value === "total",
+          club_commission: 0,
+          player_commission: 0,
+          additional_items: additionalItems,
+        };
+
+        const response = await api.post("/reservations", reservationData);
+        reservationData.payment_order_id = response.data.payment_order_id;
+
+        const amount =
+          paymentOption.value === "total"
+            ? Math.round(total.value * 100)
+            : Math.round((total.value / 4) * 100);
+
+        clientSecretRef.value = await getClientSecret(reservationData, amount);
+
+        if (clientSecretRef.value) {
+          elements.value = stripe.value.elements({ clientSecret: clientSecretRef.value });
+          const paymentElement = elements.value.create("payment");
+          paymentElement.mount("#stripe-payment-element");
+        }
+      } catch (error) {
+        console.error("Error al cargar Stripe:", error);
+        $q.notify({
+          type: "negative",
+          message: "Error al cargar Stripe.",
+        });
+      }
+    };
+
+    onMounted(async () => {
+      products.value = await getProductsByClub(reservationDetails.value.clubId);
+      products.value.forEach(product => productQuantities.value[product.id] = 0);
+      await setupStripe();
+    });
+
+
+    const confirmReservation = async () => {
+      try {
+        $q.loading.show();
+
+        const additionalItems = selectedProducts.value.map((item) => ({
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+        }));
+
+        const reservationData = {
+          club_id: reservationDetails.value.clubId,
+          court_id: reservationDetails.value.courtId,
+          reservation_date: reservationDetails.value.date,
+          start_time: reservationDetails.value.time,
+          end_time: `${
+            parseInt(reservationDetails.value.time.split(":")[0]) +
+            reservationDetails.value.duration / 60
+          }:00`,
           total_price: total.value,
           pay_total: paymentOption.value === "total",
           club_commission: 0, // Ajusta según tu lógica
@@ -186,16 +251,30 @@ export default {
 
         const response = await api.post("/reservations", reservationData);
 
-        const clientSecret = await api.post("/create-payment-intent", {
+        const amount =
+          paymentOption.value === "total"
+            ? Math.round(total.value * 100)
+            : Math.round((total.value / 4) * 100);
+
+        const clientSecretResponse = await api.post("payments/create-payment-intent", {
           payment_order_id: response.data.payment_order_id,
-          amount: paymentOption.value === "total" ? total.value : total.value / 4,
+          amount: amount,
         });
 
-        const { paymentIntent } = await stripe.value.confirmPayment({
+        const { paymentIntent, error } = await stripe.value.confirmPayment({
           elements: elements.value,
-          clientSecret: clientSecret.data.clientSecret,
+          clientSecret: clientSecretResponse.data.clientSecret,
           redirect: "if_required",
         });
+
+        if (error) {
+          console.error("Error al confirmar el pago:", error);
+          $q.notify({
+            type: "negative",
+            message: `Error al confirmar el pago: ${error.message}`,
+          });
+          return;
+        }
 
         if (paymentIntent.status === "succeeded") {
           $q.notify({
@@ -213,7 +292,7 @@ export default {
         console.error("Error al confirmar la reserva:", error);
         $q.notify({
           type: "negative",
-          message: "Error al confirmar la reserva.",
+          message: `Error al confirmar la reserva: ${error.message}`,
         });
       } finally {
         $q.loading.hide();
