@@ -42,6 +42,8 @@
 
           <q-card-actions align="right">
             <q-btn label="Agregar Productos" color="primary" @click="showProductDialog" />
+            <div id="stripe-payment-element">
+            </div>
             <q-btn label="Confirmar y Pagar" color="green" @click="confirmReservation" />
           </q-card-actions>
         </q-card>
@@ -76,11 +78,13 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
-import { createEspiralPayment } from "../helpers/espiralUtils"; // Importa la utilidad
 import { getProductsByClub } from "src/services/supabase/products";
+import { loadStripe } from "@stripe/stripe-js";
+import api from "../services/api";
 import NotificationBell from "../components/NotificationBell.vue";
 import BannerPromoScrolling from "../components/BannerPromoScrolling.vue";
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+
 
 
 export default {
@@ -143,70 +147,68 @@ export default {
       productDialog.value = false;
     };
 
+    const stripe = ref(null);
+    const elements = ref(null);
+
+    const setupStripe = async () => {
+      try {
+        stripe.value = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+        elements.value = stripe.value.elements();
+        const paymentElement = elements.value.create("payment");
+        paymentElement.mount("#stripe-payment-element");
+      } catch (error) {
+        console.error("Error al cargar Stripe:", error);
+      }
+    };
+
     const confirmReservation = async () => {
       try {
         $q.loading.show();
 
-        // Datos del pago
-        const paymentData = {
-          cardHolder: {
-            name: "Nombre del titular", // Obtén estos datos del formulario
-            email: "titular@example.com",
-            phone: "+521234567890",
-          },
-          address: {
-            country: "MX", // Código de país
-            state: "JA", // Estado
-            city: "Zapopan", // Ciudad
-            numberExt: "123", // Número exterior
-            numberInt: "", // Número interior (opcional)
-            zipCode: "45180", // Código postal
-            street: "Calle Falsa 123", // Calle
-          },
-          transaction: {
-            items: [
-              {
-                name: "Reserva de cancha",
-                price: subtotal.value.toFixed(2),
-                description: `Reserva en ${reservationDetails.value.clubName}`,
-                quantity: 1,
-              },
-            ],
-            total: subtotal.value.toFixed(2),
-            currency: "MXN",
-          },
-          linkDetails: {
-            name: "Reserva de cancha",
-            email: "cliente@example.com",
-            reusable: false,
-            enableCard: true,
-            enableReference: true,
-            securityType3D: true,
-            bank: 1, // 1 para tarjeta, 2 para transferencia
-          },
-          webhook: {
-            redirectUrl: `${window.location.origin}/payment-success`, // URL de éxito
-            redirectErrorUrl: `${window.location.origin}/payment-error`, // URL de error
-            backPage: `${window.location.origin}/`, // Página de regreso
-            redirectData: {
-              url: `${window.location.origin}/api/webhook/espiral`, // URL para guardar datos
-              redirectMethod: "POST",
-            },
-            redirectErrorData: {
-              url: `${window.location.origin}/api/webhook/espiral`, // URL para guardar datos de error
-              redirectMethod: "POST",
-            },
-          },
-          metadata: {
-            reservationId: reservationDetails.value.clubId, // Metadatos adicionales
-          },
+        const additionalItems = selectedProducts.value.map(item => ({
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity
+        }));
+
+        const reservationData = {
+          club_id: reservationDetails.value.clubId,
+          court_id: reservationDetails.value.courtId,
+          reservation_date: reservationDetails.value.date,
+          start_time: reservationDetails.value.time,
+          end_time: `${parseInt(reservationDetails.value.time.split(':')[0]) + (reservationDetails.value.duration / 60)}:00`,
+          total_price: total.value,
+          pay_total: paymentOption.value === "total",
+          club_commission: 0, // Ajusta según tu lógica
+          player_commission: 0, // Ajusta según tu lógica
+          additional_items: additionalItems,
         };
 
-        // Crear el pago a través de tu backend
-        const espiralResponse = await createEspiralPayment(paymentData);
+        const response = await api.post("/reservations", reservationData);
 
-        // Redirigir al usuario a la página de pago de Espiral
-        window.location.href = espiralResponse.url;
+        const clientSecret = await api.post("/create-payment-intent", {
+          payment_order_id: response.data.payment_order_id,
+          amount: paymentOption.value === "total" ? total.value : total.value / 4,
+        });
+
+        const { paymentIntent } = await stripe.value.confirmPayment({
+          elements: elements.value,
+          clientSecret: clientSecret.data.clientSecret,
+          redirect: "if_required",
+        });
+
+        if (paymentIntent.status === "succeeded") {
+          $q.notify({
+            type: "positive",
+            message: "Reserva y pago confirmados.",
+          });
+          router.push(`/match/${response.data.match.id}`);
+        } else {
+          $q.notify({
+            type: "negative",
+            message: "Error al confirmar el pago.",
+          });
+        }
       } catch (error) {
         console.error("Error al confirmar la reserva:", error);
         $q.notify({
