@@ -1,9 +1,14 @@
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
   {
-    path: "/checkout",
-    name: "CheckoutPage",
-    component: () => import("src/pages/CheckoutPage.vue"),
+    path: "/datosreserva",
+    name: "ReservationSummary",
+    component: () => import("src/pages/player/ReservationSummary.vue"),
+  },
+  {
+    path: "/stripe-payment",
+    name: "StripePayment",
+    component: () => import("src/pages/StripePayment.vue"),
   },
   { path: "/forgot-password", component: () => import("pages/RecoveryPassword.vue")},
   { path: "/reset-password", component: () => import("pages/ResetPassword.vue")},

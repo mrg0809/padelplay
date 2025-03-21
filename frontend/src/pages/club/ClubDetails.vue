@@ -189,7 +189,7 @@ export default {
       };
 
       router.push({
-        name: "CheckoutPage",
+        name: "ReservationSummary",
         query: reservationDetails,
       });
     };

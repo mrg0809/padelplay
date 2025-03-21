@@ -96,8 +96,8 @@
                 flat
                 dense
                 color="white"
-                icon="o_redeem"
-                label="Recompensas"
+                icon="o_credit_card"
+                label="ForMas de pago"
                 class="q-my-sm"
                 stack
                 @click="editProfile"
