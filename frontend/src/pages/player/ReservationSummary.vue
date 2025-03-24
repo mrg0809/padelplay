@@ -93,6 +93,7 @@
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
   import { getProductsByClub } from "src/services/supabase/products";
+  import api from "../../services/api";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
   export default {
@@ -159,19 +160,37 @@
         productDialog.value = false;
       };
   
-      const goToPayment = () => {
-        const amountToPay = paymentOption.value === "total" ? total.value : total.value / 4;
-        router.push({
-          name: "StripePayment",
-          query: {
-            reservationDetails: JSON.stringify(reservationDetails.value),
-            total: total.value,
-            paymentOption: paymentOption.value,
-            selectedProducts: JSON.stringify(selectedProducts.value),
-            isPublicMatch: isPublicMatch.value,
-            amountToPay: amountToPay, // Pasamos el monto a pagar calculado
-          },
-        });
+      const goToPayment = async () => {
+        try {
+          const amount = paymentOption.value === "total" ? total.value : total.value / 4;
+          const responsePaymentOrder = await api.post("payments/payment_order_and_split_payment", {
+            total_price: total.value,
+            pay_total: paymentOption.value === "total",
+          });
+
+          const payment_order_id = responsePaymentOrder.data.payment_order_id;
+
+          router.push({
+            name: "StripePayment",
+            query: {
+              reservationDetails: JSON.stringify({
+                ...reservationDetails.value,
+                payment_order_id: payment_order_id,
+              }),
+              total: total.value,
+              paymentOption: paymentOption.value,
+              selectedProducts: JSON.stringify(selectedProducts.value),
+              isPublicMatch: isPublicMatch.value,
+              amountToPay: amount,
+            },
+          });
+        } catch (error) {
+          console.error("Error al obtener payment_order:", error);
+          $q.notify({
+            type: "negative",
+            message: "Error al generar orden de pago. Por favor intente de nuevo.",
+          });
+        }
       };
   
       onMounted(async () => {

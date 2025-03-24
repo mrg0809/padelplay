@@ -87,6 +87,20 @@ export default {
       try {
         $q.loading.show();
 
+        // 1. Enviar la información de pago del usuario
+        const { error: submitError } = await elements.value.submit();
+
+        if (submitError) {
+          console.error("Error al enviar la información de pago:", submitError);
+          $q.notify({
+            type: "negative",
+            message: `Error al enviar la información de pago: ${submitError.message}`,
+          });
+          $q.loading.hide();
+          return;
+        }
+
+        // 2. Confirmar el pago
         const { paymentIntent, error } = await stripe.value.confirmPayment({
           elements: elements.value,
           clientSecret: clientSecretRef.value,
@@ -99,6 +113,7 @@ export default {
             type: "negative",
             message: `Error al confirmar el pago: ${error.message}`,
           });
+          $q.loading.hide();
           return;
         }
 
@@ -120,6 +135,7 @@ export default {
         $q.loading.hide();
       }
     };
+
 
     const processPaymentSuccess = async () => {
       try {
@@ -155,10 +171,11 @@ export default {
           club_commission: 0,
           player_commission: 0,
           additional_items: additionalItems,
+          payment_order_id: reservationDetails.value.payment_order_id,
         };
 
         const response = await api.post("/reservations", reservationData);
-        router.push(`/match/${response.data.match.id}`);
+        router.push(`/player/match/${response.data.match_id}`);
         $q.notify({
             type: "positive",
             message: "Reserva y pago confirmados.",

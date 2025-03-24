@@ -9,10 +9,10 @@ router = APIRouter()
 
 
 @router.post("/")
-def create_reservation_and_payments(data: dict, current_user: dict = Depends(get_current_user)):
+def create_reservation(data: dict, current_user: dict = Depends(get_current_user)):
     try:
         # Validar campos obligatorios
-        required_fields = ["club_id", "court_id", "reservation_date", "start_time", "end_time", "total_price", "pay_total"]
+        required_fields = ["club_id", "court_id", "reservation_date", "start_time", "end_time", "total_price"]
         for field in required_fields:
             if field not in data:
                 raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {field}")
@@ -24,28 +24,7 @@ def create_reservation_and_payments(data: dict, current_user: dict = Depends(get
         start_time = data["start_time"]
         end_time = data["end_time"]
         total_price = data["total_price"]
-        pay_total = data["pay_total"]
-        club_commission = data["club_commission"]
-        player_commission = data["player_commission"]
-        additional_items = data["additional_items"]
-
-        # Verificar disponibilidad (sin cambios)
-        overlapping_reservations = supabase.from_("reservations").select("*").match({
-            "court_id": court_id,
-            "reservation_date": reservation_date,
-        }).execute()
-
-        overlapping_blocks = supabase.from_("court_blocks").select("*").match({
-            "court_id": court_id,
-            "start_date": reservation_date,
-            "end_date": reservation_date,
-        }).execute()
-
-        if not overlapping_reservations or not overlapping_blocks:
-            raise HTTPException(status_code=500, detail="Error al verificar disponibilidad en reservas o bloques.")
-
-        if overlapping_reservations.data or overlapping_blocks.data:
-            raise HTTPException(status_code=400, detail="La cancha no está disponible para este rango de tiempo.")
+        payment_order_id = data["payment_order_id"]
 
         # Llamar a la función RPC
         rpc_data = {
@@ -56,47 +35,23 @@ def create_reservation_and_payments(data: dict, current_user: dict = Depends(get
             "end_time": end_time,
             "total_price": total_price,
             "player_id": player_id,
-            "club_commission": club_commission,
-            "player_commission": player_commission,
-            "additional_items": additional_items,
         }
         rpc_response = supabase.rpc("create_reservation_rpc", rpc_data).execute()
 
-        if not rpc_response or not rpc_response.data:
-            raise HTTPException(status_code=500, detail="Error al crear la reserva y orden de pago.")
+        if not rpc_response.data:
+            raise HTTPException(status_code=500, detail="Error al crear la reserva y partido.")
 
-        reservation_id = rpc_response.data[0]["reservation_id"]
-        payment_order_id = rpc_response.data[0]["payment_order_id"]
+        reservation_id = rpc_response.data["reservation_id"]
+        match_id = rpc_response.data["match_id"]
+        print("Reservation ID:", reservation_id)
+        print("Match ID:", match_id)
 
-        # Crear split_payment
-        if pay_total:
-            amount = total_price
-        else:
-            amount = total_price / 4
+        supabase.from_("payment_orders").update({"event_id": str(reservation_id)}).eq("id", str(payment_order_id)).execute()
 
-        split_payment_response = supabase.from_("split_payments").insert({
-            "payment_order_id": payment_order_id,
-            "user_id": player_id,
-            "amount": amount,
-            "payment_status": "pending",
-        }).execute()
-
-        if not split_payment_response or not split_payment_response.data:
-            raise HTTPException(status_code=500, detail="Error al crear el pago dividido.")
-
-        match_response = supabase.from_("matches").select("*").match({"reservation_id": reservation_id}).execute()
-
-        if not match_response or not match_response.data:
-            raise HTTPException(status_code=500, detail="Error al obtener información del partido.")
-        
-        match_data = match_response.data[0]
-        
         return {
-            "message": "Reserva, orden de pago y pago dividido creados exitosamente.",
+            "message": "Reserva y partido creados exitosamente.",
             "reservation_id": reservation_id,
-            "payment_order_id": payment_order_id,
-            "split_payment_id": split_payment_response.data[0]["id"],
-            "match": match_data,
+            "match_id": match_id,
         }
 
     except Exception as e:
