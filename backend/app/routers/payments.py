@@ -71,3 +71,28 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
+
+@router.post("/process-stripe-payment")
+def process_stripe_payment(data: dict):
+    payment_order_id = data["payment_order_id"]
+    payment_method = data["payment_method"]
+    payment_status = data["payment_status"]
+    transaction_id = data["transaction_id"]
+    is_full_payment = data["is_full_payment"] # Opcional
+
+    # Actualizar payment_orders
+    supabase.from_("payment_orders").update({
+        "payment_method": payment_method,
+        "payment_status": payment_status,
+        "transaction_id": transaction_id,
+        "is_full_payment": is_full_payment # Opcional
+    }).eq("id", payment_order_id).execute()
+
+    # Actualizar split_payments
+    supabase.from_("split_payments").update({
+        "payment_status": payment_status,
+        "transaction_id": transaction_id
+    }).eq("payment_order_id", payment_order_id).execute()
+
+    return {"message": "Pago procesado y registros actualizados exitosamente."}

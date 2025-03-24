@@ -3,8 +3,6 @@ from app.db.connection import supabase
 from app.core.security import get_current_user
 from datetime import time, timedelta, datetime
 
-
-# Inicializa el router
 router = APIRouter()
 
 
@@ -25,6 +23,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
         end_time = data["end_time"]
         total_price = data["total_price"]
         payment_order_id = data["payment_order_id"]
+        is_public_match = data["is_public_match"]
 
         # Llamar a la función RPC
         rpc_data = {
@@ -35,6 +34,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
             "end_time": end_time,
             "total_price": total_price,
             "player_id": player_id,
+            "is_public_match": is_public_match,
         }
         rpc_response = supabase.rpc("create_reservation_rpc", rpc_data).execute()
 

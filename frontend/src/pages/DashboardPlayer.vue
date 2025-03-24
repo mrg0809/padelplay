@@ -233,8 +233,10 @@
   .events-carousel {
   width: 100%;
   display: flex;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 13px;
   overflow-x: auto; /* Desplazamiento horizontal */
+  overflow-y: hidden; 
   padding: 5px 0;
   scroll-snap-type: x mandatory; /* Efecto de desplazamiento suave */
   align-items: center;
@@ -242,8 +244,8 @@
   }
 
   .event-card {
-    flex: 0 0 calc(33.333% - 16px); /* Tres tarjetas visibles a la vez */
-    max-width: calc(33.333% - 16px);
+    flex: 0 0 auto; /* Tres tarjetas visibles a la vez */
+    max-width: 220px;
     background-image: url("../assets/texturafondo.png");
     background-size: cover;
     border-radius: 15px;

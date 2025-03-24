@@ -1,5 +1,15 @@
 <template>
   <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+        </div>
+        <div class="header-icons">
+          <q-btn flat round icon="close" @click="goBack" />
+        </div>
+      </div>
+    </q-header>
     <q-page-container>
       <q-page class="q-pa-md">
         <q-card class="text-white">
@@ -11,7 +21,12 @@
             <div id="stripe-payment-element"></div>
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn label="Confirmar Pago" color="green" @click="confirmPayment" />
+            <q-btn
+              :label="`PAGAR $${total.toFixed(2)}`"
+              color="green"
+              class="full-width"
+              @click="confirmPayment"
+            />
           </q-card-actions>
         </q-card>
       </q-page>
@@ -24,6 +39,8 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { loadStripe } from "@stripe/stripe-js";
+import { endtime_calculate } from "src/helpers/hourUtils";
+import { createNotification } from "src/services/api/notifications";
 import api from "../services/api";
 
 export default {
@@ -118,6 +135,22 @@ export default {
         }
 
         if (paymentIntent.status === "succeeded") {
+          const paymentMethod = paymentIntent.payment_method;
+          await api.post("/payments/process-stripe-payment", {
+            payment_order_id: reservationDetails.value.payment_order_id,
+            payment_method: paymentMethod,
+            payment_status: "succeeded",
+            transaction_id: paymentIntent.id,
+            is_full_payment: paymentOption.value === "total",
+          });
+
+          // Notificación para el club
+          await createNotification({
+            user_id: reservationDetails.value.club_id, // Usar club_id
+            title: "Nueva Reserva",
+            message: `Se ha realizado una nueva reserva para el ${reservationDetails.value.reservation_date}.`,
+          });
+
           await processPaymentSuccess();
         } else {
           $q.notify({
@@ -162,16 +195,14 @@ export default {
           court_id: reservationDetails.value.courtId,
           reservation_date: reservationDetails.value.date,
           start_time: reservationDetails.value.time,
-          end_time: `${
-            parseInt(reservationDetails.value.time.split(":")[0]) +
-            reservationDetails.value.duration / 60
-          }:00`,
+          end_time: endtime_calculate( reservationDetails.value.time, reservationDetails.value.duration ),
           total_price: total.value,
           pay_total: paymentOption.value === "total",
           club_commission: 0,
           player_commission: 0,
           additional_items: additionalItems,
           payment_order_id: reservationDetails.value.payment_order_id,
+          is_public_match: isPublicMatch.value,
         };
 
         const response = await api.post("/reservations", reservationData);
@@ -189,6 +220,10 @@ export default {
       }
     };
 
+    const goBack = () => {
+      router.back()
+    }
+
     onMounted(async () => {
       await setupStripe();
     });
@@ -196,7 +231,59 @@ export default {
     return {
       total,
       confirmPayment,
+      goBack,
     };
   },
 };
 </script>
+
+<style scoped>
+
+.home {
+      background-color: #dddddd;
+    }
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: #000000; 
+  }
+  
+.greeting {
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+.header-icons {
+    display: flex;
+    gap: 2px;
+  }
+  
+.logo-icon {
+    width: 60px; /* Ajusta el tamaño del logo */
+    height: 60px;
+  }
+
+.q-card {
+  background-image: url(src/assets/texturafondo.png);
+  background-size: cover;
+  max-width: 400px;
+  margin: auto;
+  color: #fff; /* Texto blanco para visibilidad */
+  border-radius: 8px; /* Bordes redondeados */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Sombra para destacar */
+}
+
+.text-primary {
+  color: #4caf50; /* Verde primario */
+}
+
+.q-card-section {
+  padding: 16px;
+}
+</style>

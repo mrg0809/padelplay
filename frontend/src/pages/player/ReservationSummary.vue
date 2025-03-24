@@ -14,7 +14,7 @@
         <q-page class="q-pa-md">
           <q-card class="text-white">
             <q-card-section>
-              <h3 class="text-white">Resumen de Reserva</h3>
+              <h3 class="text-white">Reserva:</h3>
             </q-card-section>
             <q-card-section>
               <p><strong>Club:</strong> {{ reservationDetails.clubName }}</p>
