@@ -144,13 +144,6 @@ export default {
             is_full_payment: paymentOption.value === "total",
           });
 
-          // Notificación para el club
-          await createNotification({
-            user_id: reservationDetails.value.club_id, // Usar club_id
-            title: "Nueva Reserva",
-            message: `Se ha realizado una nueva reserva para el ${reservationDetails.value.reservation_date}.`,
-          });
-
           await processPaymentSuccess();
         } else {
           $q.notify({
@@ -206,6 +199,15 @@ export default {
         };
 
         const response = await api.post("/reservations", reservationData);
+        const club_user_id = response.data.club_user_id;
+
+        // Notificación para el club
+        await createNotification({
+            user_id: club_user_id,
+            title: "Nueva Reserva",
+            message: `Se ha realizado una nueva reserva para el ${reservationDetails.value.date}. a las ${reservationDetails.value.time}`,
+          });
+
         router.push(`/player/match/${response.data.match_id}`);
         $q.notify({
             type: "positive",

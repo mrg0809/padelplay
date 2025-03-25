@@ -1,3 +1,5 @@
+import api from "../api";
+
 export const createNotification = async (notificationData) => {
     try {
         const response = await api.post('/notifications', notificationData);

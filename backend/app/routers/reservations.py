@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.db.connection import supabase
 from app.core.security import get_current_user
 from datetime import time, timedelta, datetime
+from app.utils.notification_utils import create_notification
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
 
         # Llamar a la función RPC
         rpc_data = {
-            "club_id": club_id,
+            "p_club_id": club_id,
             "court_id": court_id,
             "reservation_date": reservation_date,
             "start_time": start_time,
@@ -43,15 +44,18 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
 
         reservation_id = rpc_response.data["reservation_id"]
         match_id = rpc_response.data["match_id"]
-        print("Reservation ID:", reservation_id)
-        print("Match ID:", match_id)
+        club_user_id = rpc_response.data["club_user_id"]
 
         supabase.from_("payment_orders").update({"event_id": str(reservation_id)}).eq("id", str(payment_order_id)).execute()
+
+        create_notification(player_id, "Nueva Reserva", f"Tu reserva para el {reservation_date} a las {start_time} ha sido creada con éxito.")
 
         return {
             "message": "Reserva y partido creados exitosamente.",
             "reservation_id": reservation_id,
             "match_id": match_id,
+            "club_user_id": club_user_id,
+	
         }
 
     except Exception as e:
