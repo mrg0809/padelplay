@@ -24,18 +24,22 @@
                 <h2>{{ coach.name }}</h2>
                 <p>Especialidad: {{ coach.coach_focus }}</p>
                 <p>Resumen: {{ coach.coach_resume }}</p>
-                <h2>Disponibilidad</h2>
-  
+             
                 <div v-for="(day, dayName) in availability" :key="dayName">
-                  <h3>{{ dayName }}</h3>
-                  <button
-                    v-for="time in day"
+                
+                <div class="time-slots">
+                  <q-btn
+                    v-for="time in availability[dayName]"
                     :key="time"
                     @click="selectTime(time, dayName)"
+                    color="grey"
+                    :class="{ 'selected': selectedTime === time && selectedDay === dayName }"
+                    class="time-option-btn"
                   >
                     {{ time }}
-                  </button>
+                  </q-btn>
                 </div>
+              </div>
   
                 <button v-if="selectedTime" @click="startReservation">Reservar Clase</button>
               </div>
@@ -54,6 +58,7 @@
   import { ref, onMounted } from "vue";
   import { useRoute } from "vue-router";
   import { getCoachDetails } from "src/services/supabase/coaches";
+  import { processAvailability } from "src/helpers/coachUtils";
   import NotificationBell from "src/components/NotificationBell.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
@@ -77,8 +82,9 @@
         try {
           const coachDetails = await getCoachDetails(coachId, clubId);
           coach.value = coachDetails;
-          availability.value = coachDetails.availability;
-          console.log("Detalles del coach cargados:", coachDetails);
+          if (coachDetails.availability) {
+            availability.value = processAvailability(coachDetails.availability);
+          }
         } catch (error) {
           console.error("Error al cargar detalles del coach:", error);
         }
@@ -146,4 +152,9 @@
     border-radius: 8px; /* Bordes redondeados */
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Sombra para destacar */
     }
+
+    .time-option-btn {
+    width: 88px;
+    margin: 3px;
+  }
   </style>
