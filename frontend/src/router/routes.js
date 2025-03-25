@@ -192,6 +192,11 @@ const routes = [
     name: "ClubLessons",
     component: () => import("src/pages/player/ClubLessons.vue"),
   },
+  {
+    path: "/player/coach/:coachId",
+    name: "CoachDetails",
+    component: () => import("src/pages/player/CoachDetails.vue"),
+  },
   { 
     path: "/player/community", 
     component: () => import("src/pages/player/PlayerCommunity.vue"),

@@ -21,7 +21,8 @@
   </template>
   
   <script>
-  import { ref, onMounted } from "vue"; 
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
   import { getCoachesByClub } from "src/services/supabase/coaches";
   
   export default {
@@ -33,6 +34,7 @@
     },
     setup(props) {
       const coaches = ref([]); 
+      const router = useRouter();
   
       const loadCoaches = async () => {
         try {
@@ -43,9 +45,14 @@
         }
       };
   
-      const goToCoachDetails = (coachId) => {
-        console.log("Ir a detalles del coach:", coachId);
-      };
+      const goToCoachDetails = (coach) => {
+        console.log("Coach seleccionado:", coach);
+        router.push({
+          name: "CoachDetails",
+          params: { coachId: coach },
+          query: { clubId: props.clubDetails.id },
+          });
+        };
   
       onMounted(loadCoaches); 
   
