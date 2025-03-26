@@ -28,3 +28,24 @@ export const processAvailability = (availabilityData) => {
     }
     return processedAvailability;
   };
+
+export const generateAvailableDates = (availability) => {
+  const dates = [];
+  const today = new Date();
+  const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+  for (let i = 0; i < 15; i++) { // Cambiar 7 a 15
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const day = daysOfWeek[date.getDay()];
+    if (availability[day]) {
+      dates.push({
+        day,
+        date,
+        formattedDate: `${date.getDate()}`,
+        month: date.toLocaleString("default", { month: "short" }),
+      });
+    }
+  }
+  return dates;
+};
