@@ -38,6 +38,7 @@
   
       const loadCoaches = async () => {
         try {
+          console.log("Club ID:", props.clubDetails.id);
           coaches.value = await getCoachesByClub(props.clubDetails.id);
         } catch (error) {
           console.error("Error al cargar entrenadores:", error);
@@ -54,7 +55,11 @@
           });
         };
   
-      onMounted(loadCoaches); 
+      onMounted(() => {
+        if (props.clubDetails?.id) {
+          loadCoaches();
+        }
+      });
   
       return {
         coaches,
