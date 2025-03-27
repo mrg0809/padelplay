@@ -44,15 +44,15 @@
                 <q-btn flat round icon="arrow_forward" size="xs" />
               </div>
 
-              <div v-if="selectedDate">
-                <h3>Horarios Disponibles para {{ selectedDate.day }}</h3>
+              <div v-if="availableTimes && selectedDate">
+                <h3>Horarios Disponibles para {{ selectedDate.formattedDate }}</h3>
                 <div class="time-slots">
                   <q-btn
                     v-for="time in availableTimes"
                     :key="time"
-                    @click="selectTime(time, selectedDate.day)"
+                    @click="selectTime(time)"
                     color="grey"
-                    :class="{ 'selected': selectedTime === time && selectedDay === selectedDate.day }"
+                    :class="{ 'selected': selectedTime === time }"
                     class="time-option-btn"
                   >
                     {{ time }}
@@ -141,11 +141,17 @@ export default {
             },
           });
 
-          if (response.data) {
-            availableTimes.value = response.data.available_times;
+          if (response.data && response.data.available_times) {
+            const allTimes = [];
+            for (const timesArray of Object.values(response.data.available_times)) {
+              allTimes.push(...timesArray);
+            }
+            availableTimes.value = [...new Set(allTimes)].sort(); // Remueve duplicados y ordena
+          } else {
+            availableTimes.value = [];
           }
         } catch (error) {
-          console.error("Error al obtener horarios disponibles:", error);
+          console.error("Error fetching available times:", error);
         }
       }
     };
