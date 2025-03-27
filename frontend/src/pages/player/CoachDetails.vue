@@ -25,6 +25,7 @@
               <p>Especialidad: {{ coach.coach_focus }}</p>
               <p>Resumen: {{ coach.coach_resume }}</p>
 
+              
               <div class="q-mt-lg days-container">
                 <q-btn flat round icon="arrow_back" size="xs"/>
                 <div class="days-scroll">
@@ -33,7 +34,7 @@
                     :key="index"
                     :name="index"
                     :outline="selectedDate?.date.getTime() !== date.date.getTime()"
-                    :color="selectedDate?.date.getTime() === date.date.getTime() ? 'primary' : 'grey'"
+                    :color="selectedDate?.date.getTime() === date.date.getTime() ? 'green' : 'white'"
                     class="day-button"
                     @click="selectDay(date.date)"
                   >
@@ -51,7 +52,7 @@
                     v-for="time in availableTimes"
                     :key="time"
                     @click="selectTime(time)"
-                    :color="selectedTime === time ? 'secondary' : 'grey'"
+                    :color="selectedTime === time ? 'green' : 'white'"
                     :outline="selectedTime !== time"
                     class="time-option-btn"
                   >
@@ -84,11 +85,11 @@
 
               <div class="q-mt-lg text-center" v-if="selectedPriceOption">
                 <q-btn
-                  color="accent"
+                  color="green"
                   label="Continuar Reserva"
                   @click="startReservation"
-                  icon-right="shopping_cart"
-                  size="lg"
+                  class="full-width"
+                  size="md"
                 />
               </div>
 
@@ -298,24 +299,25 @@ export default {
 }
 
 .logo-icon {
-  width: 60px; /* Mantenido */
-  height: 60px; /* Mantenido */
+  width: 60px; 
+  height: 60px; 
 }
 
 .q-card {
-  background-image: url(../../assets/texturafondo.png); /* Mantenido */
-  background-size: cover; /* Mantenido */
-  max-width: 400px; /* Mantenido */
-  margin: 16px auto; /* Ajustado para centrar mejor */
-  color: #fff; /* Mantenido */
-  border-radius: 8px; /* Mantenido */
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Mantenido */
+  background-image: url(../../assets/texturafondo.png); 
+  background-size: cover; 
+  max-width: 400px; 
+  margin: 16px auto;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); 
 }
 
 .time-option-btn {
-  width: 88px; /* Mantenido */
-  margin: 3px; /* Mantenido */
-  /* El padding se quita del template si width/margin son fijos */
+  width: 70px; 
+  margin: 3px;
+  align-items: center;
+  justify-content: center;
 }
 
 .day-button {
