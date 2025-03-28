@@ -112,7 +112,7 @@
           name: "Clases de Pádel",
           icon: "o_school",
           image_url: "/src/assets/menu/clases.jpeg",
-          route: "clases",
+          route: "reservas",
         },
       ];
 

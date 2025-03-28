@@ -32,10 +32,14 @@
          <q-card class="tabs-section">
            <q-card-section>
              <q-tabs v-model="selectedTab" align="justify" class="text-white">
-               <q-tab name="info" label="Info" icon="info" />
+              <q-icon name="arrow_back_ios" />
+               <q-tab name="info" label="Info" icon="o_info" />
                <q-tab name="reservations" label="Reservas" icon="event" />
-               <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
-               <q-tab name="wall" label="Muro" icon="chat" />
+               <q-tab name="tournaments" label="Torneos" icon="o_emoji_events" />
+               <q-tab name="publiclessons" label="Clases" icon="event" />
+               <q-tab name="privatelessons" label="Coaches" icon="o_school" />
+               <q-tab name="wall" label="Muro" icon="o_chat" />
+               <q-icon name="arrow_forward_ios" />
              </q-tabs>
            </q-card-section>
          </q-card>
@@ -77,6 +81,14 @@
            :menuVisible="menuVisible"
            @update:posts="updatePosts"
          />
+         <LessonsComponent
+          v-if="selectedTab === 'publiclessons'"
+          :clubDetails="unwrappedClubDetails"
+        />
+        <CoachesComponent
+          v-if="selectedTab === 'privatelessons'"
+          :clubDetails="unwrappedClubDetails"
+        />
        </div>
      </q-page>
    </q-page-container>
@@ -102,6 +114,8 @@ import ClubWallComponent from "src/components/ClubWallComponent.vue";
 import TournamentsClubListComponent from "src/components/TournamentsClubListComponent.vue";
 import ReservationsComponent from "src/components/ReservationsComponent.vue";
 import ClubInfoComponent from "src/components/ClubInfoComponent.vue";
+import LessonsComponent from "src/components/LessonsComponent.vue";
+import CoachesComponent from "src/components/CoachesComponent.vue";
 
 export default {
   components: {
@@ -112,6 +126,8 @@ export default {
     ReservationsComponent,
     TournamentsClubListComponent,
     ClubInfoComponent,
+    LessonsComponent,
+    CoachesComponent,
   },
   setup() {
     const route = useRoute();

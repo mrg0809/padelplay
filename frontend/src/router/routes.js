@@ -193,11 +193,6 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/player/lessons/:clubId",
-    name: "ClubLessons",
-    component: () => import("src/pages/player/ClubLessons.vue"),
-  },
-  {
     path: "/player/coach/:coachId",
     name: "CoachDetails",
     component: () => import("src/pages/player/CoachDetails.vue"),
