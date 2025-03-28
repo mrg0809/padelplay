@@ -1,6 +1,11 @@
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
   {
+    path: "/datosclase",
+    name: "LessonSummary",
+    component: () => import("src/pages/player/LessonSummary.vue"),
+  },
+  {
     path: "/datosreserva",
     name: "ReservationSummary",
     component: () => import("src/pages/player/ReservationSummary.vue"),

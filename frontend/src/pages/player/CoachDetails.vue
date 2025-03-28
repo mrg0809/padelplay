@@ -107,7 +107,6 @@
 </template>
 
 <script>
-// El script permanece igual que en la respuesta anterior
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getCoachDetails } from "src/services/supabase/coaches";
@@ -135,6 +134,7 @@ export default {
     const availableTimes = ref(null);
     const selectedDate = ref(null);
     const selectedPriceOption = ref(null);
+
 
     const priceOptions = computed(() => {
       if (!coach.value) return [];
@@ -235,7 +235,7 @@ export default {
       };
       console.log("Procediendo al checkout con:", reservationDetails);
       router.push({
-         name: 'CheckoutPage',
+         name: 'LessonSummary',
          query: {
             coachId: reservationDetails.coachId,
             clubId: reservationDetails.clubId,
@@ -268,12 +268,9 @@ export default {
 </script>
 
 <style scoped>
-/* --- Tus Estilos --- */
 .home {
   background-color: #dddddd;
-  /* Asegúrate que q-page-container es el elemento correcto para esto */
-  /* O podrías aplicarlo a q-page si prefieres el fondo solo en el contenido */
-  min-height: 100vh; /* Para asegurar que cubra la altura */
+  min-height: 100vh; 
 }
 
 .header-content {
@@ -281,21 +278,19 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background-color: #000000; /* Mantenido */
+  background-color: #000000; 
 }
 
 .greeting {
-  /* font-size: 1rem; */ /* Comentado si no hay texto */
-  /* font-weight: 500; */ /* Comentado si no hay texto */
   display: flex;
   align-items: center;
-  gap: 8px; /* Mantenido */
+  gap: 8px; 
 }
 
 .header-icons {
   display: flex;
-  gap: 2px; /* Mantenido */
-  align-items: center; /* Añadido para alinear verticalmente los íconos */
+  gap: 2px; 
+  align-items: center; 
 }
 
 .logo-icon {
@@ -325,48 +320,43 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* --- Añadidos/Ajustados --- */
-  min-width: 65px; /* Ancho mínimo */
+  min-width: 65px; 
   border: 1px solid #ccc; /* Borde como en mi sugerencia */
   border-radius: 8px; /* Borde redondeado */
   padding: 6px 4px; /* Padding ajustado */
   font-size: 0.8rem; /* Tamaño de fuente */
   line-height: 1.2; /* Interlineado */
   text-align: center;
-  /* gap ya está en el padre (.days-scroll) */
 }
 
 .month-label {
-  font-size: 0.75rem; /* Mantenido */
-  color: #aaa; /* Mantenido */
+  font-size: 0.75rem; 
+  color: #aaa; 
   /* --- Añadidos/Ajustados --- */
-  text-transform: uppercase; /* Mayúsculas */
-  margin-top: 2px; /* Espacio superior */
+  text-transform: uppercase; 
+  margin-top: 2px; 
 }
 
 .days-container {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Mantenido */
-  /* overflow: hidden; quitado para no cortar flechas si están muy cerca */
+  justify-content: space-between; 
 }
 
 .days-scroll {
   display: flex;
-  overflow-x: auto; /* Mantenido */
-  flex-wrap: nowrap; /* Mantenido */
-  gap: 8px; /* Mantenido - gestiona el espacio entre day-button */
-  flex-grow: 1; /* Para que ocupe el espacio entre flechas */
-  padding: 4px 0; /* Espacio vertical pequeño */
-   /* Ocultar barra de scroll */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE/Edge */
+  overflow-x: auto; 
+  flex-wrap: nowrap; 
+  gap: 8px; 
+  flex-grow: 1; 
+  padding: 4px 0; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;  
 }
 .days-scroll::-webkit-scrollbar {
   display: none; /* Chrome/Safari/Opera */ /* Mantenido */
 }
 
-/* --- Estilos Adicionales/Modificados --- */
 
 h3 {
     text-align: center;
@@ -396,16 +386,10 @@ h4 {
   margin: 3px; /* Añadido margen similar a time-option-btn */
 }
 
-/* Asegurar que el spinner sea visible sobre el fondo oscuro/imagen */
-.q-spinner-cube {
-  /* El color ya está definido en el template, pero podrías asegurarlo aquí */
-  /* color: orange; */
-}
 .text-center p {
-  color: #ccc; /* Color para el texto "Cargando..." */
+  color: #ccc; 
 }
 
-/* Avatar centrado */
 .text-center {
   text-align: center;
 }
