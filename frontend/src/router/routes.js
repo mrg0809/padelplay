@@ -11,6 +11,11 @@ const routes = [
     component: () => import("src/pages/player/ReservationSummary.vue"),
   },
   {
+    path: "/resumenorden",
+    name: "OrderSummary",
+    component: () => import("src/pages/player/OrderSummary.vue"),
+  },
+  {
     path: "/stripe-payment",
     name: "StripePayment",
     component: () => import("src/pages/StripePayment.vue"),

@@ -87,7 +87,7 @@
                 <q-btn
                   color="green"
                   label="Continuar Reserva"
-                  @click="startReservation"
+                  @click="proceedToSummary"
                   class="full-width"
                   size="md"
                 />
@@ -111,6 +111,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getCoachDetails } from "src/services/supabase/coaches";
 import { processAvailability, generateAvailableDates } from "src/helpers/coachUtils";
+import { useSummaryStore } from 'src/stores/summaryStore'
 import api from "../../services/api";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
@@ -125,6 +126,7 @@ export default {
   setup() {
     const route = useRoute();
     const router = useRouter();
+    const summaryStore = useSummaryStore();
     const coachId = route.params.coachId;
     const clubId = route.query.clubId;
     const coach = ref(null);
@@ -219,7 +221,7 @@ export default {
       }
     };
 
-    const startReservation = () => {
+    /*const startReservation = () => {
       if (!selectedDate.value || !selectedTime.value || !selectedPriceOption.value) {
         console.error("Información incompleta para la reserva.");
         return;
@@ -246,7 +248,51 @@ export default {
             coachName: reservationDetails.coachName
          }
        });
+    };*/
+
+    const proceedToSummary = () => {
+      // 1. Recopila la información necesaria (igual que antes)
+      const coachData = coach.value;
+      const selectedDateValue = selectedDate.value;
+      const selectedTimeValue = selectedTime.value;
+      const selectedPriceOptionValue = selectedPriceOption.value;
+      const clubIdValue = clubId;
+      // ¡Asegúrate de tener el nombre del club también!
+      const clubNameValue = 'Nombre del Club Aquí'; // Reemplaza con el nombre real
+  // 2. Construye el objeto de props (igual que antes)
+      const summaryProps = {
+        summaryTitle: 'Resumen de Entrenamiento',
+        itemDetails: [
+          { label: 'Club', value: clubNameValue },
+          { label: 'Coach', value: coachData?.name || 'No especificado' },
+          { label: 'Fecha', value: selectedDateValue?.date.toISOString().split("T")[0] || 'No especificada' },
+          { label: 'Horario', value: `${selectedTimeValue} hrs.` || 'No especificada' },
+          { label: 'Duración', value: '60 minutos' },
+          { label: 'Participantes', value: selectedPriceOptionValue?.people || 0 }
+        ],
+        baseData: {
+          clubId: clubIdValue,
+          price: selectedPriceOptionValue?.price || 0,
+          participants: selectedPriceOptionValue?.people || 1,
+          type: 'class',
+          id: coachData?.id,
+        },
+        allowPaymentSplit: true,
+        showPublicToggle: false,
+        commissionRate: 4,
+        extraData: {
+            coachFocus: coachData?.coach_focus
+        }
+      };
+
+        // 3. Guarda los datos en el Store de Pinia
+      summaryStore.setSummaryDetails(summaryProps);
+
+    // 4. Navega a la página de resumen SIN query parameters
+    router.push({ name: 'OrderSummary' }); 
     };
+
+
 
     onMounted(loadCoachDetails);
 
@@ -254,7 +300,6 @@ export default {
       coach,
       selectedTime,
       selectTime,
-      startReservation,
       availableDates,
       selectedDate,
       selectDay,
@@ -262,6 +307,7 @@ export default {
       priceOptions,
       selectedPriceOption,
       selectPriceOption,
+      proceedToSummary,
     };
   },
 };
