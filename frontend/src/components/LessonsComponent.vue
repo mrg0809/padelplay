@@ -9,8 +9,6 @@
         <h5>{{ lesson.name }}</h5>
         <p>Fecha: {{ lesson.lesson_date }}</p>
         <p>Hora: {{ lesson.lesson_time }} hrs.</p>
-        <p>Duración: {{ lesson.duration }} minutos.</p>
-        <p> {{ lesson.description }}</p>
       </div>
       <p v-if="lessons && lessons.length === 0" class="text-center q-mt-md">
         No hay clases abiertas en este club.
@@ -20,7 +18,9 @@
   
   <script>
   import { ref, onMounted } from "vue";
-  import { fetchClubLessons } from "../services/api/lessons"; 
+  import { fetchClubLessons } from "../services/api/lessons";
+  import { useRouter } from "vue-router";
+
   
   export default {
     props: {
@@ -31,6 +31,7 @@
     },
     setup(props) {
       const lessons = ref([]); 
+      const router = useRouter();
   
       const loadLessons = async () => {
         try {
@@ -42,7 +43,11 @@
       };
 
       const goToLessonDetails = (lessonId) => {
-          console.log("Ir a detalles de la lección:", lessonId);
+        router.push({
+          name: "LessonDetails",
+          params: { lessonId: lessonId },
+          query: { clubId: props.clubDetails.id, clubName: props.clubDetails.name },
+          });
         };
   
       onMounted(loadLessons); 

@@ -38,20 +38,19 @@
   
       const loadCoaches = async () => {
         try {
-          console.log("Club ID:", props.clubDetails.id);
+          console.log("Club ID:", props.clubDetails);
           coaches.value = await getCoachesByClub(props.clubDetails.id);
         } catch (error) {
-          console.error("Error al cargar entrenadores:", error);
+          console.error("Error al cargar entrenadores:", error);b 
           coaches.value = [];
         }
       };
   
       const goToCoachDetails = (coach) => {
-        console.log("Coach seleccionado:", coach);
         router.push({
           name: "CoachDetails",
           params: { coachId: coach },
-          query: { clubId: props.clubDetails.id },
+          query: { clubId: props.clubDetails.id, clubName: props.clubDetails.name },
           });
         };
   

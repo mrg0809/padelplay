@@ -325,10 +325,9 @@
           totalAmount: total.value.toFixed(2),
           description: props.summaryTitle,
           clubId: props.baseData?.clubId,
-          // Puedes simplificar los datos pasados a Stripe si no los necesita todos
-          // itemDetails: JSON.stringify(props.itemDetails), // Quizás no necesario para Stripe
-          // baseData: JSON.stringify(props.baseData), // Quizás no necesario para Stripe
-          // selectedProducts: JSON.stringify(selectedProducts.value), // Quizás no necesario para Stripe
+          baseData: JSON.stringify(props.baseData || {}),         // Convertir objeto a JSON string
+          extraData: JSON.stringify(props.extraData || {}),       // Convertir objeto a JSON string
+          selectedProducts: JSON.stringify(selectedProducts.value || []), // Convertir array a JSON string
         },
       });
     } catch (error) {

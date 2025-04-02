@@ -100,7 +100,7 @@
                 label="ForMas de pago"
                 class="q-my-sm"
                 stack
-                @click="editProfile"
+                @click="goToPaymentMethods"
               />
 
               <q-btn
@@ -177,6 +177,10 @@ const goBack = () => {
 
 const goToCommunity = () => {
   router.push("/player/community");
+};
+
+const goToPaymentMethods = () => {
+  router.push("/player/formasdepago");
 };
 
 onMounted(loadPlayer);

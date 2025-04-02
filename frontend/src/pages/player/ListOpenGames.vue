@@ -14,75 +14,63 @@
     <q-page-container class="home">
       <q-page class="q-pa-md">
         <!-- Filter Buttons -->
-        <div class="filter-options">
-          <!-- Button Dropdown for City -->
-          <q-btn
-            dense
-            color="black"
-            filled
-            rounded
-            icon="location_on"
-            label="Ciudad"
-            @click="cityMenu = true"
-          />
-          <q-menu v-model="cityMenu" anchor="bottom left" self="top left">
-            <q-list>
-              <q-item
-                v-for="city in cityOptions"
-                :key="city.value"
-                clickable
-                @click="selectCity(city)"
-              >
-                <q-item-section>{{ city.label }}</q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
+        <div class="row q-col-gutter-md q-mb-lg">
+          <div class="col-12 col-sm-4">
+            <q-select
+              v-model="selectedCity"
+              :options="cityOptions"
+              label="Ciudad"
+              outlined dense options-dense clearable hide-selected
+              input-debounce="300" @filter="filterCityFn" @clear="selectedCity = null"
+              dark color="black" label-color="black"
+              popup-content-class="bg-black text-black"
+            >
+              <template v-slot:prepend>
+                <q-icon name="location_on" color="black"/>
+              </template>
+              <template v-slot:no-option>
+                <q-item><q-item-section class="text-black">No hay ciudades</q-item-section></q-item>
+              </template>
+            </q-select>
+          </div>
 
-          <!-- Button Dropdown for Dates -->
-          <q-btn
-            dense
-            color="black"
-            filled
-            rounded
-            icon="calendar_month"
-            label="Fechas"
-            @click="dateMenu = true"
-          />
-          <q-menu v-model="dateMenu" anchor="bottom left" self="top left">
-            <q-list>
-              <q-item
-                v-for="date in dateOptions"
-                :key="date.value"
-                clickable
-                @click="selectDate(date)"
-              >
-                <q-item-section>{{ date.label }}</q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
+          <div class="col-12 col-sm-4">
+            <q-select
+              v-model="selectedDate"
+              :options="dateOptions"
+              label="Fecha"
+              outlined dense options-dense clearable
+              dark color="black" label-color="black"
+              popup-content-class="bg-black text-black"
+              @clear="selectedDate = null"
+            >
+              <template v-slot:prepend>
+                <q-icon name="calendar_month" color="black"/>
+              </template>
+              <template v-slot:no-option>
+                <q-item><q-item-section class="text-black">No hay opciones</q-item-section></q-item>
+              </template>
+            </q-select>
+          </div>
 
-          <!-- Button Dropdown for Gender -->
-          <q-btn
-            dense
-            color="black"
-            filled
-            rounded
-            icon="wc"
-            label="Tipo"
-            @click="genderMenu = true"
-          />
-          <q-menu v-model="genderMenu" anchor="bottom left" self="top left">
-            <q-list>
-              <q-item
-                v-for="gender in genderOptions"
-                :key="gender.value"
-                clickable
-                @click="selectGender(gender)"
-              >
-                <q-item-section>{{ gender.label }}</q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
+          <div class="col-12 col-sm-4">
+            <q-select
+              v-model="selectedGender"
+              :options="genderOptions"
+              label="Género"
+              outlined dense options-dense clearable
+              dark color="black" label-color="black"
+              popup-content-class="bg-black text-black"
+              @clear="selectedGender = null"
+            >
+              <template v-slot:prepend>
+                <q-icon name="wc" color="black"/>
+              </template>
+              <template v-slot:no-option>
+                <q-item><q-item-section class="text-grey-8">No hay opciones</q-item-section></q-item>
+              </template>
+            </q-select>
+          </div>
         </div>
 
         <!-- Games List -->
@@ -92,7 +80,6 @@
               v-for="game in games"
               :key="game.id"
               clickable
-              @click="navigateToMatch(game.id)"
               class="match-card"
             >
             <q-card-section class="q-mt-md">
@@ -111,13 +98,6 @@
                         {{ game.team1_players[0].category }}
                       </div>
                     </div>
-                    <q-btn
-                      v-else
-                      flat
-                      round
-                      icon="o_person_add"
-                      @click="openAddPlayerDialog(1, 0)"
-                    />
                   </div>
                   <div class="player team1-player2">
                     <div v-if="game.team1_players[1]">
@@ -134,7 +114,8 @@
                       flat
                       round
                       icon="o_person_add"
-                      @click="openAddPlayerDialog(1, 1)"
+                      @click.stop="prepareJoinGameSummary(game, 1, 1)"
+                      title="Unirse a este espacio"
                     />
                   </div>
                   <div class="player team2-player1">
@@ -152,7 +133,8 @@
                       flat
                       round
                       icon="o_person_add"
-                      @click="openAddPlayerDialog(2, 0)"
+                      @click.stop="prepareJoinGameSummary(game, 2, 0)"
+                      title="Unirse a este espacio"
                     />
                   </div>
                   <div class="player team2-player2">
@@ -170,7 +152,8 @@
                       flat
                       round
                       icon="o_person_add"
-                      @click="openAddPlayerDialog(2, 1)"
+                      @click.stop="prepareJoinGameSummary(game, 2, 1)"
+                      title="Unirse a este espacio"
                     />
                   </div>
                   
@@ -216,230 +199,234 @@
   </q-layout>
 </template>
 
-<script>
-import { ref, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
-import { supabase } from "../../services/supabase";
-import { fetchCities } from "src/services/supabase/commun";
-import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-import NotificationBell from "src/components/NotificationBell.vue";
-import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+<script setup> // Usar script setup
+  import { ref, onMounted, watch } from "vue";
+  import { useRouter } from "vue-router";
+  import { supabase } from "../../services/supabase"; // Asegúrate que la ruta sea correcta
+  import { fetchCities } from "src/services/supabase/commun"; // Asegúrate que la ruta sea correcta
+  import { useSummaryStore } from 'src/stores/summaryStore'; 
+  import { useQuasar } from 'quasar'; 
 
-export default {
-  components: {
-    PlayerNavigationMenu,
-    BannerPromoScrolling,
-    NotificationBell,
-  },
-  setup() {
-    const cityOptions = ref([]);
-    const dateOptions = ref([
-      { label: "Hoy", value: "today" },
-      { label: "Mañana", value: "tomorrow" },
-      { label: "Esta semana", value: "this_week" },
-    ]);
-    const genderOptions = ref([
-      { label: "Femenil", value: "femenil" },
-      { label: "Varonil", value: "varonil" },
-      { label: "Mixto", value: "mixto" },
-    ]);
+  import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+  import NotificationBell from "src/components/NotificationBell.vue";
+  import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 
-    const router = useRouter();
+  // --- Inicialización ---
+  const router = useRouter();
+  const summaryStore = useSummaryStore(); // Inicializar store
+  const $q = useQuasar(); // Para notificaciones
 
-    const selectedCity = ref(null);
-    const selectedDates = ref([]);
-    const selectedGender = ref(null);
+  // --- Estado de Filtros ---
+  const allCityOptions = ref([]);
+  const cityOptions = ref([]); // Para el select con filtro
+  const dateOptions = ref(['Hoy', 'Mañana', 'Esta Semana', 'Próximos 7 días']); // Opciones simplificadas
+  const genderOptions = ref(["femenil", "varonil", "mixto"]); // Valores directos
 
-    const cityMenu = ref(false);
-    const dateMenu = ref(false);
-    const genderMenu = ref(false);
+  const selectedCity = ref(null); 
+  const selectedDate = ref(null); 
+  const selectedGender = ref(null); 
 
-    const games = ref([]);
-    const searching = ref(false);
+  const games = ref([]);
+  const searching = ref(false); 
 
-    // Format the timestamp to a readable date string
-    const formatTimestamp = (timestamp) => {
-      return new Date(timestamp).toLocaleDateString('es-MX', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    };
+  const formatTimestamp = (timestamp) => {
+    return new Date(timestamp).toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
-    // Calculate the duration of the match in minutes
-    const calculateDuration = (startTime, endTime) => {
-      const [startHour, startMinute] = startTime.split(':').map(Number);
-      const [endHour, endMinute] = endTime.split(':').map(Number);
+  const calculateDuration = (startTime, endTime) => {
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
 
-      let durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+    let durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
 
-      // Si la duración es negativa, significa que el partido terminó después de la medianoche
-      if (durationMinutes < 0) {
-        durationMinutes += 24 * 60; // Agregar 24 horas (en minutos)
-      }
+    // Si la duración es negativa, significa que el partido terminó después de la medianoche
+    if (durationMinutes < 0) {
+      durationMinutes += 24 * 60; // Agregar 24 horas (en minutos)
+    }
 
-      return durationMinutes;
-    };
+    return durationMinutes;
+  };
 
-    // Fetch matches from Supabase with filters
-    const fetchMatches = async () => {
-      searching.value = true;
-      try {
-        // 1. Obtener los partidos con la información del club
-        let { data: matches, error } = await supabase
-          .from("matches")
-          .select(`
-            *,
-            club:clubs (
-              name,
-              city,
-              logo_url,
-              geolocation
-            ),
-            reservation:reservations(total_price, start_time, end_time)
-          `)
-          .eq("is_open", true)
-          .gt("match_date", new Date().toISOString());
+  const loadCities = async () => {
+    try {
+        const cities = await fetchCities();
+        allCityOptions.value = cities.map(city => typeof city === 'string' ? city : city.value || city.label || city);
+        cityOptions.value = allCityOptions.value;
+    } catch (error) { /* ... manejo error ... */ }
+  };
 
+  const filterCityFn = (val, update) => {
+    if (val === '') {
+        update(() => { cityOptions.value = allCityOptions.value; });
+        return;
+    }
+    update(() => {
+        const needle = val.toLowerCase();
+        cityOptions.value = allCityOptions.value.filter(v => v.toLowerCase().indexOf(needle) > -1);
+    });
+  };
+
+
+  // Fetch matches from Supabase with filters
+  const fetchMatches = async () => {
+    searching.value = true;
+    games.value = []; // Limpiar antes de buscar
+    try {
+        let query = supabase
+            .from("matches")
+            .select(`
+                id, match_date, match_time, category, gender, is_open, team1_players, team2_players,
+                club:clubs!inner ( id, name, city, logo_url ),
+                reservation:reservations ( total_price, start_time, end_time )
+            `)
+            .eq("is_open", true); // Solo juegos abiertos
+
+        // --- Aplicar Filtro de Fecha ---
+        const dateFilter = selectedDate.value;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+        const dayAfterTomorrow = new Date(today); dayAfterTomorrow.setDate(today.getDate() + 2);
+        const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + (7 - today.getDay())); endOfWeek.setHours(23, 59, 59, 999);
+        const endOfNext7Days = new Date(today); endOfNext7Days.setDate(today.getDate() + 7); endOfNext7Days.setHours(23, 59, 59, 999);
+
+        const todayStr = today.toISOString().split('T')[0];
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const dayAfterTomorrowStr = dayAfterTomorrow.toISOString().split('T')[0];
+        const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
+        const endOfNext7DaysStr = endOfNext7Days.toISOString().split('T')[0];
+
+
+        if (dateFilter === 'Hoy') {
+            query = query.gte('match_date', todayStr).lt('match_date', tomorrowStr);
+        } else if (dateFilter === 'Mañana') {
+            query = query.gte('match_date', tomorrowStr).lt('match_date', dayAfterTomorrowStr);
+        } else if (dateFilter === 'Esta Semana') {
+            query = query.gte('match_date', todayStr).lte('match_date', endOfWeekStr);
+        } else if (dateFilter === 'Próximos 7 días') {
+            query = query.gte('match_date', todayStr).lte('match_date', endOfNext7DaysStr);
+        } else {
+             // Por defecto, mostrar solo desde hoy en adelante si no hay filtro de fecha
+             query = query.gte('match_date', todayStr);
+        }
+        // --- Fin Filtro Fecha ---
+
+        // --- Otros Filtros ---
         if (selectedCity.value) {
-          query = query.eq("club.city", selectedCity.value); // Filtrar por ciudad del club
+             query = query.eq("club.city", selectedCity.value); 
         }
         if (selectedGender.value) {
-          query = query.eq("gender", selectedGender.value);
-        }
-        if (selectedDates.value.length > 0) {
-          // Filtrado por fechas 
-          if (selectedDates.value.includes("today")) {
-            const today = new Date();
-            const startOfDay = new Date(
-              today.getFullYear(),
-              today.getMonth(),
-              today.getDate()
-            ).toISOString();
-            const endOfDay = new Date(
-              today.getFullYear(),
-              today.getMonth(),
-              today.getDate() + 1
-            ).toISOString();
-            query = query.or(`match_date.gte.${startOfDay},match_date.lt.${endOfDay}`);
-          }
-          if (selectedDates.value.includes("tomorrow")) {
-            const today = new Date();
-            const startOfTomorrow = new Date(
-              today.getFullYear(),
-              today.getMonth(),
-              today.getDate() + 1
-            ).toISOString();
-            const endOfTomorrow = new Date(
-              today.getFullYear(),
-              today.getMonth(),
-              today.getDate() + 2
-            ).toISOString();
-            query = query.or(`match_date.gte.${startOfTomorrow},match_date.lt.${endOfTomorrow}`);
-          }
+            query = query.eq("gender", selectedGender.value);
         }
 
-        if (error) {
-          console.error("Error fetching matches:", error.message);
-          games.value = [];
-          return;
-        }
+        const { data: matchesData, error } = await query.order('match_date').order('match_time');
 
-        // 2. Obtener los IDs de todos los jugadores
-        const playerIds = matches.flatMap(match => [
-          ...match.team1_players, 
-          ...match.team2_players
-        ]);
+        if (error) throw error;
+        if (!matchesData) { games.value = []; return; }
 
-        // 3. Obtener la información de los jugadores
-        let { data: players, error: playersError } = await supabase
-          .from("players")
-          .select("user_id, first_name, photo_url, category")
-          .in("user_id", playerIds);
+         const playerIds = matchesData.flatMap(match => [...(match.team1_players || []), ...(match.team2_players || [])]).filter(id => id != null);
+         let playerMap = {};
+         if (playerIds.length > 0) {
+            const { data: players, error: playersError } = await supabase
+               .from("players")
+               .select("user_id, first_name, photo_url, category")
+               .in("user_id", [...new Set(playerIds)]);
+            if (playersError) throw playersError;
+            playerMap = (players || []).reduce((map, player) => { map[player.user_id] = player; return map; }, {});
+         }
 
-        if (playersError) {
-          console.error("Error fetching players:", playersError.message);
-          games.value = [];
-          return;
-        }
-
-        // 4. Crear un mapa de jugadores por user_id
-        const playerMap = players.reduce((map, player) => {
-          map[player.user_id] = player;
-          return map;
-        }, {});
-
-        // 5. Agregar la información de los jugadores a los partidos
-        games.value = matches.map(match => ({
-          ...match,
-          team1_players: match.team1_players.map(playerId => playerMap[playerId]),
-          team2_players: match.team2_players.map(playerId => playerMap[playerId]),
+        // --- Mapear Resultados ---
+        games.value = matchesData.map(match => ({
+            ...match,
+            club: match.club || { name: 'N/A', city: 'N/A', id: null }, // Default object for club
+            reservation: match.reservation || { total_price: 0, start_time: '00:00', end_time: '00:00' }, // Default for reservation
+            // Mapear jugadores, devolver null si el ID no está o no se encontró
+            team1_players: (match.team1_players || [null, null]).map(playerId => playerMap[playerId] || null),
+            team2_players: (match.team2_players || [null, null]).map(playerId => playerMap[playerId] || null),
         }));
 
-      } catch (error) {
-        console.error("Unexpected error fetching matches:", error.message);
-        games.value = [];
-      } finally {
+    } catch (error) {
+        console.error("Error fetching matches:", error);
+        games.value = []; // Limpiar en caso de error
+        $q.notify({ type: 'negative', message: 'Error al buscar juegos.' });
+    } finally {
         searching.value = false;
-      }
+    }
+  };
+
+  const prepareJoinGameSummary = (game, teamNum, playerIndex) => {
+    console.log(`Intentando unirse a juego ${game.id}, equipo ${teamNum}, slot ${playerIndex}`);
+
+    // Validaciones
+    if (!game || !game.reservation || game.reservation.total_price === undefined || game.reservation.total_price === null || !game.club?.id) {
+        console.error("Datos incompletos del juego para proceder al pago:", game);
+        $q.notify({ type: 'negative', message: 'Información del juego incompleta para unirse.' });
+        return;
+    }
+
+    const pricePerPlayer = (game.reservation.total_price || 0) / 4;
+    if (pricePerPlayer <= 0) {
+        // Podría ser un juego gratuito o un error en el precio total
+        // Decide cómo manejar juegos gratuitos (¿quizás unirse directamente sin pago?)
+        console.warn("El precio por jugador es cero o inválido.");
+         // $q.notify({ type: 'info', message: 'Este juego parece ser gratuito o tiene un error en el precio.' });
+         // Por ahora, continuamos asumiendo que un precio > 0 es necesario
+         // Si permites juegos gratuitos, necesitarías otra lógica aquí.
+         // return; // Descomenta si no permites precio cero
+    }
+
+
+    // 1. Construir Props
+    const summaryProps = {
+        summaryTitle: 'Confirmar Unión a Juego',
+        itemDetails: [
+            { label: 'Club', value: game.club.name || 'No especificado' },
+            { label: 'Fecha', value: formatTimestamp(game.match_date) }, // Usar función existente
+            { label: 'Hora', value: `${new Date(game.match_date + 'T' + game.match_time).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} hrs.` },
+            { label: 'Categoría', value: game.category || 'N/A' },
+            { label: 'Precio (Tu parte)', value: `$${pricePerPlayer.toFixed(2)}` },
+        ],
+        baseData: {
+            clubId: game.club.id,
+            price: pricePerPlayer,
+            participants: 1, // Al unirse, paga 1 persona
+            type: 'open_match_join', // Nuevo tipo
+            id: game.id, // ID del Match
+        },
+        allowPaymentSplit: false, // Ya está dividido, se paga la parte individual
+        showPublicToggle: false, // No aplica
+        commissionRate: 4, // O desde config
+        extraData: { // Información adicional útil
+            matchId: game.id,
+            teamToJoin: teamNum,
+            slotIndex: playerIndex, // Puede ser útil post-pago para actualizar el match
+            matchCategory: game.category,
+            matchGender: game.gender,
+            matchDate: game.match_date,
+            matchTime: game.match_time,
+            clubName: game.club.name,
+        }
     };
 
-    const navigateToMatch = (matchId) => {
-      router.push(`/player/match/${matchId}`);
-    };
+    summaryStore.setSummaryDetails(summaryProps);
+    console.log('Datos para unirse a juego guardados en Pinia:', summaryProps);
+    router.push({ name: 'OrderSummary' });
+  };
 
-    const selectCity = (city) => {
-      selectedCity.value = city.value;
-      cityMenu.value = false;
-    };
-
-    const selectDate = (date) => {
-      if (!selectedDates.value.includes(date.value)) {
-        selectedDates.value.push(date.value);
-      } else {
-        selectedDates.value = selectedDates.value.filter((d) => d !== date.value);
-      }
-      dateMenu.value = false;
-    };
-
-    const selectGender = (gender) => {
-      selectedGender.value = gender.value;
-      genderMenu.value = false;
-    };
-
-    // Watch for changes in filters and refetch matches
-    watch([selectedCity, selectedDates, selectedGender], fetchMatches);
+    watch([selectedCity, selectedDate, selectedGender], fetchMatches, { deep: true }); 
 
     onMounted(() => {
-      fetchCities();
+      loadCities();
       fetchMatches();
     });
 
-    return {
-      cityOptions,
-      dateOptions,
-      genderOptions,
-      selectedCity,
-      selectedDates,
-      selectedGender,
-      cityMenu,
-      dateMenu,
-      genderMenu,
-      games,
-      navigateToMatch,
-      searching,
-      selectCity,
-      selectDate,
-      selectGender,
-      formatTimestamp,
-      calculateDuration,
-    };
-  },
-};
 </script>
 
   
-<style>
+<style scooped>
 
   .home {
       background-color: #dddddd;
@@ -467,7 +454,7 @@ export default {
     }
     
   .logo-icon {
-      width: 60px; /* Ajusta el tamaño del logo */
+      width: 60px; 
       height: 60px;
     }
 
@@ -481,12 +468,12 @@ export default {
     
     .club-info-section {
       display: flex;
-      align-items: center; /* Centra verticalmente */
+      align-items: center; 
     }
 
     .club-info {
       display: flex;
-      align-items: center; /* Centra verticalmente el logo y el nombre */
+      align-items: center; 
     }
 
     .club-logo {
@@ -494,18 +481,18 @@ export default {
       height: 30px;
       border-radius: 50%;
       object-fit: cover;
-      margin-right: 18px; /* Espacio entre el logo y el nombre */
+      margin-right: 18px; 
     }
 
     .vertical-divider {
-      border-left: 1px solid #ccc; /* Estilo de la línea divisora */
-      height: 40px; /* Altura de la línea */
-      margin: 0 20px; /* Espacio a los lados de la línea */
+      border-left: 1px solid #ccc; 
+      height: 40px; 
+      margin: 0 20px; 
     }
 
     .price-duration {
       margin-left: 15px;
-      text-align: left; /* Alinea el texto a la derecha */
+      text-align: left; 
     }
     
     .club-name {

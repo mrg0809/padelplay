@@ -129,6 +129,7 @@ export default {
     const summaryStore = useSummaryStore();
     const coachId = route.params.coachId;
     const clubId = route.query.clubId;
+    const clubName = route.query.clubName;
     const coach = ref(null);
     const availability = ref({});
     const selectedTime = ref(null);
@@ -136,7 +137,6 @@ export default {
     const availableTimes = ref(null);
     const selectedDate = ref(null);
     const selectedPriceOption = ref(null);
-
 
     const priceOptions = computed(() => {
       if (!coach.value) return [];
@@ -221,35 +221,6 @@ export default {
       }
     };
 
-    /*const startReservation = () => {
-      if (!selectedDate.value || !selectedTime.value || !selectedPriceOption.value) {
-        console.error("Información incompleta para la reserva.");
-        return;
-      }
-      const reservationDetails = {
-          coachId: coachId,
-          coachName: coach.value?.name,
-          clubId: clubId,
-          date: selectedDate.value.date.toISOString().split("T")[0],
-          time: selectedTime.value,
-          people: selectedPriceOption.value.people,
-          price: selectedPriceOption.value.price,
-      };
-      console.log("Procediendo al checkout con:", reservationDetails);
-      router.push({
-         name: 'LessonSummary',
-         query: {
-            coachId: reservationDetails.coachId,
-            clubId: reservationDetails.clubId,
-            date: reservationDetails.date,
-            time: reservationDetails.time,
-            people: reservationDetails.people,
-            price: reservationDetails.price,
-            coachName: reservationDetails.coachName
-         }
-       });
-    };*/
-
     const proceedToSummary = () => {
       // 1. Recopila la información necesaria (igual que antes)
       const coachData = coach.value;
@@ -257,13 +228,11 @@ export default {
       const selectedTimeValue = selectedTime.value;
       const selectedPriceOptionValue = selectedPriceOption.value;
       const clubIdValue = clubId;
-      // ¡Asegúrate de tener el nombre del club también!
-      const clubNameValue = 'Nombre del Club Aquí'; // Reemplaza con el nombre real
   // 2. Construye el objeto de props (igual que antes)
       const summaryProps = {
         summaryTitle: 'Resumen de Entrenamiento',
         itemDetails: [
-          { label: 'Club', value: clubNameValue },
+          { label: 'Club', value: clubName || 'No especificado' },
           { label: 'Coach', value: coachData?.name || 'No especificado' },
           { label: 'Fecha', value: selectedDateValue?.date.toISOString().split("T")[0] || 'No especificada' },
           { label: 'Horario', value: `${selectedTimeValue} hrs.` || 'No especificada' },

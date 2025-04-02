@@ -1,3 +1,5 @@
+import { name } from "dayjs/locale/es-mx";
+
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
   {
@@ -52,6 +54,7 @@ const routes = [
   { 
     path: "/dashboard/player", 
     component: () => import("pages/DashboardPlayer.vue"),
+    name: "DashboardPlayer",
     meta: { requiresAuth: true },
   },
   { 
@@ -217,10 +220,20 @@ const routes = [
     component: () => import("src/pages/DashboardPlayer.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/player/detallessesion/:lessonId",
+    name: "LessonDetails",
+    component: () => import("src/pages/player/LessonDetails.vue"),
+  },
   { 
     path: "/player/match/:matchId", 
     component: () => import("src/pages/player/MatchDetails.vue"),
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/player/formasdepago",
+    name: "PaymentMethods",
+    component: () => import("src/pages/player/PaymentMethods.vue"),
   },
   { 
     path: "/player/perfil", 
