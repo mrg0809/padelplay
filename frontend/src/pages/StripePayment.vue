@@ -87,8 +87,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { loadStripe } from "@stripe/stripe-js";
 import { getBrandIcon, getBrandName  } from "src/helpers/paymentUtils";
-import { endtime_calculate } from "src/helpers/hourUtils";
-import { createNotification } from "src/services/api/notifications";
+import { finalizeCourtReservationUtil } from "src/helpers/reservationsUtils";
 import api from "../services/api";
 
 export default {
@@ -146,14 +145,20 @@ export default {
 
 
     const isReadyToPay = computed(() => {
-      if (!clientSecretRef.value) return false; // Siempre se necesita clientSecret
-      if (selectedMethodId.value === 'new') {
-          // Si es nueva tarjeta, el elemento debe estar listo
-          return isPaymentElementReady.value;
-      } else {
-          // Si es tarjeta guardada, solo necesitamos el ID seleccionado
-          return !!selectedMethodId.value && selectedMethodId.value !== 'new';
-      }
+        console.log("Checking isReadyToPay:", {
+            clientSecret: !!clientSecretRef.value,
+            selectedMethodId: selectedMethodId.value,
+            isPaymentElementReady: isPaymentElementReady.value,
+            elementsValueExists: !!elements.value // <-- ADD THIS CHECK
+        });
+        if (!clientSecretRef.value) return false;
+        if (selectedMethodId.value === 'new') {
+            // If new card, elements group AND payment element must be ready
+            return !!elements.value && isPaymentElementReady.value; // Check elements.value too
+        } else {
+            // If saved card, just need the ID
+            return !!selectedMethodId.value && selectedMethodId.value !== 'new';
+        }
     });
 
     const fetchSavedMethods = async () => {
@@ -292,30 +297,6 @@ export default {
       }
     };
 
-    const setupStripe = async () => {
-      try {
-        stripe.value = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
-        // Usa amountToPay para obtener el clientSecret
-        clientSecretRef.value = await getClientSecret(amountToPay.value);
-
-        if (clientSecretRef.value && stripe.value) {
-          // Configurar apariencia (opcional, tema 'stripe' es el default)
-          const appearance = { theme: 'night', labels: 'floating' };
-          elements.value = stripe.value.elements({ clientSecret: clientSecretRef.value, appearance });
-          const paymentElement = elements.value.create("payment"); // Usar Payment Element
-          paymentElement.mount("#stripe-payment-element"); // Montar en el div
-        } else if (!clientSecretRef.value) {
-             console.error("No se pudo montar Stripe Elements porque faltó el clientSecret.");
-             // Mostrar error al usuario
-             $q.notify({ type: "negative", message: "No se pudo cargar el formulario de pago. Intenta volver y reintentar.", timeout: 0, actions: [{ label: 'Cerrar', handler: () => {} }]});
-        }
-      } catch (error) {
-        console.error("Error al cargar Stripe:", error);
-        $q.notify({ type: "negative", message: "Error al cargar el sistema de pago." });
-      }
-    };
-
     // Observador para montar/desmontar el elemento cuando cambia la selección
     watch(selectedMethodId, async (newValue) => {
         console.log("Método seleccionado cambiado a:", newValue);
@@ -362,6 +343,7 @@ export default {
                     throw new Error("El formulario de nueva tarjeta no está listo.");
                 }
                 console.log("Confirmando pago con Payment Element...");
+                console.log("Value passed to confirmPayment elements:", elements.value);
                 const result = await stripe.value.confirmPayment({
                     elements, // Instancia de Elements group
                     confirmParams: {
@@ -429,32 +411,25 @@ export default {
         console.log("Pago Exitoso! Procesando tipo:", baseData.value?.type, "con ID:", baseData.value?.id);
         $q.loading.show({ message: 'Confirmando reserva...' }); // Cambiar mensaje
 
+        const context = {
+          baseData: baseData.value,
+          extraData: extraData.value,
+          selectedProducts: selectedProducts.value,
+          paymentOrderId: paymentOrderId.value,
+          totalAmount: totalAmount.value,
+          amountToPay: amountToPay.value
+        };
+
         try {
-            // --- Opcional: Notificar a tu backend sobre el pago exitoso ---
-            // (Esto es MEJOR hacerlo con Webhooks de Stripe en tu backend)
-            // try {
-            //      await api.post("/payments/process-stripe-payment", {
-            //          payment_order_id: paymentOrderId.value,
-            //          payment_intent_id: paymentIntent.id, // Pasar ID del PaymentIntent
-            //          payment_status: paymentIntent.status, // 'succeeded'
-            //          // Otros datos que tu backend necesite...
-            //      });
-            // } catch (processError) {
-            //      console.error("Error notificando al backend sobre el pago (continuando...):", processError);
-            //      // Decide si este error es crítico o puedes continuar
-            // }
-            // --- Fin Opcional ---
-
-
-            // --- Lógica Específica por Tipo ---
             const type = baseData.value?.type;
-            let success = false;
-            let redirectPath = '/'; // Ruta por defecto en caso de error o tipo desconocido
+            let result = { success: false };
+            let redirectPath = '/dashboard/player'; // Ruta por defecto en caso de error o tipo desconocido
 
             if (type === 'court') {
-                const result = await finalizeCourtReservation(paymentIntent);
-                success = result.success;
-                redirectPath = result.path || `/player/match/${result.matchId}`; // Asume que devuelve matchId
+                result = await finalizeCourtReservationUtil(paymentIntent, context, api, $q);
+                if (result.success) {
+                  redirectPath = result.path || `/player/match/${result.matchId}`; // Asume que devuelve matchId
+                }
             } else if (type === 'class') {
                  const result = await finalizeClassBooking(paymentIntent);
                  success = result.success;
@@ -520,38 +495,6 @@ export default {
                  isProcessingPayment.value = false;
                  $q.loading.hide();
                 break;
-        }
-    };
-
-    const finalizeCourtReservation = async (paymentIntent) => {
-        console.log("Finalizando reserva de cancha...");
-        try {
-            const payload = {
-                club_id: baseData.value.clubId,
-                court_id: baseData.value.id,
-                reservation_date: extraData.value.date, // O obtenerlo de baseData si lo pasaste ahí
-                start_time: extraData.value.time, // O obtenerlo de baseData
-                end_time: extraData.value.endTime, // Necesitarías calcular y pasar endTime en extraData
-                total_price: totalAmount.value, // El total original
-                pay_total: amountToPay.value === totalAmount.value, // Determinar si pagó todo
-                additional_items: selectedProducts.value, // Productos
-                payment_order_id: paymentOrderId.value,
-                payment_intent_id: paymentIntent.id, // Guardar ID de Stripe
-                is_public_match: extraData.value.isPublicMatch, // Obtener de extraData
-            };
-            console.log("Payload para /reservations:", payload);
-            // const response = await api.post("/reservations", payload); // LLAMADA REAL A TU API
-             // Simulación de éxito
-             const response = { data: { match_id: 'match123', /* otros datos */ } };
-             await new Promise(res => setTimeout(res, 1000)); // Simular delay API
-
-            console.log("Respuesta de API /reservations:", response.data);
-             if (!response.data?.match_id) throw new Error("La API no devolvió un ID de partido.");
-            return { success: true, matchId: response.data.match_id }; // Devolver ID para redirección
-        } catch (error) {
-             console.error("Error en finalizeCourtReservation:", error);
-             $q.notify({ type: 'negative', message: error.response?.data?.detail || error.message || "Error al confirmar la reserva de cancha." });
-             return { success: false };
         }
     };
 
@@ -706,7 +649,7 @@ export default {
       isLoadingMethods,
       getBrandIcon,
       getBrandName,
-      endtime_calculate,
+      isReadyToPay,
     };
   },
 };
