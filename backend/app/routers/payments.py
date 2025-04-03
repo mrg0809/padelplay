@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Body, Path, Response, status
 from pydantic import BaseModel
+from typing import Optional
 from app.db.connection import supabase
 import stripe
 from app.core.config import settings
@@ -16,18 +17,25 @@ class User(BaseModel):
     email: str
 
 class PaymentIntentRequest(BaseModel):
-    payment_order_id: str
     amount: int
+    payment_order_id: str
+    customer: Optional[str] = None # Agrega customer, y lo hace opcional
+    metadata: Optional[dict] = None # Agrega metadata, y lo hace opcional
 
 
 @router.post("/create-payment-intent")
 async def create_payment_intent(request_data: PaymentIntentRequest = Body(...)):
     try:
-        payment_intent = stripe.PaymentIntent.create(
-            amount=request_data.amount,
-            currency="mxn",
-            metadata={"payment_order_id": request_data.payment_order_id},
-        )
+        payment_intent_params = {
+            "amount": request_data.amount,
+            "currency": "mxn",
+            "metadata": {"payment_order_id": request_data.payment_order_id},
+        }
+        
+        if request_data.customer:
+            payment_intent_params["customer"] = request_data.customer
+            
+        payment_intent = stripe.PaymentIntent.create(**payment_intent_params)
         return {"clientSecret": payment_intent.client_secret}
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -151,6 +159,7 @@ async def list_payment_methods(current_user: dict = Depends(get_current_user)):
                 "last4": pm.card.last4,
                 "expMonth": pm.card.exp_month,
                 "expYear": pm.card.exp_year,
+                "customer": pm.customer,
                 # Puedes añadir is_default aquí si lo implementas
             }
             for pm in payment_methods.data

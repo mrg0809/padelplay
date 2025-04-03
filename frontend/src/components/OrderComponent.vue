@@ -325,9 +325,9 @@
           totalAmount: total.value.toFixed(2),
           description: props.summaryTitle,
           clubId: props.baseData?.clubId,
-          baseData: JSON.stringify(props.baseData || {}),         // Convertir objeto a JSON string
-          extraData: JSON.stringify(props.extraData || {}),       // Convertir objeto a JSON string
-          selectedProducts: JSON.stringify(selectedProducts.value || []), // Convertir array a JSON string
+          baseData: JSON.stringify(props.baseData || {}),         
+          extraData: JSON.stringify(props.extraData || {}),    
+          selectedProducts: JSON.stringify(selectedProducts.value || []), 
         },
       });
     } catch (error) {
