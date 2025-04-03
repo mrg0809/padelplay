@@ -133,7 +133,6 @@ export default {
     });
 
     const stripe = ref(null);
-    const elements = ref(null);
     const paymentElement = ref(null); // Instancia específica del Payment Element
     const clientSecretRef = ref(null);
     const isProcessingPayment = ref(false);
@@ -143,18 +142,17 @@ export default {
     const paymentElementError = ref(null); // Errores del PaymentElement
     const isPaymentElementReady = ref(false); // Indica si el elemento está montado y listo
 
+    const elementsRef = ref(null);
+    const cardElementRef = ref(null);
+    const stripeInstance = shallowRef(null)
+    const stripeLoadingError = ref(null)
+
 
     const isReadyToPay = computed(() => {
-        console.log("Checking isReadyToPay:", {
-            clientSecret: !!clientSecretRef.value,
-            selectedMethodId: selectedMethodId.value,
-            isPaymentElementReady: isPaymentElementReady.value,
-            elementsValueExists: !!elements.value // <-- ADD THIS CHECK
-        });
         if (!clientSecretRef.value) return false;
         if (selectedMethodId.value === 'new') {
             // If new card, elements group AND payment element must be ready
-            return !!elements.value && isPaymentElementReady.value; // Check elements.value too
+            return !!elementsRef.value?.elements && isPaymentElementReady.value; // Check elements.value too
         } else {
             // If saved card, just need the ID
             return !!selectedMethodId.value && selectedMethodId.value !== 'new';
@@ -212,56 +210,45 @@ export default {
     };
 
 
+// --- Montar Payment Element (Modificado) ---
     const mountPaymentElement = () => {
-      if (!stripe.value || !clientSecretRef.value || selectedMethodId.value !== 'new') {
-          isPaymentElementReady.value = false;
-          // Si el elemento ya estaba montado, destruirlo (opcional, pero buena práctica)
-          if (paymentElement.value) {
-              console.log("Desmontando Payment Element...");
-              paymentElement.value.destroy();
-              paymentElement.value = null;
-          }
-          return;
-      }
-      // Solo crear y montar si no existe ya Y se seleccionó 'new'
-      if (!paymentElement.value && selectedMethodId.value === 'new') {
-          console.log("Montando Payment Element...");
-          try {
-              const appearance = { theme: 'night', labels: 'floating' }; // O tu tema
-              // Crear instancia de Elements Group asociada al Payment Intent
-              elements.value = stripe.value.elements({ clientSecret: clientSecretRef.value, appearance });
-              // Crear el Payment Element
-              paymentElement.value = elements.value.create("payment", {
-                  // Puedes añadir opciones aquí si es necesario
-                  // layout: 'tabs' // O 'accordion'
-              });
-              // Montar en el div
-              paymentElement.value.mount("#stripe-payment-element");
-              isPaymentElementReady.value = false; // Resetear
-              paymentElementError.value = null;
-              // Escuchar evento 'ready' para saber cuándo está listo para usarse
-              paymentElement.value.on('ready', () => {
-                  console.log("Payment Element listo.");
-                  isPaymentElementReady.value = true;
-              });
-              // Escuchar cambios para errores
-              paymentElement.value.on('change', (event) => {
-                  if (event.error) {
-                      paymentElementError.value = event.error.message;
-                      isPaymentElementReady.value = false; // No está listo si hay error
-                  } else {
-                      paymentElementError.value = null;
-                      // 'ready' es más fiable que 'complete' para habilitar el botón
-                      // isPaymentElementReady.value = event.complete;
-                  }
-              });
+        // Verificar Stripe y la referencia al componente Elements
+        if (!stripeInstance.value || !elementsRef.value || selectedMethodId.value !== 'new' || !clientSecretRef.value) {
+            isPaymentElementReady.value = false;
+            if (paymentElement.value) { paymentElement.value.destroy(); paymentElement.value = null; }
+            return;
+        }
 
-          } catch(error) {
-              console.error("Error montando Payment Element:", error);
-              paymentElementError.value = "Error al cargar formulario de tarjeta.";
-              isPaymentElementReady.value = false;
-          }
-      }
+        // Obtener el grupo de Elements DESDE LA REFERENCIA del componente <StripeElements>
+        const elementsGroup = elementsRef.value?.elements;
+        if (!elementsGroup) {
+            console.error("Fallo al obtener Elements group desde elementsRef.");
+            paymentElementError.value = "Error al inicializar formulario (E-Group Ref).";
+            isPaymentElementReady.value = false;
+            return;
+        }
+
+        if (!paymentElement.value) {
+            console.log("Montando Payment Element usando Elements group de ref...");
+            try {
+                // Crear el Payment Element usando el grupo de la ref
+                paymentElement.value = elementsGroup.create("payment", { /* options */ });
+                paymentElement.value.mount("#stripe-payment-element");
+                isPaymentElementReady.value = false;
+                paymentElementError.value = null;
+                paymentElement.value.on('ready', () => {
+                    console.log("Payment Element listo.");
+                    isPaymentElementReady.value = true;
+                });
+                // Payment Element no tiene evento 'change' como CardElement, la validación es más implícita
+                // Puedes escuchar 'change' en 'elementsGroup' si necesitas reaccionar a cambios generales
+                // elementsGroup.on('change', (event) => { ... });
+            } catch(error) {
+                console.error("Error montando Payment Element:", error);
+                paymentElementError.value = "Error al cargar formulario de tarjeta.";
+                isPaymentElementReady.value = false;
+            }
+        }
     };
 
     // Inicializar Stripe y obtener datos iniciales
@@ -324,88 +311,85 @@ export default {
 
 
     const confirmPayment = async () => {
-        if (!stripe.value || !clientSecretRef.value || !selectedMethodId.value) {
-            $q.notify({ type: "negative", message: "Sistema de pago no inicializado." });
-            return;
-        }
+      // Usar la instancia de Stripe cargada en onMounted
+      const stripe = stripeInstance.value;
+      // Obtener el grupo de Elements DESDE LA REFERENCIA del componente <StripeElements>
+      const elementsGroup = elementsRef.value?.elements;
 
-        isProcessingPayment.value = true;
-        $q.loading.show({ message: 'Procesando pago...' });
-        paymentElementError.value = null; // Limpiar errores previos
+      if (!stripe || !clientSecretRef.value || !selectedMethodId.value) {
+          $q.notify({ type: "negative", message: "Sistema de pago no inicializado correctamente." });
+          return;
+      }
 
-        let error = null;
-        let paymentIntent = null;
+      isProcessingPayment.value = true;
+      $q.loading.show({ message: 'Procesando pago...' });
+      paymentElementError.value = null;
 
-        try {
-            if (selectedMethodId.value === 'new') {
-                // --- Pagar con NUEVA tarjeta usando Payment Element ---
-                if (!elements.value || !paymentElement.value || !isPaymentElementReady.value) {
-                    throw new Error("El formulario de nueva tarjeta no está listo.");
-                }
-                console.log("Confirmando pago con Payment Element...");
-                console.log("Value passed to confirmPayment elements:", elements.value);
-                const result = await stripe.value.confirmPayment({
-                    elements, // Instancia de Elements group
-                    confirmParams: {
-                        return_url: `${window.location.origin}/payment-complete`, // Página de retorno
-                        // Opcional: Guardar esta nueva tarjeta para futuro uso
-                        // setup_future_usage: 'on_session',
-                    },
-                    redirect: "if_required",
-                });
-                error = result.error;
-                paymentIntent = result.paymentIntent; // Puede ser undefined si hubo error inmediato
+      let error = null;
+      let paymentIntent = null;
 
-            } else {
-                // --- Pagar con tarjeta GUARDADA (pm_...) usando confirmCardPayment ---
-                console.log(`Confirmando pago con tarjeta guardada: ${selectedMethodId.value}`);
-                const result = await stripe.value.confirmCardPayment(
-                    clientSecretRef.value, // El client secret del PaymentIntent
-                    {
-                        payment_method: selectedMethodId.value, // El ID pm_... de la tarjeta guardada
-                        // No se necesita return_url aquí, confirmCardPayment maneja 3DS
-                    }
-                );
-                error = result.error;
-                paymentIntent = result.paymentIntent;
-            }
+      try {
+          if (selectedMethodId.value === 'new') {
+              // --- Pagar con NUEVA tarjeta usando Payment Element ---
+              // Verificar que el grupo de elements exista y que el botón esté habilitado (isReadyToPay)
+              if (!elementsGroup || !isReadyToPay.value) {
+                  throw new Error("El formulario de nueva tarjeta no está listo.");
+              }
+              console.log("Confirmando pago con Payment Element...");
+              console.log("Stripe Instance:", stripe);
+              console.log("Elements Group Instance:", elementsGroup); // <- Log del grupo correcto
 
-            // --- Manejar Resultado ---
-            if (error) {
-                // Error durante la confirmación (antes o después de 3DS si aplica)
-                console.error("Error al confirmar el pago:", error);
-                $q.notify({ type: "negative", message: `Error: ${error.message}` });
-                paymentElementError.value = error.message; // Mostrar error cerca del elemento si es 'new'
-            } else if (paymentIntent) {
-                // Si no hubo error, procesar estado del PaymentIntent
-                // (Puede ser succeeded, processing, requires_action - aunque este último es raro post-confirm)
-                console.log("Resultado confirmación:", paymentIntent);
-                await handlePaymentIntentStatus(paymentIntent); // Usar la función existente
-            } else if (!error && selectedMethodId.value !== 'new') {
-                // Caso raro: sin error y sin paymentIntent con tarjeta guardada (quizás fallo silencioso?)
-                  console.warn("Confirmación con tarjeta guardada no devolvió error ni paymentIntent.");
-                  $q.notify({type: 'warning', message: 'Estado de pago incierto. Verifica tus operaciones.'});
-            }
-            // Si hubo redirección, el código no llegará aquí. Se maneja en /payment-complete
+              const result = await stripe.confirmPayment({
+                  elements: elementsGroup, // <--- Pasar el grupo obtenido de la Ref
+                  confirmParams: {
+                      return_url: `${window.location.origin}/payment-complete`,
+                  },
+                  redirect: 'if_required',
+              });
+              error = result.error;
+              paymentIntent = result.paymentIntent;
 
-        } catch (error) {
-            console.error("Excepción durante confirmPayment:", error);
-            $q.notify({ type: "negative", message: "Ocurrió un error inesperado durante el pago." });
-        } finally {
-            // Solo ocultar si NO hubo redirección o si hubo error inmediato
-            // Si paymentIntent existe y no es 'succeeded', puede estar procesando o falló
-            if (error || (paymentIntent && paymentIntent.status !== 'succeeded')) {
+          } else {
+              // --- Pagar con tarjeta GUARDADA (pm_...) usando confirmCardPayment ---
+              console.log(`Confirmando pago con tarjeta guardada: ${selectedMethodId.value}`);
+              const result = await stripe.confirmCardPayment(
+                  clientSecretRef.value,
+                  { payment_method: selectedMethodId.value }
+                  // No necesita return_url aquí normalmente
+              );
+              error = result.error;
+              paymentIntent = result.paymentIntent;
+          }
+
+          // --- Manejar Resultado ---
+          if (error) {
+              console.error("Error al confirmar el pago:", error);
+              $q.notify({ type: "negative", message: `Error: ${error.message}` });
+              if(selectedMethodId.value === 'new') paymentElementError.value = error.message;
+          } else if (paymentIntent) {
+              console.log("Resultado confirmación:", paymentIntent);
+              await handlePaymentIntentStatus(paymentIntent); // Procesar estado
+          } else if (!error && selectedMethodId.value !== 'new') {
+              console.warn("Confirmación con tarjeta guardada no devolvió error ni paymentIntent.");
+              $q.notify({type: 'warning', message: 'Estado de pago incierto. Verifica tus operaciones.'});
+          }
+          // Si hubo redirección, el código no llegará aquí.
+
+      } catch (error) {
+          console.error("Excepción durante confirmPayment:", error);
+          $q.notify({ type: "negative", message: "Ocurrió un error inesperado durante el pago." });
+      } finally {
+          // Manejo cuidadoso del loading
+          if (error || (paymentIntent && paymentIntent.status !== 'succeeded')) {
+              $q.loading.hide();
+              isProcessingPayment.value = false;
+          } else if (!error && !paymentIntent && selectedMethodId.value !== 'new') {
                 $q.loading.hide();
                 isProcessingPayment.value = false;
-            } else if (!error && !paymentIntent && selectedMethodId.value !== 'new') {
-                  // Si no hubo error ni intent con tarjeta guardada, detener loading
-                  $q.loading.hide();
-                  isProcessingPayment.value = false;
-            }
-            // Si fue exitoso o requiere acción (redirección), el loading se quitará
-            // en handleSuccessfulPayment o en la página de retorno.
-        }
-      };
+          }
+          // Si fue 'succeeded' o requiere acción/redirect, loading se maneja en otro lado
+      }
+    };
 
     const handleSuccessfulPayment = async (paymentIntent) => {
         console.log("Pago Exitoso! Procesando tipo:", baseData.value?.type, "con ID:", baseData.value?.id);
@@ -618,6 +602,9 @@ export default {
 
     onMounted(async () => {
     // Parsear datos de la ruta una vez
+      let parsedBaseData = {}
+      let parsedExtraData = {}
+      let parsedSelectedProducts = []
       try {
           baseData.value = JSON.parse(route.query.baseData || '{}');
           extraData.value = JSON.parse(route.query.extraData || '{}');
@@ -628,10 +615,11 @@ export default {
           // Podrías redirigir o mostrar un estado de error permanente
           return;
       }
+      console.log('Parsed baseData:', baseData.value);
 
       // Validar datos esenciales después de parsear
       if (!paymentOrderId.value || amountToPay.value <= 0 || !baseData.value?.type) {
-          console.error("Faltan datos esenciales después de parsear:", { query: route.query, baseData: baseData.value });
+          console.error("Faltan datos esenciales después de parsear o falta 'type' en baseData:", { query: route.query, baseData: baseData.value });
           $q.notify({ type: 'negative', message: 'Información de pago incompleta. Por favor, vuelve a intentarlo.', timeout: 0, actions: [{ label: 'Volver', handler: goBack }] });
           return;
       }
@@ -650,6 +638,8 @@ export default {
       getBrandIcon,
       getBrandName,
       isReadyToPay,
+      isPaymentElementReady,
+      paymentElementError,
     };
   },
 };
