@@ -32,8 +32,10 @@
           </div>
           
           <div class="events-carousel flex flex-center">
-            
-            <q-spinner-puff v-if="isLoading" color="primary" size="9em" />
+
+            <div v-if="matches.length === 0 && !isInitiallyLoading" class="q-pa-md text-center text-grey">
+              No tienes próximos eventos registrados.
+            </div>
             <div
               v-else
               v-for="match in matches"
@@ -64,13 +66,15 @@
   </template>
   
   <script>
-  import { ref, onMounted } from 'vue';
+  import { useQuasar } from 'quasar';
+  import { ref, onMounted, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import NotificationBell from "../components/NotificationBell.vue";
   import NavigationMenu from "../components/PlayerNavigationMenu.vue";
   import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   import { useUserStore } from "src/stores/userStore";
+  import { runTaskWithMinLoading } from 'src/helpers/loadingUtils';
   import { fetchUpcomingPlayerMatches } from "src/services/api/matches";
   import { formatDate } from 'src/helpers/dateUtils';
 
@@ -83,10 +87,11 @@
       BannerPromoScrolling,
     },
     setup() {
+      const $q = useQuasar();
       const router = useRouter();
-      const isLoading = ref(true);
       const matches = ref([]);
       const full_name = ref(null);
+      const isInitiallyLoading = ref(true);
       const userStore = useUserStore();
 
       const options = [
@@ -116,14 +121,10 @@
         },
       ];
 
-      const fetchMatches = async () => {
-        try {
-          matches.value = await fetchUpcomingPlayerMatches();
-        } catch (error) {
-          console.error("Error al cargar partidos:", error);
-        } finally {
-          isLoading.value = false;
-        }
+      const fetchDashboardMatches = async () => {
+        const upcomingMatches = await fetchUpcomingPlayerMatches();
+        // Puedes añadir transformaciones aquí si es necesario antes de devolver
+        return upcomingMatches;
       };
 
       const navigateToMatch = (matchId) => {
@@ -134,15 +135,39 @@
         router.push(`/player/${route}`);
       };
 
-      onMounted(() => {
-        fetchMatches();
+      onMounted(async () => {
+        isInitiallyLoading.value = true;
+        matches.value = []; // Limpia datos anteriores
+
+        try {
+          // Llama al util: pasa $q, tu función de fetch, y el tiempo mínimo deseado
+          const fetchedMatches = await runTaskWithMinLoading(
+            $q,
+            fetchDashboardMatches, // La función que hace el trabajo real
+            2000 // Ejemplo: mostrar spinner mínimo 0.7 segundos
+            // Puedes pasar opciones extras de QLoading aquí si quieres sobrescribir defaults:
+            // { message: 'Cargando el dashboard...', spinnerColor: 'amber' }
+          );
+
+          // Si la promesa se resuelve, runTaskWithMinLoading devuelve el resultado de fetchDashboardMatches
+          matches.value = fetchedMatches || []; // Actualiza tu estado
+
+        } catch (error) {
+          // El error ya fue notificado y logueado por el util.
+          // Puedes añadir lógica adicional aquí si es necesario para este componente
+          // específico (ej: mostrar un mensaje de error diferente en la UI).
+          console.error("Error especifico capturado en DashboardPlayer:", error);
+          matches.value = []; // Asegurar que esté vacío en caso de error
+        } finally {
+          isInitiallyLoading.value = false; // Marca que la carga inicial (intento) terminó
+        }
       });
 
       return {
         full_name,
         options,
         matches,
-        isLoading,
+        isInitiallyLoading,
         formatDate,
         navigateToMatch,
         navigateTo,

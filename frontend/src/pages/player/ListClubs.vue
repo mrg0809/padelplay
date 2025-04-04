@@ -69,7 +69,7 @@
   import { useRouter } from "vue-router";
   import { useQuasar } from "quasar";
   import { getUserLocation } from "src/helpers/locationUtils";
-  import { searchClubs } from "src/services/supabase/clubs";
+  import { searchClubs, fetchFirstClubs } from "src/services/supabase/clubs";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   import NotificationBell from "src/components/NotificationBell.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
@@ -88,30 +88,61 @@
       const $q = useQuasar();
   
       onMounted(async () => {
+        searching.value = true; // Indicate loading starts
         try {
+            console.log("Attempting to get user location...");
             const userLocation = await getUserLocation(); // Obtener la ubicación del usuario
-            clubs.value = await searchClubs("", userLocation);
+            console.log("User location obtained:", userLocation);
+            clubs.value = await searchClubs("", userLocation); // Search nearby
+            console.log("Nearby clubs found:", clubs.value);
         } catch (error) {
             console.error("Geolocation error:", error.message);
             $q.notify({
-            type: "negative",
-            message: "No se pudo obtener tu ubicación.",
+              type: "warning", // Changed to warning as it's a fallback, not necessarily critical error
+              message: "No se pudo obtener tu ubicación. Mostrando clubes generales.",
+              icon: 'location_off', // More specific icon
             });
-            clubs.value = await searchClubs(""); // Carga inicial sin geolocalización
+            // --- 2. Call fetchFirstClubs in catch block ---
+            try {
+              console.log("Fetching first 10 clubs as fallback...");
+              clubs.value = await fetchFirstClubs(10); // Fetch first 10 clubs
+              console.log("Fallback clubs found:", clubs.value);
+            } catch (fetchError) {
+              console.error("Error fetching first clubs:", fetchError);
+              $q.notify({ type: 'negative', message: 'No se pudieron cargar los clubes.' });
+              clubs.value = []; // Ensure list is empty on fetch error
+            }
+        } finally {
+            searching.value = false; // Indicate loading finished
         }
-        });
+      });
 
         // Buscar al escribir
         watch(searchQuery, async (newQuery) => {
           searching.value = true;
+          let userLocation = null; // Attempt to get location for search
           try {
-            const userLocation = await getUserLocation(); // Obtener la ubicación del usuario
+            userLocation = await getUserLocation();
+          } catch(locationError) {
+            console.warn("Could not get location for search query:", newQuery, locationError.message);
+            // Decide fallback for search: Search without location or show notification?
+            // Option: Search without location (might require searchClubs to handle null location)
+            // clubs.value = await searchClubs(newQuery, null);
+            // Option: Notify and clear (or keep previous results?)
+              $q.notify({ type: 'info', message: 'Buscando sin ubicación precisa.' });
+            // Let's proceed with searchClubs allowing null location for now
+          }
+
+          try {
+            // Call searchClubs, potentially with null location
             clubs.value = await searchClubs(newQuery, userLocation);
           } catch (error) {
             console.error("Error al buscar clubes:", error.message);
-            clubs.value = [];
+            $q.notify({ type: 'negative', message: 'Error durante la búsqueda.' });
+            clubs.value = []; // Clear results on search error
+          } finally {
+            searching.value = false;
           }
-          searching.value = false;
         });
   
         const viewClubDetails = (clubId, tabName = "reservations") => {

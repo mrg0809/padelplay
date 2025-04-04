@@ -75,3 +75,27 @@ export const fetchScheduleHours = async (clubId) => {
   if (error) throw new Error(error.message);
   return data;
 };
+
+
+export async function fetchFirstClubs(limit = 10) {
+  console.log(`Workspaceing first ${limit} clubs...`); // Log for debugging
+  const { data, error } = await supabase
+    .from('clubs')
+    .select(`
+      id,
+      name,
+      address,
+      logo_url
+      // Add other fields needed for the list display
+    `)
+    .order('name', { ascending: true }) // Order by name, for example
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching first clubs:', error);
+    throw new Error(`Supabase error: ${error.message}`);
+  }
+
+  console.log('First clubs data:', data); // Log fetched data
+  return data || []; // Return data or empty array
+}
