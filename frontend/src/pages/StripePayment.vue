@@ -88,6 +88,7 @@ import { useQuasar } from "quasar";
 import { loadStripe } from "@stripe/stripe-js";
 import { getBrandIcon, getBrandName  } from "src/helpers/paymentUtils";
 import { finalizeCourtReservationUtil } from "src/helpers/reservationsUtils";
+import { finalizeClassBooking } from "src/helpers/finalizeUtils";
 import api from "../services/api";
 
 export default {
@@ -103,6 +104,8 @@ export default {
     const totalAmount = ref(parseFloat(route.query.totalAmount || '0'));
     const description = ref(route.query.description || 'Pago PadelPlay');
     const clubId = ref(route.query.clubId); // ID del club
+    const itemDetails = ref([]);
+    const paymentOption = ref(route.query.paymentOption)
 
     // Datos originales del resumen (pasados como JSON string)
     const baseData = computed(() => {
@@ -424,21 +427,25 @@ export default {
           selectedProducts: selectedProducts.value,
           paymentOrderId: paymentOrderId.value,
           totalAmount: totalAmount.value,
-          amountToPay: amountToPay.value
+          amountToPay: amountToPay.value,
+          itemDetails: itemDetails.value,
+          paymentOption: paymentOption.value,
         };
 
         try {
             const type = baseData.value?.type;
             let result = { success: false };
             let redirectPath = '/dashboard/player'; // Ruta por defecto en caso de error o tipo desconocido
+            let success = false;
 
             if (type === 'court') {
                 result = await finalizeCourtReservationUtil(paymentIntent, context, api, $q);
-                if (result.success) {
-                  redirectPath = result.path || `/player/match/${result.matchId}`; // Asume que devuelve matchId
+                success = result.success;
+                if (success) {
+                  redirectPath = `/player/match/${result.matchId}`;
                 }
             } else if (type === 'class') {
-                 const result = await finalizeClassBooking(paymentIntent);
+                 const result = await finalizeClassBooking(paymentIntent, context, api, $q);
                  success = result.success;
                  redirectPath = result.path || '/user/my-bookings'; // Ejemplo
             } else if (type === 'public_lesson') {
@@ -503,36 +510,6 @@ export default {
                  $q.loading.hide();
                 break;
         }
-    };
-
-    const finalizeClassBooking = async (paymentIntent) => {
-         console.log("Finalizando reserva de clase privada...");
-          try {
-             const payload = { /* ... Construye payload para API /class-bookings ... */
-                 club_id: baseData.value.clubId,
-                 coach_id: baseData.value.id,
-                 booking_date: extraData.value.date, // Pasado en extraData desde CoachDetails
-                 booking_time: extraData.value.time, // Pasado en extraData
-                 participants: baseData.value.participants,
-                 price_paid: amountToPay.value, // El monto pagado
-                 payment_order_id: paymentOrderId.value,
-                 payment_intent_id: paymentIntent.id,
-                 additional_items: selectedProducts.value,
-             };
-             console.log("Payload para /class-bookings:", payload);
-             // const response = await api.post("/class-bookings", payload); // LLAMADA REAL
-              // Simulación
-              await new Promise(res => setTimeout(res, 1000));
-              const response = { data: { booking_id: 'classbook123' } };
-
-             console.log("Respuesta de API /class-bookings:", response.data);
-             if (!response.data?.booking_id) throw new Error("La API no confirmó la reserva de clase.");
-             return { success: true, path: '/user/my-bookings' }; // Ejemplo de ruta post-éxito
-          } catch (error) {
-               console.error("Error en finalizeClassBooking:", error);
-               $q.notify({ type: 'negative', message: error.response?.data?.detail || error.message || "Error al confirmar la reserva de clase." });
-              return { success: false };
-          }
     };
 
     const finalizePublicLessonEnrollment = async (paymentIntent) => {
@@ -634,6 +611,13 @@ export default {
           $q.notify({ type: 'negative', message: 'Error al leer los datos de la orden.' });
           // Podrías redirigir o mostrar un estado de error permanente
           return;
+      }
+
+      try {
+          itemDetails.value = JSON.parse(route.query.itemDetails || '[]');
+      } catch (e) {
+          console.error("Error parsing itemDetails from query:", e);
+          itemDetails.value = []; // Inicializar a array vacío
       }
 
       // Validar datos esenciales después de parsear

@@ -13,27 +13,43 @@ export function getCourtPrice(court, duration) {
 
 export async function finalizeCourtReservationUtil(paymentIntent, context, api, $q) {
   console.log("Finalizando reserva de cancha post-pago exitoso (Util)...");
-  const { baseData, extraData, selectedProducts, paymentOrderId, totalAmount, amountToPay } = context;
-
+  console.log(context);
+  const { baseData, extraData, selectedProducts, paymentOrderId, totalAmount, amountToPay, itemDetails } = context;
+  console.log(baseData);
   // 1. Validar datos necesarios del contexto
   if (!baseData || !extraData || !paymentOrderId) {
       console.error("Faltan datos base/extra/paymentOrder para finalizar reserva (Util)", context);
-      // $q might not be available if not passed, handle differently or ensure it's passed
       if ($q) $q.notify({ type: 'negative', message: 'Error interno al finalizar la reserva (datos faltantes Util).' });
       return { success: false };
   }
 
   // 2. Preparar payload para la API /reservations
   try {
+      const paymentData = {
+        payment_order_id: paymentOrderId,
+        payment_method: paymentIntent.payment_method,
+        payment_status: paymentIntent.status,
+        transaction_id: paymentIntent.id,
+        is_full_payment: extraData.paymentOption === "total"
+      }
+
+      const paymentResponse = await api.post("/payments/process-stripe-payment", paymentData);
+      console.log(paymentResponse)
+      if (!paymentResponse.data.success) {
+        throw new Error(paymentResponse.data.message || "Error al actualizar el estado del pago.");
+      }
+      console.log('2',paymentResponse)
+
+
       const additionalItems = (selectedProducts || []).map((item) => ({
           name: item.product.name,
           price: item.product.price,
           quantity: item.quantity,
       }));
 
-      const reservationDate = extraData.date || baseData.date;
-      const startTime = extraData.time || baseData.time;
-      const duration = extraData.duration || 60;
+      const reservationDate = extraData.date;
+      const startTime = extraData.time;
+      const duration = extraData.duration;
 
       if (!reservationDate || !startTime) {
           throw new Error("Falta la fecha o la hora de inicio en los datos extra/base.");
@@ -54,8 +70,6 @@ export async function finalizeCourtReservationUtil(paymentIntent, context, api, 
           player_commission: 0,
           additional_items: additionalItems,
           payment_order_id: paymentOrderId,
-          payment_intent_id: paymentIntent.id,
-          payment_status: paymentIntent.status, // 'succeeded'
           is_public_match: extraData.isPublicMatch || false,
       };
 

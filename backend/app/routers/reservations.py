@@ -11,7 +11,7 @@ router = APIRouter()
 def create_reservation(data: dict, current_user: dict = Depends(get_current_user)):
     try:
         # Validar campos obligatorios
-        required_fields = ["club_id", "court_id", "reservation_date", "start_time", "end_time", "total_price"]
+        required_fields = ["club_id", "court_id", "reservation_date", "start_time", "end_time", "total_price", "payment_order_id"]
         for field in required_fields:
             if field not in data:
                 raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {field}")
@@ -24,7 +24,12 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
         end_time = data["end_time"]
         total_price = data["total_price"]
         payment_order_id = data["payment_order_id"]
-        is_public_match = data["is_public_match"]
+        is_public_match = data.get("is_public_match", False)
+
+        # Verificar el estado del pago
+        payment_order = supabase.from_("payment_orders").select("*").eq("id", payment_order_id).execute().data[0]
+        if payment_order["payment_status"] != "succeeded":
+            raise HTTPException(status_code=400, detail="El pago no ha sido completado.")
 
         # Llamar a la función RPC
         rpc_data = {

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel
 from typing import List, Optional
 from app.core.security import get_current_user
 from app.db.connection import supabase
 import uuid
 from datetime import date, time, timedelta, datetime
+from app.utils.lesson_utils import get_available_courts_for_lesson
 
 router = APIRouter()
 
@@ -31,6 +32,23 @@ class LessonResponse(BaseModel):
     lesson_type: str
     name: str
     description: Optional[str] = None
+
+class PrivateLessonBooking(BaseModel):
+    club_id: str
+    coach_id: str
+    lesson_date: date
+    lesson_time: time
+    duration: int
+    participants: int
+    price_paid: float
+    payment_order_id: str
+    payment_intent_id: str
+    additional_items: Optional[list] = None
+
+class PrivateLessonBookingResponse(BaseModel):
+    booking_id: str
+    message: str
+
 
 @router.get("/", response_model=List[LessonResponse])
 def get_lessons(club_id: str, current_user: dict = Depends(get_current_user)):
@@ -182,3 +200,77 @@ def get_available_times(club_id: str, date: str, coach_id: str, current_user: di
     except Exception as e:
         print(f"Error in get_available_times: {e}")
         raise HTTPException(status_code=500, detail=f"Error al obtener horarios disponibles: {str(e)}")
+    
+
+@router.post("/private-booking", response_model=PrivateLessonBookingResponse)
+async def create_private_lesson_booking(data: PrivateLessonBooking, current_user: dict = Depends(get_current_user)):
+    """
+    Crea una reserva para una lección privada, asigna una cancha disponible y añade el jugador.
+    """
+    try:
+        lesson_id = str(uuid.uuid4())
+
+        # 1. Buscar una cancha disponible
+        available_courts = await get_available_courts_for_lesson(
+            data.club_id, data.lesson_date, data.lesson_time, data.duration
+        )
+
+        if not available_courts:
+            raise HTTPException(status_code=400, detail="No hay canchas disponibles para esta hora.")
+
+        # Asignar la primera cancha disponible
+        assigned_court_id = available_courts[0]["id"]
+
+        # 2. Crear la lección
+        new_lesson = {
+            "id": lesson_id,
+            "club_id": data.club_id,
+            "coach": data.coach_id,
+            "court_id": assigned_court_id,
+            "lesson_date": data.lesson_date.isoformat(),
+            "lesson_time": data.lesson_time.isoformat(),
+            "duration": data.duration,
+            "lesson_type": "private",
+            "name": f"Clase Privada con {data.coach_id}",
+            "participants": data.participants,
+            "price": data.price_paid,
+            "payment_order_id": data.payment_order_id,
+            "players": [current_user["id"]], 
+        }
+
+        # Insertar la lección
+        lesson_response = supabase.from_("lessons").insert(new_lesson).execute()
+        if not lesson_response:
+            print(f"Error al crear la lección")
+            raise HTTPException(status_code=500, detail="Error al crear la lección")
+
+        # 3. Calcular el end_time para el bloqueo de cancha
+        lesson_datetime = datetime.combine(data.lesson_date, data.lesson_time)
+        end_datetime = lesson_datetime + timedelta(minutes=data.duration)
+        end_time = end_datetime.time()
+
+        # 4. Crear el bloqueo de la cancha
+        new_block = {
+            "id": str(uuid.uuid4()),
+            "club_id": data.club_id,
+            "court_id": assigned_court_id,  # Usar la cancha asignada
+            "start_date": data.lesson_date.isoformat(),
+            "start_time": data.lesson_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "end_date": data.lesson_date.isoformat(),
+            "reason": f"Clase Privada con {data.coach_id}",
+        }
+
+        # Insertar el bloqueo de la cancha
+        block_response = supabase.from_("court_blocks").insert(new_block).execute()
+        if not block_response:
+            print(f"Error al bloquear la cancha")
+            # Rollback: Eliminar la lección
+            await supabase.from_("lessons").delete().eq("id", lesson_id).execute()
+            raise HTTPException(status_code=500, detail="Error al bloquear la cancha")
+
+        return PrivateLessonBookingResponse(booking_id=lesson_id, message="Reserva de clase privada creada exitosamente")
+
+    except Exception as e:
+        print(f"Error en create_private_lesson_booking: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al crear reserva de clase privada: {str(e)}")

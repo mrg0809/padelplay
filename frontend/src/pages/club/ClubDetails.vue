@@ -233,6 +233,9 @@ export default {
             showPublicToggle: true,
             commissionRate: 4, // O desde configuración
             extraData: {
+                date: currentSelectedDay,
+                time: currentSelectedTime,
+                duration: duration,
                 isIndoor: court.is_indoor,
                 courtSurface: court.surface // Ejemplo de dato extra
             }

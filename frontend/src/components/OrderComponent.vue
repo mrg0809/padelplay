@@ -327,7 +327,9 @@
           clubId: props.baseData?.clubId,
           baseData: JSON.stringify(props.baseData || {}),         
           extraData: JSON.stringify(props.extraData || {}),    
-          selectedProducts: JSON.stringify(selectedProducts.value || []), 
+          selectedProducts: JSON.stringify(selectedProducts.value || []),
+          itemDetails: JSON.stringify(props.itemDetails || []),
+          paymentOption: paymentOption.value,
         },
       });
     } catch (error) {
