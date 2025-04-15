@@ -129,13 +129,16 @@ import { useRouter } from "vue-router";
 import { fetchPlayer } from "../../services/supabase/players";
 import { formatLongDate } from "../../helpers/dateUtils";
 import { uploadPhoto } from "../../helpers/uploadFileUtils";
-import { shareProfile } from "../../helpers/shareUtils";
+import { shareContent } from "../../helpers/shareUtils";
+import { useUserStore } from "src/stores/userStore";
 
 import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
 import PlayerTopMenu from "src/components/PlayerTopMenu.vue";
 import NotificationBell from "src/components/NotificationBell.vue";
 import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
 
+const userStore = useUserStore();
+const userId = userStore.userId;
 const router = useRouter();
 const fileInput = ref(null);
 
@@ -154,7 +157,7 @@ const player = ref({
 const categories = ["primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "profesional"];
 
 const loadPlayer = async () => {
-  const playerData = await fetchPlayer();
+  const playerData = await fetchPlayer(userId);
   if (playerData) player.value = playerData;
 };
 
@@ -166,6 +169,14 @@ const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) uploadPhoto(file, player.value);
 };
+
+const shareProfile = () => {
+    const title = 'Descubre a este jugador.';
+    const url = window.location.href;
+    const text = 'Echa un vistazo a este perfil.';
+
+    shareContent(title, url, text);
+  };
 
 const editProfile = () => {
   router.push("/player/editarinfo");

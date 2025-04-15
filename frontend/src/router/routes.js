@@ -225,6 +225,11 @@ const routes = [
     name: "LessonDetails",
     component: () => import("src/pages/player/LessonDetails.vue"),
   },
+  {
+    path: "/player/privatelesson/:lessonId",
+    name: "PrivateLessonDetails",
+    component: () => import("src/pages/player/ClassDetails.vue"),
+  },
   { 
     path: "/player/match/:matchId", 
     component: () => import("src/pages/player/MatchDetails.vue"),

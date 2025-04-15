@@ -19,3 +19,18 @@ export const getUserLocation = () => {
       }
     });
   };
+
+
+export const goToMapLocation = (latitude, longitude, $q) => {
+  if (latitude && longitude) {
+    // URL para abrir en Google Maps
+    const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    window.open(mapUrl, '_blank');
+  } else {
+    $q.notify({
+      message: 'Ubicación no disponible',
+      color: 'negative',
+      position: 'top',
+    });
+  }
+};

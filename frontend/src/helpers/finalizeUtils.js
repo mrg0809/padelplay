@@ -1,16 +1,32 @@
 export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
     console.log("Finalizando reserva de clase privada...");
-    console.log('context:', context)
+    console.log('context:', context);
 
-    const { baseData, extraData, selectedProducts, paymentOrderId, amountToPay } = context; // Asegúrate de tener 'context' disponible
-    const { itemDetails } = context; // Asume que 'context' contiene itemDetails
-
+    const { baseData, extraData, selectedProducts, paymentOrderId, amountToPay, paymentOption } = context; // Incluir paymentOption
+    const { itemDetails } = context;
 
     try {
-        // --- **EXTRAER DATOS DE itemDetails** ---
+        // Llamar a /process-stripe-payment antes de /lessons/private-booking
+        const paymentData = {
+            payment_order_id: paymentOrderId,
+            payment_method: paymentIntent.payment_method,
+            payment_status: paymentIntent.status,
+            transaction_id: paymentIntent.id,
+            is_full_payment: paymentOption === "total" // Usar paymentOption
+        };
+        const paymentResponse = await api.post("/payments/process-stripe-payment", paymentData);
+
+        if (!paymentResponse.data || !paymentResponse.data.message) {
+            throw new Error("Error al actualizar el estado del pago.");
+        }
+
+        // Añadimos un pequeño retraso antes de llamar a /lessons/private-booking
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // --- EXTRAER DATOS DE itemDetails ---
         let lessonDate = null;
         let lessonTime = null;
-        let duration = 60; // Valor por defecto
+        let duration = 60;
 
         const dateDetail = itemDetails.find(detail => detail.label === "Fecha");
         if (dateDetail) {
@@ -19,7 +35,7 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
 
         const timeDetail = itemDetails.find(detail => detail.label === "Horario");
         if (timeDetail) {
-            lessonTime = timeDetail.value.split(' ')[0]; // o una lógica para obtener la hora sin "hrs."
+            lessonTime = timeDetail.value.split(' ')[0];
         }
 
         const durationDetail = itemDetails.find(detail => detail.label === "Duración");
@@ -34,10 +50,9 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
             throw new Error("Falta la fecha o la hora de la clase.");
         }
 
-
         const payload = {
             club_id: baseData.clubId,
-            coach_id: baseData.id, // O donde tengas el ID del coach
+            coach_id: baseData.id,
             lesson_date: lessonDate,
             lesson_time: lessonTime,
             duration: duration,
@@ -45,7 +60,8 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
             participants: baseData.participants,
             payment_order_id: paymentOrderId,
             payment_intent_id: paymentIntent.id,
-            additional_items: selectedProducts, // O una transformación si es necesaria
+            additional_items: selectedProducts,
+            pay_total: paymentOption === "total", // Incluir pay_total
         };
 
         console.log("Payload para /lessons/private-booking:", payload);
@@ -54,7 +70,7 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
 
         if (response.data && response.data.booking_id) {
             console.log("Reserva de clase privada creada:", response.data);
-            return { success: true, path: '/user/my-bookings' }; // Ruta a tu página de reservas
+            return { success: true, path: '/user/my-bookings' };
         } else {
             console.error("Error: No se recibió booking_id en la respuesta:", response);
             throw new Error("No se pudo confirmar la reserva de la clase privada.");
