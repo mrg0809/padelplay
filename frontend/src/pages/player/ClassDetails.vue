@@ -53,7 +53,7 @@
                     <q-item-label>{{ player.first_name }}</q-item-label>
                   </q-item-section>
                 </q-item>
-                <q-item v-for="i in (classDetails.participants - classDetails.playerDetails.length)" :key="'add-player-' + i" clickable @click="openAddPlayerDialog">
+                <q-item v-for="i in (classDetails.participants - classDetails.playerDetails.length)" :key="'add-player-' + i" clickable @click="openSearchPlayerDialog">
                   <q-item-section avatar>
                     <q-avatar size="48px" class="bg-grey-7">
                       <q-icon name="person_add" size="32px" color="white" />
@@ -70,15 +70,14 @@
       </q-page>
     </q-page-container>
 
-    <q-dialog v-model="addPlayerDialog">
+    <q-dialog v-model="searchPlayerDialog">
       <q-card>
         <q-card-section>
           <div class="text-h6">Agregar Jugador</div>
-          <q-input v-model="searchInput" label="Buscar por email o teléfono" outlined dense />
+            <PlayerSearch v-model="searchPlayerDialog" @playerSelected="addSelectedPlayer" />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" color="negative" v-close-popup />
-          <q-btn flat label="Agregar" color="positive" @click="addPlayer" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -101,6 +100,7 @@
   import BannerPromoScrolling from 'src/components/BannerPromoScrolling.vue';
   import NotificationBell from 'src/components/NotificationBell.vue';
   import PlayerTopMenu from 'src/components/PlayerTopMenu.vue';
+  import PlayerSearch from 'src/components/PlayerSearch.vue';
 
   const route = useRoute();
   const router = useRouter();
@@ -108,8 +108,7 @@
 
   const classDetails = ref(null);
   const loading = ref(true);
-  const searchInput = ref('');
-  const addPlayerDialog = ref(false);
+  const searchPlayerDialog = ref(false);
 
   const fetchClassDetails = async () => {
     try {
@@ -127,22 +126,14 @@
     }
   };
 
-  const openAddPlayerDialog = () => {
-    searchInput.value = '';
-    addPlayerDialog.value = true;
+  const openSearchPlayerDialog = () => {
+    searchPlayerDialog.value = true;
   };
 
-  const addPlayer = async () => {
-    try {
-      console.log('Agregar jugador');
-      // Aquí puedes agregar la lógica para agregar un jugador
-    } catch (error) {
-      console.error('Error al agregar jugador:', error.message);
-      $q.notify({
-        type: 'negative',
-        message: 'Error al agregar jugador.',
-      });
-    }
+  const addSelectedPlayer = (player) => {
+    console.log('Jugador seleccionado:', player);
+    // Aquí puedes agregar la lógica para agregar el jugador seleccionado al evento
+    searchPlayerDialog.value = false; // Cierra el diálogo PlayerSearch
   };
 
   const shareClass = () => {
