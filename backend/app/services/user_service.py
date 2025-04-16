@@ -1,5 +1,6 @@
 from app.db.connection import supabase
 from fastapi import Depends, HTTPException
+from datetime import date
 
 #CREACION DE USUARIO PLAYER
 async def create_user(full_name: str, email: str, password: str):
@@ -21,6 +22,16 @@ async def create_user(full_name: str, email: str, password: str):
                 "created_by": user_id,  # El propio usuario es el creador inicial
             }
         ).execute()
+
+        # Insertar datos iniciales en la tabla 'players'
+        player_data = {
+            "user_id": user_id,
+            "first_name": full_name.split()[0] if full_name.split() else None,
+            "last_name": full_name.split()[1] if len(full_name.split()) > 1 else None,
+            "birth_date": date(1900, 1, 1).isoformat(),
+            "category": "sexta",
+        }
+        supabase.table("players").insert([player_data]).execute()
 
         return {"message": "User created successfully", "user_id": user_id}
     except Exception as e:

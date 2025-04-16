@@ -1,3 +1,6 @@
+import dayjs from "dayjs";
+import 'dayjs/locale/es-mx'
+
 export function formatDate(date) {
     const [year, month, day] = date.split('-').map(Number);
     const localDate = new Date(year, month - 1, day);
@@ -75,4 +78,14 @@ export const nextWeek = () => {
   currentDate.value.setDate(currentDate.value.getDate() + 7);
   generateDays();
   fetchAvailableTimes();
+};
+
+
+export const formatLargeDate = (date) => {
+  dayjs.locale("es-mx");
+  const formattedDate = dayjs(date).format('dddd, D [de] MMMM [del] YYYY');
+  const [day, restOfDate] = formattedDate.split(' de ');
+  const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
+  const capitalizedMonth = restOfDate.charAt(0).toUpperCase() + restOfDate.slice(1);
+  return capitalizedDay + ' de ' + capitalizedMonth;
 };

@@ -169,6 +169,11 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
+"@capacitor/share@^7.0.1":
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/@capacitor/share/-/share-7.0.1.tgz#1d1e6d312504703c1f34fa0de94bed14af4bcbf8"
+  integrity sha512-7GAtWrb2inEWohC8E7mx38qAX6D9yqPDDnUtJaZ8JRpo15jjFRS40Cx388M8h4NlBWjV5NU3qf1sHXnyOBSJ5g==
+
 "@esbuild/linux-loong64@0.14.54":
   version "0.14.54"
   resolved "https://registry.yarnpkg.com/@esbuild/linux-loong64/-/linux-loong64-0.14.54.tgz#de2a4be678bd4d0d1ffbb86e6de779cde5999028"
@@ -501,6 +506,11 @@
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/merge-streams/-/merge-streams-2.3.0.tgz#719df7fb41766bc143369eaa0dd56d8dc87c9958"
   integrity sha512-LtoMMhxAlorcGhmFYI+LhPgbPZCkgP6ra1YL604EeF6U98pLlQ3iWIGMdWSC+vWmPBWBNgmDBAhnAobLROJmwg==
+
+"@stripe/stripe-js@^5.5.0":
+  version "5.10.0"
+  resolved "https://registry.yarnpkg.com/@stripe/stripe-js/-/stripe-js-5.10.0.tgz#4d1fcf8c59530865fcd59ce910798cc9c973a870"
+  integrity sha512-PTigkxMdMUP6B5ISS7jMqJAKhgrhZwjprDqR1eATtFfh0OpKVNp110xiH+goeVdrJ29/4LeZJR4FaHHWstsu0A==
 
 "@stripe/stripe-js@^6.1.0":
   version "6.1.0"
@@ -4241,6 +4251,13 @@ vue-router@^4.0.12:
   integrity sha512-4fKZygS8cH1yCyuabAXGUAsyi1b2/o/OKgu/RUb+znIYOxPRxdkytJEx+0wGcpBE1pX6vUgh5jwWOKRGvuA/7Q==
   dependencies:
     "@vue/devtools-api" "^6.6.4"
+
+vue-stripe-js@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/vue-stripe-js/-/vue-stripe-js-2.0.2.tgz#6690d39f3317e249fb9c23035f4155b98c1f3aff"
+  integrity sha512-tYDUw0zzXfo7kTTyTAFYCDZP7BPq1TM5mAgCRcjcLg7IgUiJlSBcnReDoCCZ6RDhSjFC4Yl5hwKO5Zs38fV63A==
+  dependencies:
+    "@stripe/stripe-js" "^5.5.0"
 
 vue@^3.4.18:
   version "3.5.13"

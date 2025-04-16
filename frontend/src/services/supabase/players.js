@@ -1,8 +1,13 @@
 import { supabase } from "../supabase";
 
-export async function fetchPlayer() {
+export async function fetchPlayer(userId) {
   try {
-    const { data, error } = await supabase.from("players").select("*").single();
+    const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
     if (error) throw error;
     return data;
   } catch (err) {
@@ -10,3 +15,16 @@ export async function fetchPlayer() {
     return null;
   }
 }
+
+export const searchPlayers = async (query) => {
+  const { data, error } = await supabase
+    .from('players')
+    .select('user_id, first_name, last_name, email, phone, photo_url, category')
+    .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};

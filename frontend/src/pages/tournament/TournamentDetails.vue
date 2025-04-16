@@ -1,180 +1,217 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="bg-primary text-white">
-        <q-toolbar>
-          <q-toolbar-title>Torneo</q-toolbar-title>
-          <q-btn flat round icon="arrow_back" @click="goBack" label="REGRESAR" />
-        </q-toolbar>
-      </q-header>
-  
-      <q-page-container>
-        <q-page class="q-pa-md">
-          <div v-if="loading" class="text-center">
-            <q-spinner-dots color="primary" size="lg" />
-          </div>
-  
-          <div v-else-if="tournament">
-            <q-card>
-              <q-card-section>
-                <h4>{{ tournament.name }}</h4>
-                <p><strong>Fecha de inicio:</strong> {{ tournament.start_date }}</p>
-                <p><strong>Hora:</strong> {{ tournament.start_time }}</p>
-                <p>
-                  <strong>Club:</strong>
-                  <q-btn
-                    flat
-                    @click="goToClubDetails"
-                    class="text-primary"
-                  >
-                    {{ tournament.clubName }}
-                  </q-btn>
-                </p>
-                <p><strong>Categoría:</strong> {{ tournament.category }}</p>
-                <p><strong>Género:</strong> {{ tournament.gender }}</p>
-                <p><strong>Precio por pareja:</strong> ${{ tournament.price_per_pair }}</p>
-                <p><strong>Valor Premios:</strong> ${{ tournament.prize }}</p>
-              </q-card-section>
-  
-              <q-card-actions align="center">
-                <q-btn
-                  label="Inscribirme"
-                  color="primary"
-                  icon="check_circle"
-                  @click="handleEnrollment"
-                />
-              </q-card-actions>
-            </q-card>
-          </div>
-        </q-page>
-      </q-page-container>
-      <!-- Menú de Navegación Inferior -->
-      <q-footer class="bg-primary text-white">
-        <q-tabs
-          align="justify"
-          class="q-pa-xs"
-          active-color="white"
-          @update:model-value="onTabChange"
-        >
-          <q-tab
-            v-for="tab in tabs"
-            :key="tab.name"
-            :name="tab.name"
-            :label="tab.label"
-            :icon="tab.icon"
-            class="text-white"
-          />
-        </q-tabs>
-      </q-footer>
-    </q-layout>
-  </template>
-  
-  <script>
-  import { ref, onMounted } from "vue";
-  import { supabase } from "../../services/supabase";
-  import { useRoute, useRouter } from "vue-router";
-  import { useQuasar } from "quasar";
-  
-  export default {
-    setup() {
-      const route = useRoute();
-      const router = useRouter();
-      const $q = useQuasar();
-      const tournament = ref(null);
-      const loading = ref(false);
-  
-      const tournamentId = route.params.tournamentId;
-  
-      const fetchTournamentDetails = async () => {
-        try {
-          loading.value = true;
-          const { data, error } = await supabase
-            .from("tournaments")
-            .select(`
-              *,
-              clubs(name)
-            `)
-            .eq("id", tournamentId)
-            .single();
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="text-white">
+     <div class="header-content">
+       <div class="greeting">
+         <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
+       </div>
+       <div class="header-icons">
+         <NotificationBell />
+       </div>
+     </div>
+     <BannerPromoScrolling />
+    </q-header>
 
-          if (error) throw error;
+    <q-page-container>
+      <q-page class="q-pa-md">
+        <div v-if="loading" class="text-center q-pa-xl">
+          <q-spinner-dots color="primary" size="xl" />
+          <p class="q-mt-md">Cargando detalles del torneo...</p>
+        </div>
 
-          tournament.value = {
-            ...data,
-            clubName: data.clubs?.name || "Nombre no disponible",
-            clubId: data.club_id, // Guardar el club_id para redirección
-          };
-        } catch (error) {
-          console.error("Error al obtener detalles del torneo:", error.message);
-          $q.notify({
-            type: "negative",
-            message: "Error al cargar detalles del torneo.",
-          });
-        } finally {
-          loading.value = false;
-        }
-      };
-  
-      const handleEnrollment = () => {
-        if (!tournament.value) return;
-  
-        const enrollmentDetails = {
-          tournamentId: tournament.value.id,
-          tournamentName: tournament.value.name,
-          startDate: tournament.value.start_date,
-          startTime: tournament.value.start_time,
-          clubName: tournament.value.clubName,
-          pricePerPair: tournament.value.price_per_pair,
-        };
-  
-        router.push({
-          name: "TournamentCheckout",
-          query: enrollmentDetails,
-        });
-      };
-  
-      const goBack = () => {
-        router.back();
-      };
+        <div v-else-if="tournament">
+          <q-card>
+            <q-card-section>
+              <h4 class="q-mt-none q-mb-md">{{ tournament.name }}</h4>
+              <p><strong><q-icon name="mdi-calendar-start" class="q-mr-xs"/>Inicio:</strong> {{ tournament.start_date }} - {{ tournament.start_time }} hrs.</p>
+              <p><strong><q-icon name="mdi-domain" class="q-mr-xs"/>Club:</strong> {{ tournament.clubs.name }} </p>
+              <p><strong><q-icon name="mdi-trophy-variant-outline" class="q-mr-xs"/>Categoría:</strong> {{ tournament.category }}</p>
+              <p><strong><q-icon name="mdi-gender-male-female" class="q-mr-xs"/>Género:</strong> {{ tournament.gender }}</p>
+              <p><strong><q-icon name="mdi-cash-multiple" class="q-mr-xs"/>Precio por Pareja:</strong> ${{ tournament.price_per_pair?.toFixed(2) || 'N/A' }}</p>
+              <p><strong><q-icon name="mdi-gift-outline" class="q-mr-xs"/>Premios (Valor):</strong> ${{ tournament.prize || 'N/A' }}</p>
+            </q-card-section>
 
-      const goToClubDetails = () => {
-        if (tournament.value?.clubId) {
-          router.push({ name: "ClubDetails", params: { clubId: tournament.value.clubId } });
-        }
-      };
+            <q-card-actions align="center" class="q-pa-md">
+              <q-btn
+                label="Inscribirme (Pagar mi parte)"
+                color="green"
+                icon-right="mdi-pencil-plus-outline"
+                class="full-width"
+                size="lg"
+                push
+                @click="handleEnrollment"
+                :disable="!tournament"
+                title="Inscribirse al torneo pagando la mitad del costo de pareja"
+              />
+            </q-card-actions>
+          </q-card>
+        </div>
+         <div v-else class="q-pa-md text-center text-negative">
+            <q-icon name="mdi-alert-circle-outline" size="lg" />
+           <p class="q-mt-md">No se pudieron cargar los detalles del torneo.</p>
+           <q-btn flat label="Volver" @click="goBack" />
+         </div>
+      </q-page>
+    </q-page-container>
+    <PlayerNavigationMenu />
+  </q-layout>
+</template>
 
-      const onTabChange = (tabName) => {
-        router.push(`/player/${tabName}`);
-      };
-  
-      onMounted(fetchTournamentDetails);
-  
-      return {
-        tournament,
-        loading,
-        handleEnrollment,
-        goBack,
-        goToClubDetails,
-        onTabChange,
-        tabs: [
-          { name: "inicio", label: "Inicio", icon: "home" },
-          { name: "torneos", label: "Torneos", icon: "sports_tennis" },
-          { name: "asociaciones", label: "Asociaciones", icon: "group" },
-          { name: "perfil", label: "Perfil", icon: "account_circle" },
-        ],
-      };
+<script setup> 
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useQuasar } from "quasar";
+import { useSummaryStore } from 'src/stores/summaryStore';
+import { fetchTournamentDetails } from "src/services/supabase/tournaments";
+import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
+import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
+import NotificationBell from "src/components/NotificationBell.vue";
+
+const route = useRoute();
+const router = useRouter();
+const $q = useQuasar();
+const summaryStore = useSummaryStore(); 
+const tournament = ref(null);
+const loading = ref(false);
+
+const tournamentId = route.params.tournamentId;
+
+const loadData = async () => {
+  if (!tournamentId) {
+     console.error("ID del torneo no encontrado en los parámetros de la ruta.");
+     $q.notify({ type: 'negative', message: 'No se pudo identificar el torneo.' });
+     loading.value = false; 
+     return;
+  }
+
+  loading.value = true;
+  tournament.value = null; 
+
+  try {
+    const data = await fetchTournamentDetails(tournamentId);
+
+    if (!data || typeof data !== 'object') {
+        console.warn(`No se encontraron datos para el torneo ID ${tournamentId} o el formato es incorrecto.`);
+        throw new Error("Torneo no encontrado o datos inválidos.");
+    }
+
+    tournament.value = data[0];
+    console.log("Detalles del torneo cargados:", tournament.value);
+
+  } catch (error) {
+    console.error("Error al cargar detalles del torneo (desde loadData):", error);
+    tournament.value = null; 
+    $q.notify({
+      type: "negative",
+      message: error?.message || "Error al cargar la información del torneo.",
+    });
+  } finally {
+    loading.value = false; 
+  }
+};
+
+const handleEnrollment = () => {
+  if (!tournament.value || !tournament.value.price_per_pair) {
+      console.error("Datos del torneo incompletos o precio no disponible", tournament.value);
+       $q.notify({ type: 'negative', message: 'No se puede procesar la inscripción, falta información del torneo.' });
+      return; 
+  }
+
+  const tournamentData = tournament.value;
+
+  const enrollmentPrice = (tournamentData.price_per_pair || 0) / 2;
+
+  const summaryProps = {
+    summaryTitle: 'Resumen de Inscripción a Torneo',
+    itemDetails: [
+      { label: 'Torneo', value: tournamentData.name || 'No especificado' },
+      { label: 'Club', value: tournamentData.clubName || 'No especificado' },
+      { label: 'Fecha Inicio', value: tournamentData.start_date || 'No especificada' },
+      { label: 'Categoría', value: tournamentData.category || 'No especificada' },
+      { label: 'Género', value: tournamentData.gender || 'No especificado' },
+      { label: 'Precio Inscripción (Individual)', value: `$${enrollmentPrice.toFixed(2)}` },
+      { label: 'Precio Total (Pareja)', value: `$${tournamentData.price_per_pair.toFixed(2)}` }, 
+    ],
+    baseData: {
+      clubId: tournamentData.clubId, 
+      price: enrollmentPrice,        
+      participants: 1,             
+      type: 'tournament',            
+      id: tournamentData.id,         
     },
+    allowPaymentSplit: false,       
+    showPublicToggle: false,         
+    commissionRate: 4,               
+    extraData: {                     
+      tournamentName: tournamentData.name, 
+      prize: tournamentData.prize,
+      pricePerPair: tournamentData.price_per_pair 
+    }
   };
-  </script>
+
+  summaryStore.setSummaryDetails(summaryProps);
+  console.log('Datos del resumen de TORNEO guardados en Pinia:', summaryProps);
+
+
+  router.push({ name: 'OrderSummary' });
+};
+
+const goBack = () => {
+  router.back();
+};
+
+onMounted(() => {
+  loadData(); 
+});
+
+</script>
+
   
   <style scoped>
+.club-logo {
+  width: 300px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.logo-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000;
+}
+
+.greeting {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icons {
+  display: flex;
+  gap: 2px;
+}
   .q-layout {
     min-height: 100vh;
   }
   
   .q-card {
-    background-color: #1e1e1e !important;
-    color: white !important;
-  }
+    background-image: url("../../assets/texturafondo.png");
+    background-size: cover;
+    max-width: 400px;
+    margin: auto;
+    color: #fff; 
+    border-radius: 8px; 
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); 
+    }
   
   ul {
     padding-left: 1.2rem;
@@ -183,5 +220,10 @@
   ul li {
     list-style-type: disc;
   }
-  </style>
+
+h4 { margin-top: 0; margin-bottom: 16px; }
+p { margin-bottom: 0.6rem; }
+p strong { color: #b3e5fc; }
+
+</style>
   

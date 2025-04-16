@@ -21,7 +21,8 @@
   </template>
   
   <script>
-  import { ref, onMounted } from "vue"; 
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
   import { getCoachesByClub } from "src/services/supabase/coaches";
   
   export default {
@@ -33,21 +34,31 @@
     },
     setup(props) {
       const coaches = ref([]); 
+      const router = useRouter();
   
       const loadCoaches = async () => {
         try {
+          console.log("Club ID:", props.clubDetails);
           coaches.value = await getCoachesByClub(props.clubDetails.id);
         } catch (error) {
-          console.error("Error al cargar entrenadores:", error);
+          console.error("Error al cargar entrenadores:", error);b 
           coaches.value = [];
         }
       };
   
-      const goToCoachDetails = (coachId) => {
-        console.log("Ir a detalles del coach:", coachId);
-      };
+      const goToCoachDetails = (coach) => {
+        router.push({
+          name: "CoachDetails",
+          params: { coachId: coach },
+          query: { clubId: props.clubDetails.id, clubName: props.clubDetails.name },
+          });
+        };
   
-      onMounted(loadCoaches); 
+      onMounted(() => {
+        if (props.clubDetails?.id) {
+          loadCoaches();
+        }
+      });
   
       return {
         coaches,

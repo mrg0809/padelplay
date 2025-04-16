@@ -32,10 +32,14 @@
          <q-card class="tabs-section">
            <q-card-section>
              <q-tabs v-model="selectedTab" align="justify" class="text-white">
-               <q-tab name="info" label="Info" icon="info" />
+              <q-icon name="arrow_back_ios" />
+               <q-tab name="info" label="Info" icon="o_info" />
                <q-tab name="reservations" label="Reservas" icon="event" />
-               <q-tab name="tournaments" label="Torneos" icon="emoji_events" />
-               <q-tab name="wall" label="Muro" icon="chat" />
+               <q-tab name="tournaments" label="Torneos" icon="o_emoji_events" />
+               <q-tab name="publiclessons" label="Clases" icon="event" />
+               <q-tab name="privatelessons" label="Coaches" icon="o_school" />
+               <q-tab name="wall" label="Muro" icon="o_chat" />
+               <q-icon name="arrow_forward_ios" />
              </q-tabs>
            </q-card-section>
          </q-card>
@@ -61,7 +65,7 @@
           @next-week="reservations.nextWeek"
           @select-day="reservations.selectDay"
           @select-time="reservations.selectTime"
-          @select-duration="onSelectDuration"
+          @select-duration="prepareAndGoToSummary"
         />
          <TournamentsClubListComponent
            v-if="selectedTab === 'tournaments'"
@@ -77,6 +81,14 @@
            :menuVisible="menuVisible"
            @update:posts="updatePosts"
          />
+         <LessonsComponent
+          v-if="selectedTab === 'publiclessons'"
+          :clubDetails="unwrappedClubDetails"
+        />
+        <CoachesComponent
+          v-if="selectedTab === 'privatelessons'"
+          :clubDetails="unwrappedClubDetails"
+        />
        </div>
      </q-page>
    </q-page-container>
@@ -89,6 +101,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { useUserStore } from "src/stores/userStore";
+import { useSummaryStore } from "src/stores/summaryStore";
 import { useClub } from "src/composables/useClub";
 import { useReactions } from "src/composables/useReactions";
 import { useReservations } from "src/composables/useReservations";
@@ -102,6 +115,10 @@ import ClubWallComponent from "src/components/ClubWallComponent.vue";
 import TournamentsClubListComponent from "src/components/TournamentsClubListComponent.vue";
 import ReservationsComponent from "src/components/ReservationsComponent.vue";
 import ClubInfoComponent from "src/components/ClubInfoComponent.vue";
+import LessonsComponent from "src/components/LessonsComponent.vue";
+import CoachesComponent from "src/components/CoachesComponent.vue";
+
+
 
 export default {
   components: {
@@ -112,14 +129,18 @@ export default {
     ReservationsComponent,
     TournamentsClubListComponent,
     ClubInfoComponent,
+    LessonsComponent,
+    CoachesComponent,
   },
   setup() {
     const route = useRoute();
     const router = useRouter();
     const $q = useQuasar();
     const userStore = useUserStore();
+    const summaryStore = useSummaryStore();
     const selectedTab = ref("info");
     const clubId = route.params.clubId;
+    
     
     // Composables
     const club = useClub();
@@ -159,40 +180,78 @@ export default {
     });
 
     // Handle reservation selection
-    const onSelectDuration = (payload) => {
-      const { option, court} = payload;
+    const prepareAndGoToSummary = (payload) => {
+        const { option, court } = payload;
 
-      if (!court || !reservations.selectedDay.value || !reservations.selectedTime.value) {
-        const missingFields = [];
-        if (!court) missingFields.push("cancha");
-        if (!reservations.selectedDay.value) missingFields.push("día");
-        if (!reservations.selectedTime.value) missingFields.push("hora");
+        const currentSelectedDay = reservations.selectedDay.value;
+        const currentSelectedTime = reservations.selectedTime.value;
+        const clubDetails = club.clubDetails.value; // Obtener detalles del club
 
-        $q.notify({
-          color: "negative",
-          message: `Datos incompletos: ${missingFields.join(", ")}`,
-        });
-        return;
-      }
+        if (!court || !currentSelectedDay || !currentSelectedTime || !clubDetails) {
+            const missingFields = [];
+            if (!court) missingFields.push("cancha");
+            if (!currentSelectedDay) missingFields.push("día");
+            if (!currentSelectedTime) missingFields.push("hora");
+            if (!clubDetails) missingFields.push("detalles del club");
 
-      const clubDetails = club.clubDetails.value
+            console.error("Datos incompletos para generar resumen:", { court, currentSelectedDay, currentSelectedTime, clubDetails });
+            $q.notify({
+                color: "negative",
+                message: `Faltan datos para continuar: ${missingFields.join(", ")}`,
+            });
+            return;
+        }
 
-      const reservationDetails = {
-        clubId: clubDetails.id || "ID de club no especificado",
-        clubName: clubDetails.name || "Nombre de club no especificado",
-        courtId: court.id || "ID de cancha no especificado",
-        courtName: court.name || "Nombre de cancha no especificado",
-        date: reservations.selectedDay.value || "Fecha no especificada",
-        time: reservations.selectedTime.value || "Hora no especificada",
-        duration: option.duration || 0,
-        price: reservations.getCourtPrice(court, option.duration) || 0,
-      };
+        const price = reservations.getCourtPrice(court, option.duration);
+        if (price === undefined || price === null) {
+             console.error("No se pudo calcular el precio para la cancha y duración seleccionadas.");
+              $q.notify({ color: "negative", message: "Error al obtener el precio de la cancha." });
+             return;
+        }
 
-      router.push({
-        name: "CheckoutPage",
-        query: reservationDetails,
-      });
+        // 1. Recopilar Información (ya la tenemos de las validaciones y payload)
+        const duration = option.duration;
+
+        // 2. Construir Props para el Componente Genérico
+        const summaryProps = {
+            summaryTitle: 'Resumen de Reserva',
+            itemDetails: [
+                { label: 'Club', value: clubDetails.name || 'No disponible' },
+                { label: 'Cancha', value: court.name || 'No disponible' },
+                { label: 'Fecha', value: currentSelectedDay }, // Formatear si es necesario
+                { label: 'Horario', value: `${currentSelectedTime} hrs.` },
+                { label: 'Duración', value: `${duration} minutos` },
+            ],
+            baseData: {
+                clubId: clubDetails.id, // ID del club
+                price: price,
+                participants: 4, // Asumir 4 para reserva de cancha
+                type: 'court',
+                id: court.id, // ID de la cancha
+            },
+            allowPaymentSplit: true,
+            showPublicToggle: true,
+            commissionRate: 4, // O desde configuración
+            extraData: {
+                date: currentSelectedDay,
+                time: currentSelectedTime,
+                duration: duration,
+                isIndoor: court.is_indoor,
+                courtSurface: court.surface // Ejemplo de dato extra
+            }
+        };
+
+        // 3. Guardar en Pinia Store
+        summaryStore.setSummaryDetails(summaryProps);
+        console.log('Datos del resumen guardados en Pinia:', summaryProps);
+
+
+        // 4. Navegar a la página del Resumen Genérico
+        //    ¡Asegúrate que 'ReservationSummaryPage' es el nombre correcto de tu ruta!
+        router.push({ name: 'OrderSummary' });
     };
+
+
 
     const goToTournamentDetails = (tournamentId) => {
       router.push({ name: "TournamentDetails", params: { tournamentId } });
@@ -244,9 +303,9 @@ export default {
       unwrappedClubDetails,
       toggleReaction,
       userStore, 
-      onSelectDuration,
       clubLogoUrl,
       goToTournamentDetails,
+      prepareAndGoToSummary,
     };
   },
 };

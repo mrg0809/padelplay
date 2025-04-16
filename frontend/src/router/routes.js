@@ -1,9 +1,26 @@
+import { name } from "dayjs/locale/es-mx";
+
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
   {
-    path: "/checkout",
-    name: "CheckoutPage",
-    component: () => import("src/pages/CheckoutPage.vue"),
+    path: "/datosclase",
+    name: "LessonSummary",
+    component: () => import("src/pages/player/LessonSummary.vue"),
+  },
+  {
+    path: "/datosreserva",
+    name: "ReservationSummary",
+    component: () => import("src/pages/player/ReservationSummary.vue"),
+  },
+  {
+    path: "/resumenorden",
+    name: "OrderSummary",
+    component: () => import("src/pages/player/OrderSummary.vue"),
+  },
+  {
+    path: "/stripe-payment",
+    name: "StripePayment",
+    component: () => import("src/pages/StripePayment.vue"),
   },
   { path: "/forgot-password", component: () => import("pages/RecoveryPassword.vue")},
   { path: "/reset-password", component: () => import("pages/ResetPassword.vue")},
@@ -37,6 +54,7 @@ const routes = [
   { 
     path: "/dashboard/player", 
     component: () => import("pages/DashboardPlayer.vue"),
+    name: "DashboardPlayer",
     meta: { requiresAuth: true },
   },
   { 
@@ -183,9 +201,9 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/player/lessons/:clubId",
-    name: "ClubLessons",
-    component: () => import("src/pages/player/ClubLessons.vue"),
+    path: "/player/coach/:coachId",
+    name: "CoachDetails",
+    component: () => import("src/pages/player/CoachDetails.vue"),
   },
   { 
     path: "/player/community", 
@@ -202,10 +220,25 @@ const routes = [
     component: () => import("src/pages/DashboardPlayer.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/player/detallessesion/:lessonId",
+    name: "LessonDetails",
+    component: () => import("src/pages/player/LessonDetails.vue"),
+  },
+  {
+    path: "/player/privatelesson/:lessonId",
+    name: "PrivateLessonDetails",
+    component: () => import("src/pages/player/ClassDetails.vue"),
+  },
   { 
     path: "/player/match/:matchId", 
     component: () => import("src/pages/player/MatchDetails.vue"),
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/player/formasdepago",
+    name: "PaymentMethods",
+    component: () => import("src/pages/player/PaymentMethods.vue"),
   },
   { 
     path: "/player/perfil", 
