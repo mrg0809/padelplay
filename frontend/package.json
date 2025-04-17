@@ -13,6 +13,7 @@
     "build": "quasar build"
   },
   "dependencies": {
+    "@capacitor/core": "^7.2.0",
     "@capacitor/share": "^7.0.1",
     "@quasar/extras": "^1.16.4",
     "@stripe/stripe-js": "^6.1.0",

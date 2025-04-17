@@ -1,8 +1,9 @@
 from app.db.connection import supabase
 from fastapi import HTTPException
+from typing import Optional
 import stripe
 
-async def get_or_create_stripe_customer(user_id: str, user_email: str | None) -> str:
+async def get_or_create_stripe_customer(user_id: str, user_email: Optional[str]) -> str:
     # Buscar si existe el stripe_customer_id
     response = supabase.table('profiles').select('stripe_customer_id').eq('id', user_id).maybe_single().execute()
 
@@ -32,7 +33,7 @@ async def get_or_create_stripe_customer(user_id: str, user_email: str | None) ->
         raise HTTPException(status_code=500, detail="Error interno al configurar pagos.")
 
 
-async def get_stripe_customer_id(user_id: str) -> str | None:
+async def get_stripe_customer_id(user_id: str) -> Optional[str]:
      response = supabase.table('profiles').select('stripe_customer_id').eq('id', user_id).maybe_single().execute()
      if response.data and response.data.get('stripe_customer_id'):
          return response.data['stripe_customer_id']
