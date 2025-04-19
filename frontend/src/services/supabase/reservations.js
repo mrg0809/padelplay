@@ -20,3 +20,4 @@ export const fetchReservations = async (selectedDate, clubId) => {
     if (error) throw new Error(error.message);
     return data;
   };
+

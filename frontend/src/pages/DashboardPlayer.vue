@@ -33,27 +33,27 @@
           
           <div class="events-carousel flex flex-center">
 
-            <div v-if="matches.length === 0 && !isInitiallyLoading" class="q-pa-md text-center text-grey">
+            <div v-if="upcomingEvents.length === 0 && !isInitiallyLoading" class="q-pa-md text-center text-grey">
               No tienes próximos eventos registrados.
             </div>
             <div
               v-else
-              v-for="match in matches"
-              :key="match.id"
+              v-for="event in upcomingEvents"
+              :key="event.id"
               class="event-card"
-              @click="navigateToMatch(match.id)"
+              @click="goToEventDetails(event)"
             >
               <!-- Ícono dinámico según el tipo de evento -->
               <q-icon
-                :name="match.tournament_id ? 'emoji_events' : 'sports_tennis'"
+                :name="event.type === 'match' ? (event.tournament_id ? 'emoji_events' : 'sports_tennis') : 'o_school'"
                 class="event-icon material-icons-outlined"
                 size="35px"
               />
               <div class="event-info">
-                <p class="event-date">{{ formatDate(match.match_date) }}</p>
-                <p class="event-time">{{ match.match_time }}</p>
-                <p class="event-club">{{ match.club_name }}</p>
-                <p class="event-court">{{ match.court_name }}</p>
+                <p class="event-date">{{ formatDate(event.match_date || event.lesson_date) }}</p>
+                <p class="event-time">{{ event.match_time || event.lesson_time }}</p>
+                <p class="event-club">{{ event.clubs?.name }}</p>
+                <p class="event-court">{{ event.courts?.name }}</p>
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   import { useUserStore } from "src/stores/userStore";
   import { runTaskWithMinLoading } from 'src/helpers/loadingUtils';
-  import { fetchUpcomingPlayerMatches } from "src/services/api/matches";
+  import { fetchUpcomingPlayerEvents } from 'src/services/api/players';
   import { formatDate } from 'src/helpers/dateUtils';
 
   export default {
@@ -89,7 +89,7 @@
     setup() {
       const $q = useQuasar();
       const router = useRouter();
-      const matches = ref([]);
+      const upcomingEvents = ref([]);
       const full_name = ref(null);
       const isInitiallyLoading = ref(true);
       const userStore = useUserStore();
@@ -121,14 +121,17 @@
         },
       ];
 
-      const fetchDashboardMatches = async () => {
-        const upcomingMatches = await fetchUpcomingPlayerMatches();
-        // Puedes añadir transformaciones aquí si es necesario antes de devolver
-        return upcomingMatches;
+      const fetchDashboardEvents = async () => {
+        const events = await fetchUpcomingPlayerEvents(userStore.userId); // Pasa el ID del jugador
+      return events;
       };
 
-      const navigateToMatch = (matchId) => {
-        router.push(`/player/match/${matchId}`);
+      const goToEventDetails = (event) => {
+        if (event.type === 'match') {
+          router.push(`/player/match/${event.id}`);
+        } else if (event.type === 'lesson') {
+          router.push(`/player/privatelesson/${event.id}`);
+        }
       };
 
       const navigateTo = (route) => {
@@ -137,39 +140,30 @@
 
       onMounted(async () => {
         isInitiallyLoading.value = true;
-        matches.value = []; // Limpia datos anteriores
+        upcomingEvents.value = []; // Limpia datos anteriores
 
         try {
-          // Llama al util: pasa $q, tu función de fetch, y el tiempo mínimo deseado
-          const fetchedMatches = await runTaskWithMinLoading(
+          const fetchedEvents = await runTaskWithMinLoading(
             $q,
-            fetchDashboardMatches, // La función que hace el trabajo real
-            2000 // Ejemplo: mostrar spinner mínimo 0.7 segundos
-            // Puedes pasar opciones extras de QLoading aquí si quieres sobrescribir defaults:
-            // { message: 'Cargando el dashboard...', spinnerColor: 'amber' }
+            fetchDashboardEvents, // Llama a la nueva función
+            2000
           );
-
-          // Si la promesa se resuelve, runTaskWithMinLoading devuelve el resultado de fetchDashboardMatches
-          matches.value = fetchedMatches || []; // Actualiza tu estado
-
+          upcomingEvents.value = fetchedEvents || [];
         } catch (error) {
-          // El error ya fue notificado y logueado por el util.
-          // Puedes añadir lógica adicional aquí si es necesario para este componente
-          // específico (ej: mostrar un mensaje de error diferente en la UI).
-          console.error("Error especifico capturado en DashboardPlayer:", error);
-          matches.value = []; // Asegurar que esté vacío en caso de error
+          console.error("Error fetching upcoming events:", error);
+          upcomingEvents.value = [];
         } finally {
-          isInitiallyLoading.value = false; // Marca que la carga inicial (intento) terminó
+          isInitiallyLoading.value = false;
         }
       });
 
       return {
         full_name,
         options,
-        matches,
+        upcomingEvents,
         isInitiallyLoading,
         formatDate,
-        navigateToMatch,
+        goToEventDetails,
         navigateTo,
         userStore,
       };
