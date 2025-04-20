@@ -88,7 +88,7 @@ import { useQuasar } from "quasar";
 import { loadStripe } from "@stripe/stripe-js";
 import { getBrandIcon, getBrandName  } from "src/helpers/paymentUtils";
 import { finalizeCourtReservationUtil } from "src/helpers/reservationsUtils";
-import { finalizeClassBooking } from "src/helpers/finalizeUtils";
+import { finalizeClassBooking, finalizePublicLessonBooking } from "src/helpers/finalizeUtils";
 import api from "../services/api";
 
 export default {
@@ -449,7 +449,7 @@ export default {
                  success = result.success;
                  redirectPath = result.path || '/user/my-bookings'; // Ejemplo
             } else if (type === 'public_lesson') {
-                 const result = await finalizePublicLessonEnrollment(paymentIntent);
+                 const result = await finalizePublicLessonBooking(paymentIntent, context, api, $q);
                  success = result.success;
                  redirectPath = result.path || '/user/my-lessons'; // Ejemplo
             } else if (type === 'tournament') {
@@ -512,33 +512,6 @@ export default {
         }
     };
 
-    const finalizePublicLessonEnrollment = async (paymentIntent) => {
-         console.log("Finalizando inscripción a clase pública...");
-          try {
-             const payload = { /* ... Construye payload para API /lesson-enrollments ... */
-                lesson_id: baseData.value.id,
-                club_id: baseData.value.clubId, // Podría obtenerse del lesson_id en backend
-                price_paid: amountToPay.value,
-                payment_order_id: paymentOrderId.value,
-                payment_intent_id: paymentIntent.id,
-                additional_items: selectedProducts.value,
-                // user_id se obtiene del token en backend
-             };
-             console.log("Payload para /lesson-enrollments:", payload);
-            //  const response = await api.post("/lesson-enrollments", payload); // LLAMADA REAL
-             // Simulación
-             await new Promise(res => setTimeout(res, 1000));
-             const response = { data: { enrollment_id: 'lessonenroll123' } };
-
-             console.log("Respuesta de API /lesson-enrollments:", response.data);
-              if (!response.data?.enrollment_id) throw new Error("La API no confirmó la inscripción a la clase.");
-             return { success: true, path: '/user/my-lessons' };
-          } catch (error) {
-              console.error("Error en finalizePublicLessonEnrollment:", error);
-               $q.notify({ type: 'negative', message: error.response?.data?.detail || error.message || "Error al confirmar la inscripción a clase." });
-              return { success: false };
-          }
-    };
 
      const finalizeTournamentEnrollment = async (paymentIntent) => {
          console.log("Finalizando inscripción a torneo...");

@@ -10,8 +10,8 @@
         <p>Fecha: {{ lesson.lesson_date }}</p>
         <p>Hora: {{ lesson.lesson_time }} hrs.</p>
       </div>
-      <p v-if="lessons && lessons.length === 0" class="text-center q-mt-md">
-        No hay clases abiertas en este club.
+      <p v-if="lessons && lessons.length === 0" class="text-center q-mt-md text-black">
+        Por el momento el club no cuenta con clases programadas.
       </p>
     </div>
   </template>

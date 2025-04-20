@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 export const getLessonDetails = async (lessonId) => {
     const { data, error } = await supabase
       .from("lessons")
-      .select("id, name, description, court_id, duration, coach, lesson_date, lesson_time, price, coaches(name)")
+      .select("id, name, description, court_id, duration, coach, lesson_date, lesson_time, price, coaches(name), players")
       .eq("id", lessonId);
   
     if (error) throw new Error(error.message);
@@ -40,3 +40,13 @@ export const getPrivateLessonDeatails = async (lessonId) => {
   }
 };
 
+
+export const getPlayerLessonPhotos = async (players) => {
+  const { data, error } = await supabase
+    .from("players")
+    .select("user_id, photo_url")
+    .in("user_id", players);
+
+  if (error) throw new Error(error.message);
+  return data;
+};

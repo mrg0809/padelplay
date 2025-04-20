@@ -6,6 +6,7 @@ from app.db.connection import supabase
 import uuid
 from datetime import date, time, timedelta, datetime
 from app.utils.lesson_utils import get_available_courts_for_lesson
+from uuid import UUID
 
 router = APIRouter()
 
@@ -50,15 +51,16 @@ class PrivateLessonBookingResponse(BaseModel):
     message: str
 
 
+
 @router.get("/", response_model=List[LessonResponse])
 def get_lessons(club_id: str, current_user: dict = Depends(get_current_user)):
-    """
-    Obtiene la lista de lecciones públicas de un club.
-    """
+    today = date.today()
+
     response = supabase.from_("lessons") \
         .select("*") \
         .eq("club_id", club_id) \
         .eq("lesson_type", "public") \
+        .filter("lesson_date", "gte", str(today)) \
         .execute()
 
     if not response.data:
@@ -66,7 +68,6 @@ def get_lessons(club_id: str, current_user: dict = Depends(get_current_user)):
 
     return response.data
 
-from datetime import datetime, timedelta
 
 @router.post("/")
 def create_lesson(data: LessonCreate, current_user: dict = Depends(get_current_user)):
@@ -274,3 +275,47 @@ async def create_private_lesson_booking(data: PrivateLessonBooking, current_user
     except Exception as e:
         print(f"Error en create_private_lesson_booking: {e}")
         raise HTTPException(status_code=500, detail=f"Error al crear reserva de clase privada: {str(e)}")
+
+
+
+@router.post("/public-booking/{lesson_id}")
+async def public_booking(
+    lesson_id: UUID,
+    current_user: dict = Depends(get_current_user),
+):
+    try:
+        player_id: UUID = UUID(current_user["id"])  # Convertir a UUID
+
+        # Obtener la lección actual
+        lesson_result = supabase.from_("lessons").select("players").eq("id", lesson_id).execute()
+
+        if not lesson_result.data:
+            raise HTTPException(status_code=404, detail="Clase no encontrada.")
+
+        lesson = lesson_result.data[0]
+        current_players: Optional[List[str]] = [str(p) for p in lesson["players"]] if lesson["players"] else []
+
+       # Verificar si el jugador ya está inscrito
+        if str(player_id) in current_players:
+            raise HTTPException(status_code=400, detail="El jugador ya está inscrito en esta clase.")
+
+        # Agregar al jugador a la lista
+        updated_players: List[str] = current_players + [str(player_id)]
+
+        # Actualizar la lección
+        update_result = (
+            supabase.from_("lessons")
+            .update({"players": updated_players})
+            .eq("id", lesson_id)
+            .execute()
+        )
+
+        if update_result.count == 0:
+            raise HTTPException(
+                status_code=500, detail="Error al inscribir al jugador en la clase."
+            )
+
+        return {"message": "Inscripción exitosa."}
+
+    except HTTPException as e:
+        raise e

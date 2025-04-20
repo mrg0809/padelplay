@@ -11,8 +11,8 @@
         <p>Categoría: {{ tournament.category }}</p>
         <p>Género: {{ tournament.gender }}</p>
       </div>
-      <p v-if="!tournaments.length" class="text-center q-mt-md">
-        No hay torneos disponibles en este club.
+      <p v-if="!tournaments.length" class="text-center q-mt-md text-black">
+        No hay torneos programados en este club.
       </p>
     </div>
   </template>

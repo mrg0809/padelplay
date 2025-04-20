@@ -129,8 +129,10 @@
       const goToEventDetails = (event) => {
         if (event.type === 'match') {
           router.push(`/player/match/${event.id}`);
-        } else if (event.type === 'lesson') {
+        } else if (event.type === 'lesson' && event.lesson_type === 'private') {
           router.push(`/player/privatelesson/${event.id}`);
+        } else if (event.type === 'lesson' && event.lesson_type === 'public') {
+          router.push(`/player/detallessesion/${event.id}`);
         }
       };
 

@@ -85,3 +85,59 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
         return { success: false };
     }
 };
+
+
+
+export const finalizePublicLessonBooking = async (paymentIntent, context, api, $q) => {
+    console.log("Finalizando inscripción a clase pública...");
+    console.log("context:", context);
+
+    const { baseData, paymentOrderId } = context; // Extraer paymentOrderId del contexto
+
+    try {
+        // 1. Validar datos
+        if (!paymentOrderId) {
+            console.error("Falta el paymentOrderId para la inscripción a la clase pública.");
+            if ($q) $q.notify({ type: 'negative', message: 'Error interno: Falta el ID de la orden de pago.' });
+            return { success: false };
+        }
+
+        // 2. Llamar a /process-stripe-payment para actualizar los datos de pago
+        const paymentData = {
+            payment_order_id: paymentOrderId,
+            payment_method: paymentIntent.payment_method,
+            payment_status: paymentIntent.status,
+            transaction_id: paymentIntent.id,
+            is_full_payment: true, // Asumimos que las clases públicas son pago total
+        };
+        const paymentResponse = await api.post("/payments/process-stripe-payment", paymentData);
+
+        if (!paymentResponse.data || !paymentResponse.data.message) {
+            throw new Error("Error al actualizar el estado del pago.");
+        }
+
+        // Añadimos un pequeño retraso antes de llamar a /lessons/public-booking
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 3. Llamar al endpoint /lessons/public-booking/{lesson_id}
+        const response = await api.post(`/lessons/public-booking/${baseData.id}`); // Usar context.lessonId
+
+        // 4. Validar la respuesta
+        if (response.data && response.data.message === "Inscripción exitosa.") {
+            console.log("Inscripción a clase pública exitosa:", response.data);
+            if ($q) $q.notify({ type: 'positive', message: 'Te has inscrito a la clase con éxito.' });
+            return { success: true };
+        } else {
+            console.error("Error al inscribirse a la clase pública:", response);
+            const errorMessage = response.data?.detail || response.data?.message || "No se pudo completar la inscripción.";
+            if ($q) $q.notify({ type: 'negative', message: errorMessage });
+            return { success: false };
+        }
+
+    } catch (error) {
+        console.error("Error en finalizePublicLessonBooking:", error);
+        const errorMessage = error.response?.data?.detail || error.message || "Error al inscribirse a la clase.";
+        if ($q) $q.notify({ type: 'negative', message: errorMessage });
+        return { success: false };
+    }
+};
