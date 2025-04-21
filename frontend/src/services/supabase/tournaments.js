@@ -50,10 +50,10 @@ export const fetchTournaments = async (filters) => {
               start_date,
               category,
               gender,
-              price_per_pair, // Incluir campos necesarios para el resumen/detalle
+              price_per_pair,
               prize,
-              club_id,      // Necesario para baseData en el resumen
-              clubs ( city, name ) // Seleccionar nombre y ciudad del club relacionado
+              club_id,
+              clubs ( city, name )
           `)
           .gte('start_date', todayDateString);
 

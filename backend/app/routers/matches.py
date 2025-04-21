@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from typing import List, Optional
+from uuid import UUID
 from app.db.connection import supabase
 from app.core.security import get_current_user
 from app.utils.supabase_utils import handle_supabase_response
@@ -16,6 +18,11 @@ class AddPlayerPayload(BaseModel):
     player_name: str
     match_date: str
     match_time: str
+
+class MatchJoinData(BaseModel):
+    match_id: UUID
+    slot_index: int
+    team_to_join: int
 
 
 @router.get("/match/{match_id}")
@@ -166,3 +173,74 @@ async def add_player(data: AddPlayerPayload, current_user: dict = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al agregar el jugador: {str(e)}")
 
+
+
+@router.post("/join")
+async def join_match(
+    join_data: MatchJoinData,
+    current_user: dict = Depends(get_current_user),
+):
+    try:
+        player_id: UUID = UUID(current_user["id"])
+
+        # 1. Obtener el partido actual
+        match_result = supabase.from_("matches").select("team1_players, team2_players").eq("id", join_data.match_id).execute()
+
+        if not match_result.data:
+            raise HTTPException(status_code=404, detail="Partido no encontrado.")
+
+        match = match_result.data[0]
+        team1_players: Optional[List[str]] = [str(p) for p in match["team1_players"]] if match["team1_players"] else []
+        team2_players: Optional[List[str]] = [str(p) for p in match["team2_players"]] if match["team2_players"] else []
+
+        updated_team1_players = team1_players.copy()
+        updated_team2_players = team2_players.copy()
+
+        # 2. Validar que el slot esté disponible
+        if join_data.team_to_join == 1:
+            if join_data.slot_index < len(team1_players) and team1_players[join_data.slot_index] is not None:
+                raise HTTPException(status_code=400, detail="El slot seleccionado no está disponible en el equipo 1.")
+            # Rellenar con None los slots anteriores si es necesario
+            while len(updated_team1_players) < join_data.slot_index:
+                updated_team1_players.append(None)
+            if len(updated_team1_players) == join_data.slot_index:
+                updated_team1_players.append(str(player_id))
+            elif len(updated_team1_players) > join_data.slot_index:
+                updated_team1_players[join_data.slot_index] = str(player_id)
+
+        elif join_data.team_to_join == 2:
+            if join_data.slot_index < len(team2_players) and team2_players[join_data.slot_index] is not None:
+                raise HTTPException(status_code=400, detail="El slot seleccionado no está disponible en el equipo 2.")
+            # Rellenar con None los slots anteriores si es necesario
+            while len(updated_team2_players) < join_data.slot_index:
+                updated_team2_players.append(None)
+            if len(updated_team2_players) == join_data.slot_index:
+                updated_team2_players.append(str(player_id))
+            elif len(updated_team2_players) > join_data.slot_index:
+                updated_team2_players[join_data.slot_index] = str(player_id)
+        else:
+            raise HTTPException(status_code=400, detail="Equipo inválido. Debe ser 1 o 2.")
+
+        # 3. Actualizar el partido
+        update_result = (
+            supabase.from_("matches")
+            .update({"team1_players": updated_team1_players, "team2_players": updated_team2_players})
+            .eq("id", join_data.match_id)
+            .execute()
+        )
+
+        if update_result.count == 0:
+            raise HTTPException(
+                status_code=500, detail="Error al unirse al partido."
+            )
+
+        return {"message": "Te has unido al partido exitosamente."}
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        print(f"Error inesperado: {e}")
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        )

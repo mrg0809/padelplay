@@ -88,7 +88,7 @@ import { useQuasar } from "quasar";
 import { loadStripe } from "@stripe/stripe-js";
 import { getBrandIcon, getBrandName  } from "src/helpers/paymentUtils";
 import { finalizeCourtReservationUtil } from "src/helpers/reservationsUtils";
-import { finalizeClassBooking, finalizePublicLessonBooking } from "src/helpers/finalizeUtils";
+import { finalizeClassBooking, finalizePublicLessonBooking, finalizeMatchJoin, finalizeTournamentEnrollment } from "src/helpers/finalizeUtils";
 import api from "../services/api";
 
 export default {
@@ -447,20 +447,20 @@ export default {
             } else if (type === 'class') {
                  const result = await finalizeClassBooking(paymentIntent, context, api, $q);
                  success = result.success;
-                 redirectPath = result.path || '/user/my-bookings'; // Ejemplo
+                 redirectPath = result.path || `/player/privatelesson/${result.lesson_id}`; 
             } else if (type === 'public_lesson') {
                  const result = await finalizePublicLessonBooking(paymentIntent, context, api, $q);
                  success = result.success;
-                 redirectPath = result.path || '/user/my-lessons'; // Ejemplo
+                 redirectPath = result.path || `/player/detallessesion/${result.lesson_id}`; 
             } else if (type === 'tournament') {
-                 const result = await finalizeTournamentEnrollment(paymentIntent);
+                 const result = await finalizeTournamentEnrollment(paymentIntent, context, api, $q);
                  success = result.success;
                  // Asume que devuelve tournamentId en extraData o baseData
                  redirectPath = result.path || `/tournaments/${baseData.value?.id}`; // Ejemplo
             } else if (type === 'open_match_join') {
-                 const result = await finalizeMatchJoin(paymentIntent);
+                 const result = await finalizeMatchJoin(paymentIntent, context, api, $q);
                  success = result.success;
-                 redirectPath = result.path || `/player/match/${baseData.value?.id}`; // ID del match
+                 redirectPath = result.path || `/player/match/${baseData.value?.id}`;
             } else {
                 console.error(`Tipo de item desconocido: ${type}`);
                 $q.notify({ type: 'negative', message: 'Error: Tipo de operación desconocida después del pago.' });
@@ -510,63 +510,6 @@ export default {
                  $q.loading.hide();
                 break;
         }
-    };
-
-
-     const finalizeTournamentEnrollment = async (paymentIntent) => {
-         console.log("Finalizando inscripción a torneo...");
-          try {
-              const payload = { /* ... Construye payload para API /tournament-enrollments ... */
-                tournament_id: baseData.value.id,
-                price_paid: amountToPay.value, // La mitad pagada
-                payment_order_id: paymentOrderId.value,
-                payment_intent_id: paymentIntent.id,
-                additional_items: selectedProducts.value,
-                 // user_id se obtiene del token en backend
-              };
-             console.log("Payload para /tournament-enrollments:", payload);
-            //  const response = await api.post("/tournament-enrollments", payload); // LLAMADA REAL
-              // Simulación
-             await new Promise(res => setTimeout(res, 1000));
-             const response = { data: { enrollment_id: 'tournenroll123' } };
-
-              console.log("Respuesta de API /tournament-enrollments:", response.data);
-              if (!response.data?.enrollment_id) throw new Error("La API no confirmó la inscripción al torneo.");
-              return { success: true, path: `/tournaments/${baseData.value.id}` }; // Volver al detalle del torneo
-          } catch (error) {
-               console.error("Error en finalizeTournamentEnrollment:", error);
-               $q.notify({ type: 'negative', message: error.response?.data?.detail || error.message || "Error al confirmar la inscripción al torneo." });
-              return { success: false };
-          }
-    };
-
-     const finalizeMatchJoin = async (paymentIntent) => {
-         console.log("Finalizando unión a partido...");
-          try {
-              const payload = { /* ... Construye payload para API /matches/{id}/join o similar ... */
-                // match_id se usa en la URL del endpoint o se pasa en body
-                team_number: extraData.value.teamToJoin,
-                slot_index: extraData.value.slotIndex,
-                price_paid: amountToPay.value,
-                payment_order_id: paymentOrderId.value,
-                payment_intent_id: paymentIntent.id,
-                 // user_id se obtiene del token en backend
-              };
-              const matchId = baseData.value.id;
-             console.log(`Payload para PATCH /matches/${matchId}/join:`, payload); // Asume endpoint PATCH
-            //  const response = await api.patch(`/matches/${matchId}/join`, payload); // LLAMADA REAL
-              // Simulación
-             await new Promise(res => setTimeout(res, 1000));
-             const response = { data: { success: true, /* match data? */ } }; // Backend debe confirmar
-
-             console.log("Respuesta de API /matches/join:", response.data);
-              if (!response.data?.success) throw new Error("La API no confirmó la unión al partido."); // O como sea que el backend confirme
-             return { success: true, path: `/player/match/${matchId}` }; // Ir al detalle del partido
-          } catch (error) {
-              console.error("Error en finalizeMatchJoin:", error);
-               $q.notify({ type: 'negative', message: error.response?.data?.detail || error.message || "Error al confirmar la unión al partido." });
-              return { success: false };
-          }
     };
 
     const goBack = () => {

@@ -141,3 +141,126 @@ export const finalizePublicLessonBooking = async (paymentIntent, context, api, $
         return { success: false };
     }
 };
+
+
+
+export const finalizeMatchJoin = async (paymentIntent, context, api, $q) => {
+    console.log("Finalizando unión a partido abierto...");
+    console.log("context:", context);
+
+    const { paymentOrderId, extraData } = context;
+    const { matchId, slotIndex, teamToJoin } = extraData || {}; // Usar destructuring con valor por defecto
+
+    try {
+        // 1. Validar datos
+        if (!paymentOrderId || !extraData || matchId === undefined || slotIndex === undefined || teamToJoin === undefined) {
+            console.error("Faltan datos para la unión al partido abierto.");
+            if ($q) $q.notify({ type: 'negative', message: 'Error interno: Faltan datos para unirse al partido.' });
+            return { success: false };
+        }
+
+        // 2. Llamar a /payments/process-stripe-payment para actualizar los datos de pago
+        const paymentData = {
+            payment_order_id: paymentOrderId,
+            payment_method: paymentIntent.payment_method,
+            payment_status: paymentIntent.status,
+            transaction_id: paymentIntent.id,
+            is_full_payment: true, // Asumimos que la unión a partidos es pago total
+        };
+        const paymentResponse = await api.post("/payments/process-stripe-payment", paymentData);
+
+        if (!paymentResponse.data || !paymentResponse.data.message) {
+            throw new Error("Error al actualizar el estado del pago.");
+        }
+
+        // Añadimos un pequeño retraso antes de llamar a /matches/join
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 3. Llamar al endpoint /matches/join
+        const joinData = {
+            match_id: matchId,
+            slot_index: slotIndex,
+            team_to_join: teamToJoin,
+        };
+        const response = await api.post("/matches/join", joinData);
+
+        // 4. Validar la respuesta
+        if (response.data && response.data.message === "Te has unido al partido exitosamente.") {
+            console.log("Unión a partido abierto exitosa:", response.data);
+            if ($q) $q.notify({ type: 'positive', message: 'Te has unido al partido con éxito.' });
+            return { success: true };
+        } else {
+            console.error("Error al unirse al partido abierto:", response);
+            const errorMessage = response.data?.detail || response.data?.message || "No se pudo completar la unión al partido.";
+            if ($q) $q.notify({ type: 'negative', message: errorMessage });
+            return { success: false };
+        }
+
+    } catch (error) {
+        console.error("Error en finalizeMatchJoin:", error);
+        const errorMessage = error.response?.data?.detail || error.message || "Error al unirse al partido.";
+        if ($q) $q.notify({ type: 'negative', message: errorMessage });
+        return { success: false };
+    }
+};
+
+
+export const finalizeTournamentEnrollment = async (paymentIntent, context, api, $q) => {
+    console.log("Finalizando inscripción a torneo...");
+    console.log("context:", context);
+
+    const { paymentOrderId, baseData, extraData } = context;
+    const { id: tournamentId } = baseData || {}; // Usar destructuring con valor por defecto
+    const { partnerId } = extraData || {}; // Usar destructuring con valor por defecto
+
+    try {
+        // 1. Validar datos
+        if (!paymentOrderId || !tournamentId || !partnerId) {
+            console.error("Faltan datos para la inscripción al torneo.");
+            if ($q) $q.notify({ type: 'negative', message: 'Error interno: Faltan datos para inscribirse al torneo.' });
+            return { success: false };
+        }
+
+        // 2. Llamar a /payments/process-stripe-payment para actualizar los datos de pago
+        const paymentData = {
+            payment_order_id: paymentOrderId,
+            payment_method: paymentIntent.payment_method,
+            payment_status: paymentIntent.status,
+            transaction_id: paymentIntent.id,
+            is_full_payment: true, // Asumimos que la inscripción a torneos es pago total
+        };
+        const paymentResponse = await api.post("/payments/process-stripe-payment", paymentData);
+
+        if (!paymentResponse.data || !paymentResponse.data.message) {
+            throw new Error("Error al actualizar el estado del pago.");
+        }
+
+        // Añadimos un pequeño retraso antes de llamar a /tournaments/register-team
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 3. Llamar al endpoint /tournaments/register-team
+        const registerData = {
+            tournament_id: tournamentId,
+            partner_id: partnerId,
+        };
+        const response = await api.post("/tournaments/register-team", registerData);
+
+        // 4. Validar la respuesta
+        if (response.data && response.data.message === "Equipo registrado exitosamente.") {
+            console.log("Inscripción a torneo exitosa:", response.data);
+            if ($q) $q.notify({ type: 'positive', message: 'Te has inscrito al torneo con éxito.' });
+            return { success: true };
+        } else {
+            console.error("Error al inscribirse al torneo:", response);
+            const errorMessage = response.data?.detail || response.data?.message || "No se pudo completar la inscripción al torneo.";
+            if ($q) $q.notify({ type: 'negative', message: errorMessage });
+            return { success: false };
+        }
+
+    } catch (error) {
+        console.error("Error en finalizeTournamentEnrollment:", error);
+        const errorMessage = error.response?.data?.detail || error.message || "Error al inscribirse al torneo.";
+        if ($q) $q.notify({ type: 'negative', message: errorMessage });
+        return { success: false };
+    }
+};

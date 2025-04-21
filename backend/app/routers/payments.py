@@ -19,8 +19,8 @@ class User(BaseModel):
 class PaymentIntentRequest(BaseModel):
     amount: int
     payment_order_id: str
-    customer: Optional[str] = None # Agrega customer, y lo hace opcional
-    metadata: Optional[dict] = None # Agrega metadata, y lo hace opcional
+    customer: Optional[str] = None 
+    metadata: Optional[dict] = None
 
 
 @router.post("/create-payment-intent")
