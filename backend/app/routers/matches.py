@@ -6,6 +6,7 @@ from app.db.connection import supabase
 from app.core.security import get_current_user
 from app.utils.supabase_utils import handle_supabase_response
 from app.utils.email_utils import send_match_invitation_email
+from app.utils.notification_utils import create_notification
 
 router = APIRouter()
 
@@ -232,6 +233,13 @@ async def join_match(
         if update_result.count == 0:
             raise HTTPException(
                 status_code=500, detail="Error al unirse al partido."
+            )
+        
+        create_notification(
+            player_id,
+            "Unión a Juego Abierto",
+            f"Te uniste exitosamente al juego.",
+            f"/player/match/{join_data.match_id}"
             )
 
         return {"message": "Te has unido al partido exitosamente."}

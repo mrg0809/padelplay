@@ -30,10 +30,10 @@
               clickable
               class="notification-item"
             >
-              <q-item-section avatar @click="markAsRead(notification.id)">
+              <q-item-section avatar @click="markAsRead(notification.id, notification.route)">
                 <q-icon name="o_notifications" size="36px" color="white" />
               </q-item-section>
-              <q-item-section @click="markAsRead(notification.id)">
+              <q-item-section @click="markAsRead(notification.id, notification.route)">
                 <q-item-label class="text-bold">{{ notification.title }}</q-item-label>
                 <q-item-label caption>{{ notification.message }}</q-item-label>
                 <q-item-label caption class="text-grey text-sm">
@@ -49,7 +49,7 @@
                   color="white"
                   size="sm"
                   class="q-mr-sm"
-                  @click.stop="markAsRead(notification.id)"
+                  @click.stop="markAsRead(notification.id, notification.route)"
                 />
                 <q-btn
                   flat
@@ -98,10 +98,14 @@ export default {
         this.notifications = []; // Manejo en caso de error
       }
     },
-    async markAsRead(notificationId) {
+    async markAsRead(notificationId, route) {
       try {
         await api.put(`/notifications/${notificationId}/read`);
+        if (route) {
+          this.$router.push(route);
+        } else {
         this.fetchNotifications(); // Actualizar la lista
+        }
       } catch (error) {
         console.error("Error marking notification as read:", error);
       }

@@ -5,8 +5,8 @@ from uuid import UUID
 from app.db.connection import supabase
 from app.core.security import get_current_user
 from app.utils.supabase_utils import handle_supabase_response
-from app.utils.email_utils import send_tournament_invitation_email
 from app.utils.tournament_utils import generate_tournament_preview
+from app.utils.notification_utils import create_notification
 
 
 router = APIRouter()
@@ -97,6 +97,13 @@ async def register_team(
 
         if insert_result.count == 0:
             raise HTTPException(status_code=500, detail="Error al registrar el equipo en el torneo.")
+
+        create_notification(
+            player1_id,
+            "Inscripción a Torneo",
+            f"Te inscribiste exitosamente al Torneo.",
+            f"/tournament/{register_data.tournament_id}"
+            )
 
         return {"message": "Equipo registrado exitosamente."}
 

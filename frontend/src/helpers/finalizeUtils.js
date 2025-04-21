@@ -70,7 +70,7 @@ export const finalizeClassBooking = async (paymentIntent, context, api, $q) => {
 
         if (response.data && response.data.booking_id) {
             console.log("Reserva de clase privada creada:", response.data);
-            return { success: true, path: '/user/my-bookings' };
+            return { success: true, path: `/player/privatelesson/${response.data.booking_id}` };
         } else {
             console.error("Error: No se recibió booking_id en la respuesta:", response);
             throw new Error("No se pudo confirmar la reserva de la clase privada.");

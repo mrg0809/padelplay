@@ -24,17 +24,19 @@
             <q-card-section>
               <h4 class="q-mt-none q-mb-md">{{ tournament.name }}</h4>
               <p>
-                <strong><q-icon name="mdi-calendar-start" class="q-mr-xs" />Inicio:</strong> {{ tournament.start_date }} -
-                {{ tournament.start_time }} hrs.
+                <strong><q-icon name="mdi-calendar-start" class="q-mr-xs" />Inicio:</strong>
+                {{ tournament.start_date }} - {{ tournament.start_time }} hrs.
               </p>
               <p>
-                <strong><q-icon name="mdi-domain" class="q-mr-xs" />Club:</strong> {{ tournament.clubs.name }}
+                <strong><q-icon name="mdi-domain" class="q-mr-xs" />Club:</strong> {{ tournament.clubs?.name }}
               </p>
               <p>
-                <strong><q-icon name="mdi-trophy-variant-outline" class="q-mr-xs" />Categoría:</strong> {{ tournament.category }}
+                <strong><q-icon name="mdi-trophy-variant-outline" class="q-mr-xs" />Categoría:</strong>
+                {{ tournament.category }}
               </p>
               <p>
-                <strong><q-icon name="mdi-gender-male-female" class="q-mr-xs" />Género:</strong> {{ tournament.gender }}
+                <strong><q-icon name="mdi-gender-male-female" class="q-mr-xs" />Género:</strong>
+                {{ tournament.gender }}
               </p>
               <p>
                 <strong><q-icon name="mdi-cash-multiple" class="q-mr-xs" />Precio por Pareja:</strong>
@@ -45,7 +47,37 @@
                 ${{ tournament.prize || 'N/A' }}
               </p>
 
-              <div class="q-mt-md">
+              <div v-if="enrolledPlayers.length > 0" class="q-mt-md">
+                <p>
+                  <strong><q-icon name="account-group-outline" class="q-mr-xs" />Jugadores Inscritos:</strong>
+                </p>
+                <div class="q-gutter-xs row items-center">
+                  <template v-for="team in enrolledPlayers" :key="team.player1?.user_id + '-' + team.player2?.user_id">
+                    <q-avatar
+                      v-if="team.player1"
+                      size="48px"
+                      color="white"
+                      text-color="black"
+                      class="overlapping"
+                    >
+                      <img v-if="team.player1.photo_url" :src="team.player1.photo_url" :alt="team.player1.user_id" />
+                      <span v-else>{{ getInitials(team.player1.user_id) }}</span>
+                    </q-avatar>
+                    <q-avatar
+                      v-if="team.player2"
+                      size="48px"
+                      color="white"
+                      text-color="black"
+                      class="overlapping"
+                    >
+                      <img v-if="team.player2.photo_url" :src="team.player2.photo_url" :alt="team.player2.user_id" />
+                      <span v-else>{{ getInitials(team.player2.user_id) }}</span>
+                    </q-avatar>
+                  </template>
+                </div>
+              </div>
+
+              <div v-if="!isUserEnrolled" class="q-mt-md">
                 <q-btn
                   color="primary"
                   label="Elige tu Pareja"
@@ -63,6 +95,7 @@
 
             <q-card-actions align="center" class="q-pa-md">
               <q-btn
+                v-if="!isUserEnrolled && selectedPartner"
                 label="Inscribir Pareja"
                 color="green"
                 icon-right="mdi-pencil-plus-outline"
@@ -70,7 +103,7 @@
                 size="lg"
                 push
                 @click="handleEnrollment"
-                :disable="!tournament || !selectedPartner"
+                :disable="!tournament"
                 title="Inscribirse al torneo pagando la mitad del costo de pareja"
               />
             </q-card-actions>
@@ -90,11 +123,12 @@
 </template>
 
 <script setup>
-  import { ref, onMounted } from "vue";
+  import { ref, onMounted, computed } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
   import { useSummaryStore } from 'src/stores/summaryStore';
-  import { fetchTournamentDetails } from "src/services/supabase/tournaments";
+  import { useUserStore } from "src/stores/userStore";
+  import { fetchTournamentDetails, fetchTournamentPlayers } from "src/services/supabase/tournaments";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   import BannerPromoScrolling from "src/components/BannerPromoScrolling.vue";
   import NotificationBell from "src/components/NotificationBell.vue";
@@ -106,12 +140,14 @@
   const summaryStore = useSummaryStore();
   const tournament = ref(null);
   const loading = ref(false);
+  const userStore = useUserStore();
 
   const tournamentId = route.params.tournamentId;
 
   // Nuevo estado para controlar el diálogo y la pareja seleccionada
   const showPlayerSearchDialog = ref(false);
   const selectedPartner = ref(null);
+  const enrolledPlayers = ref([])
 
   const loadData = async () => {
     if (!tournamentId) {
@@ -123,6 +159,7 @@
 
     loading.value = true;
     tournament.value = null;
+    enrolledPlayers.value = [];
 
     try {
       const data = await fetchTournamentDetails(tournamentId);
@@ -134,6 +171,11 @@
 
       tournament.value = data[0];
       console.log("Detalles del torneo cargados:", tournament.value);
+
+      const playersData = await fetchTournamentPlayers(tournamentId);
+      enrolledPlayers.value = playersData;
+      console.log("Jugadores inscritos:", enrolledPlayers.value);
+
     } catch (error) {
       console.error("Error al cargar detalles del torneo (desde loadData):", error);
       tournament.value = null;
@@ -202,6 +244,22 @@
     showPlayerSearchDialog.value = false;
   };
 
+  const isUserEnrolled = computed(() => {
+    if (!enrolledPlayers.value || !userStore.userId) {
+      return false;
+    }
+    return enrolledPlayers.value.some(team => team.player1?.user_id === userStore.userId || team.player2?.user_id === userStore.userId);
+  });
+
+  const getInitials = (userId) => {
+    if (!userId) return '??';
+    const parts = userId.split('-');
+    if (parts.length > 0) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+    return userId.substring(0, 2).toUpperCase();
+  };
+
   onMounted(() => {
     loadData();
   });
@@ -265,6 +323,16 @@
   h4 { margin-top: 0; margin-bottom: 16px; }
   p { margin-bottom: 0.6rem; }
   p strong { color: #b3e5fc; }
+
+  .overlapping {
+    position: relative;
+    margin-left: -18px;
+    border: 1px solid black;
+  }
+
+  .q-avatar:first-child {
+    margin-left: 0;
+  }
 
 </style>
   

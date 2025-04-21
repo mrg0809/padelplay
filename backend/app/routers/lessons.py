@@ -7,6 +7,7 @@ import uuid
 from datetime import date, time, timedelta, datetime
 from app.utils.lesson_utils import get_available_courts_for_lesson
 from uuid import UUID
+from app.utils.notification_utils import create_notification
 
 router = APIRouter()
 
@@ -269,6 +270,13 @@ async def create_private_lesson_booking(data: PrivateLessonBooking, current_user
             # Rollback: Eliminar la lección
             await supabase.from_("lessons").delete().eq("id", lesson_id).execute()
             raise HTTPException(status_code=500, detail="Error al bloquear la cancha")
+        
+        create_notification(
+            current_user["id"],
+            "Nueva Clase",
+            f"Tu clase para el {new_lesson['lesson_date']} ha sido creada con éxito.",
+            f"/player/privatelesson/{new_lesson['id']}"
+            )
 
         return PrivateLessonBookingResponse(booking_id=lesson_id, message="Reserva de clase privada creada exitosamente")
 
@@ -313,6 +321,13 @@ async def public_booking(
         if update_result.count == 0:
             raise HTTPException(
                 status_code=500, detail="Error al inscribir al jugador en la clase."
+            )
+        
+        create_notification(
+            current_user["id"],
+            "Inscripción a sesión de entrenamiento",
+            f"Te inscribiste a una sesión de entrenamiento.",
+            f"/player/detallessesion/{lesson_id}"
             )
 
         return {"message": "Inscripción exitosa."}
