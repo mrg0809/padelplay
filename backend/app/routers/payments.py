@@ -49,6 +49,7 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
         is_full_payment = data["pay_total"]
         event_type = data["item_type"]
         num_players = data["participants"]
+        recipient_id = data["recipient_id"]
 
         # Crear payment_order
         payment_order_response = supabase.from_("payment_orders").insert({
@@ -57,6 +58,7 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
             "payment_status": "pending",
             "event_type": event_type,
             "is_full_payment": is_full_payment,
+            "recipient_id": recipient_id,
         }).execute()
 
         if not payment_order_response or not payment_order_response.data:

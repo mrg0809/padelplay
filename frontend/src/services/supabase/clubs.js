@@ -44,7 +44,7 @@ export async function getClubDetails(clubId) {
   try {
     const { data: clubData, error } = await supabase
       .from('clubs')
-      .select("*")
+      .select("id, name, location, address, city, state, country, contact_phone, contact_email, logo_url, postal_code, latitude, longitude, geolocation, facebook_url, instagram_url, tiktok_url, whatsapp_number, profiles(id)")
       .eq("id", clubId)
       .single();
 

@@ -298,6 +298,7 @@
           item_id: props.baseData?.id,
           item_type: props.baseData?.type,
           club_id: props.baseData?.clubId,
+          recipient_id: props.baseData?.recipient_user_id,
           participants: participants,
           // Incluir productos seleccionados si el backend los necesita para la orden
           products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),

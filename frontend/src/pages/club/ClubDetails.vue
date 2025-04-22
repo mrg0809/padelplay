@@ -228,6 +228,7 @@ export default {
                 participants: 4, // Asumir 4 para reserva de cancha
                 type: 'court',
                 id: court.id, // ID de la cancha
+                recipient_user_id: clubDetails.profiles[0].id,  //ID de usuario de club para poner como receptor de pago
             },
             allowPaymentSplit: true,
             showPublicToggle: true,
@@ -277,6 +278,7 @@ export default {
         
         // Initialize reservations
         await reservations.fetchTimes();
+        console.log("ClubDetails cargado:", club.clubDetails.value);
 
         // Initialize map if on info tab
         if (selectedTab.value === "info" && club.coordinates.value) {
