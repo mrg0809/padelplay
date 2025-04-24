@@ -153,7 +153,7 @@ export default {
           club_id: this.clubId,
         });
 
-        if (response.status === 201) {
+        if (response.status === 200) {
           this.$q.notify({ type: "positive", message: "Torneo creado exitosamente" });
           this.$router.push("/dashboard/club");
         } else {

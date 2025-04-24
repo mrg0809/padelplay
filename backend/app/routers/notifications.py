@@ -13,7 +13,7 @@ def get_notifications(current_user: dict = Depends(get_current_user)):
     return {"data": notifications}
 
 @router.post("/")
-def create_notification(notification: dict):
+def create_notification(notification: dict, current_user: dict = Depends(get_current_user)):
     response = supabase.from_("notifications").insert(notification).execute()
     created_notification = handle_supabase_response(response)
     return {"message": "Notification created successfully", "data": created_notification}

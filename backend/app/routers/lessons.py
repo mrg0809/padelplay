@@ -75,6 +75,7 @@ def create_lesson(data: LessonCreate, current_user: dict = Depends(get_current_u
     """
     Crea una nueva lección y bloquea la cancha durante el tiempo de la lección.
     """
+    club_user_id = current_user["id"]
     # Crear la lección
     new_lesson = {
         "id": str(uuid.uuid4()),
@@ -120,7 +121,14 @@ def create_lesson(data: LessonCreate, current_user: dict = Depends(get_current_u
         # Si falla el bloqueo, eliminar la lección creada (rollback)
         supabase.from_("lessons").delete().eq("id", new_lesson["id"]).execute()
         raise HTTPException(status_code=500, detail="Error al bloquear la cancha")
-
+    
+    create_notification(
+        club_user_id,
+        "Nueva Clase",
+        f"Haz creado una clase nueva para el {data.lesson_date}",
+        "/club/clases"
+    )
+    
     return {"message": "Lección creada y cancha bloqueada exitosamente"}
 
 

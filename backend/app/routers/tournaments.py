@@ -19,6 +19,7 @@ class TournamentRegisterTeamData(BaseModel):
 async def create_tournament(data: dict, current_user: dict = Depends(get_current_user)):
     try:
         club_id = current_user["club_id"]
+        club_user_id = current_user["id"]
 
         tournament_data = {
             "name": data["name"],
@@ -42,6 +43,13 @@ async def create_tournament(data: dict, current_user: dict = Depends(get_current
 
         if not response:
             raise HTTPException(status_code=400, detail=response.error.message)
+        
+        create_notification(
+            club_user_id,
+            "Torneo Creado",
+            f"Haz creado el torneo {data["name"]}",
+            "/club/torneos",
+        )
 
         return {"message": "Torneo creado exitosamente.", "data": response.data}
     except Exception as e:
@@ -104,6 +112,13 @@ async def register_team(
             f"Te inscribiste exitosamente al Torneo.",
             f"/tournament/{register_data.tournament_id}"
             )
+        
+        create_notification(
+            player2_id,
+            "invitación Torneo",
+            "Te han escogido como pareja para el torneo",
+            f"/tournament/{register_data.tournament_id}"
+        )
 
         return {"message": "Equipo registrado exitosamente."}
 

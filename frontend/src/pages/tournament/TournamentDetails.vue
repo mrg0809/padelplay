@@ -214,11 +214,11 @@
       baseData: {
         clubId: tournamentData.clubId,
         price: enrollmentPrice,
-        participants: 1,
+        participants: 2,
         type: 'tournament',
         id: tournamentData.id,
       },
-      allowPaymentSplit: false,
+      allowPaymentSplit: true,
       showPublicToggle: false,
       commissionRate: 4,
       extraData: {

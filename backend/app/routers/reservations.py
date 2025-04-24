@@ -53,7 +53,8 @@ def create_reservation(data: dict, current_user: dict = Depends(get_current_user
 
         supabase.from_("payment_orders").update({"event_id": str(reservation_id)}).eq("id", str(payment_order_id)).execute()
 
-        create_notification(player_id, "Nueva Reserva", f"Tu reserva para el {reservation_date} a las {start_time} ha sido creada con éxito.")
+        create_notification(player_id, "Nueva Reserva", f"Tu reserva para el {reservation_date} a las {start_time} ha sido creada con éxito.", f"/player/match/{match_id}")
+        create_notification(club_user_id, "Nueva Reserva", f"Se ha generado una nueva reserva de canche para el {reservation_date}")
 
         return {
             "message": "Reserva y partido creados exitosamente.",
