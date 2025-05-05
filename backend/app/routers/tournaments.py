@@ -47,7 +47,7 @@ async def create_tournament(data: dict, current_user: dict = Depends(get_current
         create_notification(
             club_user_id,
             "Torneo Creado",
-            f"Haz creado el torneo {data["name"]}",
+            f"Haz creado el torneo {data['name']}",
             "/club/torneos",
         )
 
@@ -110,14 +110,14 @@ async def register_team(
             player1_id,
             "Inscripción a Torneo",
             f"Te inscribiste exitosamente al Torneo.",
-            f"/tournament/{register_data.tournament_id}"
-            )
+            f"/tournament/{register_data.tournament_id}",
+        )
         
         create_notification(
             player2_id,
             "invitación Torneo",
             "Te han escogido como pareja para el torneo",
-            f"/tournament/{register_data.tournament_id}"
+            f"/tournament/{register_data.tournament_id}",
         )
 
         return {"message": "Equipo registrado exitosamente."}

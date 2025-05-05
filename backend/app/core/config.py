@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ESPIRAL_API_KEY: str = os.getenv("ESPIRAL_API_KEY")
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
     STRIPE_PUBLIC_KEY: str = os.getenv("STRIPE_PUBLIC_KEY")
+    MERCADOPAGO_ACCESS_TOKEN: str = os.getenv("MERCADOPAGO_ACCESS_TOKEN")
 
 
 
