@@ -56,7 +56,7 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), 
         preference_data = {
             "items": [item.model_dump() for item in request_data.items],
             "total_amount": request_data.total_amount,
-            "marketplace": True,
+            "marketplace": "true",
             "marketplace_fee": 0.00, # Puedes calcular tu comisión aquí o en split_config
             "split_config": [split.model_dump() for split in request_data.split_config],
             "external_reference": request_data.payment_order_id,

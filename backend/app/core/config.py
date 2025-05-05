@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
     STRIPE_PUBLIC_KEY: str = os.getenv("STRIPE_PUBLIC_KEY")
     MERCADOPAGO_ACCESS_TOKEN: str = os.getenv("MERCADOPAGO_ACCESS_TOKEN")
+    BACKEND_URL: str = os.getenv("BACKEND_URL")
 
 
 

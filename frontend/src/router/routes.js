@@ -1,5 +1,3 @@
-import { name } from "dayjs/locale/es-mx";
-
 const routes = [
   { path: "/", component: () => import("pages/LoginPage.vue") },
   {
@@ -18,9 +16,9 @@ const routes = [
     component: () => import("src/pages/player/OrderSummary.vue"),
   },
   {
-    path: "/stripe-payment",
-    name: "StripePayment",
-    component: () => import("src/pages/StripePayment.vue"),
+    path: "/checkout/mercadopago",
+    name: "MercadoPaymentPage",
+    component: () => import("src/pages/MercadoPayment.vue"),
   },
   { path: "/forgot-password", component: () => import("pages/RecoveryPassword.vue")},
   { path: "/reset-password", component: () => import("pages/ResetPassword.vue")},

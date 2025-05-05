@@ -1,156 +1,160 @@
 <template>
-    <q-layout view="hHh lpR fFf" class="bg-dark text-white">
-      <q-header elevated class="text-white">
-        <div class="header-content">
-          <div class="greeting">
-            <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
-          </div>
-          <div class="header-icons">
-            </div>
+  <q-layout view="hHh lpR fFf" class="bg-dark text-white">
+    <q-header elevated class="text-white">
+      <div class="header-content">
+        <div class="greeting">
+          <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
         </div>
-        </q-header>
-  
-      <q-page-container class="home"> <q-page class="q-pa-md">
-          <q-card class="text-white"> <q-card-section>
-              <h3 class="text-white">{{ props.summaryTitle }}</h3>
-            </q-card-section>
-            <q-card-section>
-              <p v-for="(detail, index) in props.itemDetails" :key="index">
-                <strong>{{ detail.label }}:</strong> {{ detail.value }}
-              </p>
-              <q-separator dark spaced="sm" />
-              <p><strong>Precio Base:</strong> ${{ props.baseData.price?.toFixed(2) || '0.00' }}</p>
-                <div v-if="selectedProducts.length > 0">
-                <p><strong>Adicionales:</strong> ${{ productTotal.toFixed(2) }}</p>
-                <ul class="q-ml-md q-mb-sm" style="list-style-type: none; padding-left: 0;">
-                    <li v-for="item in selectedProducts" :key="item.product.id" class="text-caption">
-                       <q-icon name="mdi-cart-outline" size="xs" class="q-mr-xs"/> {{ item.product.name }} x {{ item.quantity }} - ${{ (item.product.price * item.quantity).toFixed(2) }}
-                    </li>
-                  </ul>
-              </div>
-              <p><strong>Subtotal:</strong> ${{ subtotalBeforeCommission.toFixed(2) }}</p>
-              <p><strong>Comisión ({{ props.commissionRate }}%):</strong> ${{ commissionAmount.toFixed(2) }}</p>
-              <q-separator dark spaced="sm" />
-              <p class="text-h6">
-                <strong>Total a pagar:</strong> ${{ total.toFixed(2) }}
-                <q-icon name="o_info" size="sm" class="cursor-help q-ml-xs">
-                    <q-tooltip anchor="top middle" self="bottom middle" :offset="[0, 10]" class="bg-grey-9 text-body2">
-                    Precio total (Base + Adicionales + Comisión del {{ props.commissionRate }}%).
-                    </q-tooltip>
-                </q-icon>
-              </p>
-            </q-card-section>
-  
-            <q-card-section class="q-pt-none">
-              <q-toggle
-                v-if="props.showPublicToggle"
-                v-model="isPublicMatch"
-                checked-icon="check"
-                color="green"
-                label="Partido Público (otros podrán unirse)"
-                class="q-mb-sm"
-               />
-  
-              <q-option-group
-                v-if="props.allowPaymentSplit && props.baseData.participants > 1"
-                v-model="paymentOption"
-                :options="paymentOptions"
-                color="green"
-                inline
-                dense
-              />
-               <div v-else-if="props.baseData.participants > 1" class="text-caption q-mt-sm">
-                  Nota: El pago es individual por participante.
-               </div>
-  
-            </q-card-section>
-  
-            <q-card-actions align="right" class="q-pa-md">
-              <q-btn icon="mdi-basket-plus-outline" label="Productos" color="primary" @click="showProductDialog" dense/>
-              <q-btn
-                :label="paymentButtonLabel"
-                color="green"
-                icon-right="mdi-credit-card-outline"
-                @click="goToPayment"
-                :loading="isProcessingPayment"
-                padding="sm lg"
-              />
-            </q-card-actions>
-          </q-card>
-        </q-page>
-      </q-page-container>
-  
-      <q-dialog v-model="productDialog">
-         <q-card style="min-width: 300px; max-width: 400px" class="bg-grey-2 text-black">
-            <q-card-section class="row items-center q-pb-none bg-primary text-white"> <div class="text-h6">Añadir Productos</div>
-               <q-space />
-               <q-btn icon="close" flat round dense v-close-popup />
-            </q-card-section>
+        <div class="header-icons">
+        </div>
+      </div>
+    </q-header>
 
-            <q-card-section style="max-height: 60vh; overflow-y: auto;"> <div v-if="isLoadingProducts" class="text-center q-pa-md">
-                  <q-spinner-dots color="primary" size="40px" />
-                  <div class="q-mt-sm">Cargando...</div>
-              </div>
-              <div v-else-if="!products || products.length === 0" class="text-grey-7 q-pa-md text-center">
-                  No hay productos adicionales disponibles en este club.
-              </div>
-              <div v-else v-for="product in products" :key="product.id" class="q-mb-xs">
-                <q-item dense>
-                  <q-item-section>
-                    <q-item-label class="text-weight-medium text-black">{{ product.name }}</q-item-label>
-                    <q-item-label caption>${{ product.price.toFixed(2) }}</q-item-label>
-                  </q-item-section>
+    <q-page-container class="home">
+      <q-page class="q-pa-md">
+        <q-card class="text-white">
+          <q-card-section>
+            <h3 class="text-white">{{ props.summaryTitle }}</h3>
+          </q-card-section>
+          <q-card-section>
+            <p v-for="(detail, index) in props.itemDetails" :key="index">
+              <strong>{{ detail.label }}:</strong> {{ detail.value }}
+            </p>
+            <q-separator dark spaced="sm" />
+            <p><strong>Precio Base:</strong> ${{ props.baseData.price?.toFixed(2) || '0.00' }}</p>
+            <div v-if="selectedProducts.length > 0">
+              <p><strong>Adicionales:</strong> ${{ productTotal.toFixed(2) }}</p>
+              <ul class="q-ml-md q-mb-sm" style="list-style-type: none; padding-left: 0;">
+                <li v-for="item in selectedProducts" :key="item.product.id" class="text-caption">
+                  <q-icon name="mdi-cart-outline" size="xs" class="q-mr-xs" /> {{ item.product.name }} x {{ item.quantity }} - ${{ (item.product.price * item.quantity).toFixed(2) }}
+                </li>
+              </ul>
+            </div>
+            <p><strong>Subtotal:</strong> ${{ subtotalBeforeCommission.toFixed(2) }}</p>
+            <p><strong>Comisión ({{ props.commissionRate }}%):</strong> ${{ commissionAmount.toFixed(2) }}</p>
+            <q-separator dark spaced="sm" />
+            <p class="text-h6">
+              <strong>Total a pagar:</strong> ${{ total.toFixed(2) }}
+              <q-icon name="o_info" size="sm" class="cursor-help q-ml-xs">
+                <q-tooltip anchor="top middle" self="bottom middle" :offset="[0, 10]" class="bg-grey-9 text-body2">
+                  Precio total (Base + Adicionales + Comisión del {{ props.commissionRate }}%).
+                </q-tooltip>
+              </q-icon>
+            </p>
+          </q-card-section>
 
-                  <q-item-section side top>
-                    <div class="row items-center no-wrap">
-                      <q-btn
-                        icon="mdi-minus"
-                        color="negative"
-                        round dense flat
-                        size="sm"
-                        @click="decreaseQuantity(product.id)"
-                        :disable="!productQuantities[product.id] || productQuantities[product.id] <= 0"
-                        class="q-mr-xs"
-                       />
-                       <span class="text-h6 text-black text-weight-bold q-mx-xs" style="min-width: 25px; text-align: center;">
-                        {{ productQuantities[product.id] || 0 }}
-                      </span>
-                      <q-btn
-                        icon="mdi-plus"
-                        color="positive"
-                        round dense flat
-                        size="sm"
-                        @click="increaseQuantity(product.id)"
-                        class="q-ml-xs"
-                       />
-                    </div>
-                  </q-item-section>
-                  </q-item>
-                 <q-separator spaced="xs" />
-              </div>
-            </q-card-section>
+          <q-card-section class="q-pt-none">
+            <q-toggle
+              v-if="props.showPublicToggle"
+              v-model="isPublicMatch"
+              checked-icon="check"
+              color="green"
+              label="Partido Público (otros podrán unirse)"
+              class="q-mb-sm"
+            />
 
-            <q-separator />
+            <q-option-group
+              v-if="props.allowPaymentSplit && props.baseData.participants > 1"
+              v-model="paymentOption"
+              :options="paymentOptions"
+              color="green"
+              inline
+              dense
+            />
+            <div v-else-if="props.baseData.participants > 1" class="text-caption q-mt-sm">
+              Nota: El pago es individual por participante.
+            </div>
 
-            <q-card-actions align="right" class="q-pa-md">
-              <q-btn label="Cancelar" color="grey-7" flat v-close-popup />
-              <q-btn label="Aceptar" color="primary" push @click="addProductToOrder" />
-            </q-card-actions>
-          </q-card>
-      </q-dialog>
-  
-      <PlayerNavigationMenu />
-    </q-layout>
-  </template>
-  
-  <script setup>
+          </q-card-section>
+
+          <q-card-actions align="right" class="q-pa-md">
+            <q-btn icon="mdi-basket-plus-outline" label="Productos" color="primary" @click="showProductDialog" dense />
+            <q-btn
+              :label="paymentButtonLabel"
+              color="green"
+              icon-right="mdi-credit-card-outline"
+              @click="goToMercadoPagoCheckout"
+              :loading="isProcessingPayment"
+              padding="sm lg"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-page>
+    </q-page-container>
+
+    <q-dialog v-model="productDialog">
+      <q-card style="min-width: 300px; max-width: 400px" class="bg-grey-2 text-black">
+        <q-card-section class="row items-center q-pb-none bg-primary text-white">
+          <div class="text-h6">Añadir Productos</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section style="max-height: 60vh; overflow-y: auto;">
+          <div v-if="isLoadingProducts" class="text-center q-pa-md">
+            <q-spinner-dots color="primary" size="40px" />
+            <div class="q-mt-sm">Cargando...</div>
+          </div>
+          <div v-else-if="!products || products.length === 0" class="text-grey-7 q-pa-md text-center">
+            No hay productos adicionales disponibles en este club.
+          </div>
+          <div v-else v-for="product in products" :key="product.id" class="q-mb-xs">
+            <q-item dense>
+              <q-item-section>
+                <q-item-label class="text-weight-medium text-black">{{ product.name }}</q-item-label>
+                <q-item-label caption>${{ product.price.toFixed(2) }}</q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                <div class="row items-center no-wrap">
+                  <q-btn
+                    icon="mdi-minus"
+                    color="negative"
+                    round dense flat
+                    size="sm"
+                    @click="decreaseQuantity(product.id)"
+                    :disable="!productQuantities[product.id] || productQuantities[product.id] <= 0"
+                    class="q-mr-xs"
+                  />
+                  <span class="text-h6 text-black text-weight-bold q-mx-xs" style="min-width: 25px; text-align: center;">
+                    {{ productQuantities[product.id] || 0 }}
+                  </span>
+                  <q-btn
+                    icon="mdi-plus"
+                    color="positive"
+                    round dense flat
+                    size="sm"
+                    @click="increaseQuantity(product.id)"
+                    class="q-ml-xs"
+                  />
+                </div>
+              </q-item-section>
+            </q-item>
+            <q-separator spaced="xs" />
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn label="Cancelar" color="grey-7" flat v-close-popup />
+          <q-btn label="Aceptar" color="primary" push @click="addProductToOrder" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <PlayerNavigationMenu />
+  </q-layout>
+</template>
+
+<script setup>
   import { ref, computed, watch, reactive } from "vue";
   import { useRouter } from "vue-router";
   import { useQuasar, QSpinnerCube } from "quasar";
   import { getProductsByClub } from "src/services/supabase/products";
   import api from "../services/api";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
-  
+
   const props = defineProps({
     summaryTitle: { type: String, required: true, default: 'Resumen' },
     itemDetails: { type: Array, required: true, default: () => [] },
@@ -160,48 +164,48 @@
     allowPaymentSplit: { type: Boolean, default: false },
     extraData: { type: Object, default: () => ({}) }
   });
-  
+
   // --- Inicialización ---
   const router = useRouter();
   const $q = useQuasar();
   const products = ref([]);
-  const productQuantities = reactive({}); 
+  const productQuantities = reactive({});
   const selectedProducts = ref([]);
   const productDialog = ref(false);
   const isLoadingProducts = ref(false);
   const isPublicMatch = ref(false);
   const isProcessingPayment = ref(false);
-  
+
   // Default paymentOption: si se permite split, default a 'partial', sino 'total'
   const paymentOption = ref(props.allowPaymentSplit && props.baseData?.participants > 1 ? 'partial' : 'total');
-  
+
   // --- Computed Properties ---
   const subtotalBeforeCommission = computed(() => {
     const basePrice = props.baseData?.price || 0;
     return basePrice + productTotal.value;
-    });
+  });
 
   const commissionAmount = computed(() => {
     return subtotalBeforeCommission.value * (props.commissionRate / 100);
-    });
-  
+  });
+
   const productTotal = computed(() => {
     return selectedProducts.value.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
       0
     );
   });
-  
+
   const total = computed(() => {
     return subtotalBeforeCommission.value + commissionAmount.value;
-    });
-  
+  });
+
   // Opciones dinámicas para el QOptionGroup
   const paymentOptions = computed(() => [
     { label: `Pagar mi parte (1/${props.baseData?.participants || 1})`, value: "partial" },
     { label: "Pagar el total", value: "total" },
   ]);
-  
+
   // Label dinámico del botón de pago
   const paymentButtonLabel = computed(() => {
     const participants = props.baseData?.participants || 1;
@@ -211,7 +215,7 @@
     }
     return `Pagar $${amount.toFixed(2)}`;
   });
-  
+
   // --- Métodos ---
   const loadProducts = async () => {
     if (!props.baseData?.clubId) {
@@ -224,7 +228,7 @@
       products.value = clubProducts || [];
       products.value.forEach(product => {
         if (productQuantities[product.id] === undefined) {
-           productQuantities[product.id] = 0;
+          productQuantities[product.id] = 0;
         }
       });
     } catch (error) {
@@ -235,40 +239,40 @@
       isLoadingProducts.value = false;
     }
   };
-  
+
   const showProductDialog = () => {
     if (products.value.length === 0 && props.baseData?.clubId) {
-        loadProducts();
+      loadProducts();
     } else {
-         if (selectedProducts.value.length === 0) {
-             products.value.forEach(p => { productQuantities[p.id] = 0 });
-         }
+      if (selectedProducts.value.length === 0) {
+        products.value.forEach(p => { productQuantities[p.id] = 0 });
+      }
     }
     productDialog.value = true;
   };
-  
-    const decreaseQuantity = (productId) => {
+
+  const decreaseQuantity = (productId) => {
     if (productQuantities[productId] === undefined || productQuantities[productId] === null || isNaN(Number(productQuantities[productId]))) {
-        productQuantities[productId] = 0;
+      productQuantities[productId] = 0;
     }
 
     const currentQuantity = Number(productQuantities[productId]);
     if (currentQuantity > 0) {
-        productQuantities[productId] = currentQuantity - 1;
+      productQuantities[productId] = currentQuantity - 1;
     }
-    };
+  };
 
-    const increaseQuantity = (productId) => {
+  const increaseQuantity = (productId) => {
     // Asegurarse de que la propiedad existe y es un número antes de operar
     if (productQuantities[productId] === undefined || productQuantities[productId] === null || isNaN(Number(productQuantities[productId]))) {
-        productQuantities[productId] = 0; // Inicializar si es necesario
+      productQuantities[productId] = 0; // Inicializar si es necesario
     }
     const currentQuantity = Number(productQuantities[productId]);
     // Podrías añadir un límite máximo si quisieras, ej: if (currentQuantity < 99)
     productQuantities[productId] = currentQuantity + 1;
-    };
-  
-  
+  };
+
+
   const addProductToOrder = () => {
     selectedProducts.value = products.value
       .filter(product => productQuantities[product.id] && Number(productQuantities[product.id]) > 0)
@@ -278,95 +282,116 @@
       }));
     productDialog.value = false;
   };
-  
-  const goToPayment = async () => {
-    isProcessingPayment.value = true; // Iniciar indicador de carga
-    $q.loading.show({ spinner: QSpinnerCube, message: 'Generando orden de pago...' });
+
+  const goToMercadoPagoCheckout = async () => {
+    isProcessingPayment.value = true;
+    $q.loading.show({ message: 'Generando orden de pago...' });
+
     try {
-      const participants = props.baseData?.participants || 1;
-      let amountToPay = total.value;
-      let payTotalFlag = true;
-  
-      if (props.allowPaymentSplit && participants > 1 && paymentOption.value === "partial") {
-        amountToPay = total.value / participants;
-        payTotalFlag = false;
-      }
-  
-      const apiPayload = {
-          total_price: total.value,
-          pay_total: payTotalFlag,
-          item_id: props.baseData?.id,
-          item_type: props.baseData?.type,
+      const paymentOrderId = crypto.randomUUID(); // Generar un ID único para la orden de pago
+
+      const additionalItems = selectedProducts.value.map((item) => ({
+        title: item.product.name,
+        quantity: item.quantity,
+        unit_price: item.product.price,
+        id: item.product.id.toString(), // Asegúrate de tener un ID para el producto
+      }));
+
+      const orderData = {
+        payment_order_id: paymentOrderId, // Incluir el payment_order_id
+        items: [
+          {
+            title: props.summaryTitle,
+            quantity: 1,
+            unit_price: total.value - commissionAmount.value - productTotal.value, // Precio base sin comisión ni adicionales
+            id: props.baseData?.id.toString() || 'reserva_base', // Asegúrate de tener un ID para la reserva base
+          },
+          ...additionalItems,
+        ],
+        total_amount: total.value,
+        split_config: [
+          {
+            "type": "fixed",
+            "amount": props.baseData.price * (1 - props.commissionRate / 100),
+            "receiver": props.baseData?.clubId, // ID del club
+            "seller_id": props.baseData?.clubId, // Incluir seller_id (asumiendo que es el mismo que el receiver)
+          },
+          {
+            "type": "fixed",
+            "amount": props.baseData.price * (props.commissionRate / 100),
+            "receiver": "padelplay_commission_id", // ID de la comisión
+            "seller_id": "padelplay_commission_id", // Incluir seller_id
+          },
+        ],
+        external_reference: paymentOrderId,
+        metadata: {
           club_id: props.baseData?.clubId,
-          recipient_id: props.baseData?.recipient_user_id,
-          participants: participants,
-          // Incluir productos seleccionados si el backend los necesita para la orden
-          products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),
-          // Incluir isPublicMatch si aplica y el backend lo necesita
-          is_public: props.showPublicToggle ? isPublicMatch.value : undefined,
-           // Incluir extraData si es relevante para el backend
-          // ...props.extraData
-      };
-  
-      console.log("Enviando a API /payment_order_and_split_payment:", apiPayload);
-  
-      const responsePaymentOrder = await api.post("payments/payment_order_and_split_payment", apiPayload);
-  
-      const payment_order_id = responsePaymentOrder.data?.payment_order_id; // Usar optional chaining
-      if (!payment_order_id) {
-        throw new Error("Respuesta inválida del servidor: No se recibió payment_order_id.");
-      }
-  
-      // Navegar a StripePayment
-      router.push({
-        name: "StripePayment",
-        query: {
-          paymentOrderId: payment_order_id,
-          amountToPay: amountToPay.toFixed(2),
-          totalAmount: total.value.toFixed(2),
-          description: props.summaryTitle,
-          clubId: props.baseData?.clubId,
-          baseData: JSON.stringify(props.baseData || {}),         
-          extraData: JSON.stringify(props.extraData || {}),    
-          selectedProducts: JSON.stringify(selectedProducts.value || []),
-          itemDetails: JSON.stringify(props.itemDetails || []),
-          paymentOption: paymentOption.value,
+          court_id: props.baseData?.courtId,
+          reservation_date: props.itemDetails.find(detail => detail.label === 'Fecha')?.value,
+          start_time: props.itemDetails.find(detail => detail.label === 'Horario')?.value,
+          pay_total: paymentOption.value === "total",
+          is_public: isPublicMatch.value,
         },
-      });
+        payer: {
+          // Deberías tener acceso al email del usuario autenticado
+          // Reemplaza 'user.email' con la forma en que obtienes el email
+          "email": /* Obtener email del usuario actual */ "test@example.com"
+        }
+      };
+
+      const response = await api.post("/payments/create-payment-intent", orderData);
+
+      if (response.data && response.data.init_point) {
+        router.push({
+          name: 'MercadoPaymentPage',
+          query: {
+            initPoint: response.data.init_point,
+            total: total.value,
+          },
+        });
+      } else {
+        $q.notify({
+          type: "negative",
+          message: "Error al generar la orden de pago.",
+        });
+      }
+
     } catch (error) {
-      console.error("Error en goToPayment:", error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error al procesar el pago. Por favor intente de nuevo.';
-      $q.notify({ type: "negative", message: errorMessage });
+      console.error("Error al crear la preferencia de pago:", error);
+      $q.notify({
+        type: "negative",
+        message: `Error al iniciar el pago: ${error.message}`,
+      });
     } finally {
-      isProcessingPayment.value = false; // Detener indicador de carga
-       $q.loading.hide();
+      isProcessingPayment.value = false;
+      $q.loading.hide();
     }
   };
-  
+
   // --- Watchers ---
   watch(() => props.baseData?.clubId, (newClubId, oldClubId) => {
-      if (newClubId && newClubId !== oldClubId) {
-          // Resetear estado de productos si cambia el club
-          products.value = [];
-          selectedProducts.value = [];
-          Object.keys(productQuantities).forEach(key => delete productQuantities[key]); // Limpiar cantidades
-          loadProducts();
-      }
-  }, { immediate: true }); 
-  
+    if (newClubId && newClubId !== oldClubId) {
+      // Resetear estado de productos si cambia el club
+      products.value = [];
+      selectedProducts.value = [];
+      Object.keys(productQuantities).forEach(key => delete productQuantities[key]); // Limpiar cantidades
+      loadProducts();
+    }
+  }, { immediate: true });
+
 
   watch(() => props.allowPaymentSplit, (allowSplit) => {
-      if (!allowSplit) {
-          paymentOption.value = 'total';
-      } else if (props.baseData?.participants > 1) {
-           paymentOption.value = 'partial';
-      } else {
-           paymentOption.value = 'total'; // Si solo hay 1 participante
-      }
+    if (!allowSplit) {
+      paymentOption.value = 'total';
+    } else if (props.baseData?.participants > 1) {
+      paymentOption.value = 'partial';
+    } else {
+      paymentOption.value = 'total'; // Si solo hay 1 participante
+    }
   }, { immediate: true });
-  
-  
-  </script>
+
+
+</script>
   
   <style scoped>
 
