@@ -50,6 +50,7 @@
       const $q = useQuasar();
   
       const initPoint = ref(route.query.initPoint);
+      const preferenceId = ref(route.query.preferenceId);
       const totalAmount = ref(route.query.total || '0.00');
       const paymentError = ref(null);
       const mp = ref(null);
@@ -99,13 +100,8 @@
   
           const paymentBrickController = await mp.value.bricks().create('payment', 'mercadopago-bricks-container', {
             initialization: {
-              preferenceId: initPoint.value,
-              payer: {
-                // Puedes incluir información del pagador si la tienes disponible
-                // firstName: '',
-                // lastName: '',
-                // email: '',
-              },
+              amount: totalAmount.value,
+              preferenceId: preferenceId.value,
             },
             callbacks: {
               onReady: () => {

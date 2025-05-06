@@ -346,6 +346,7 @@
           name: 'MercadoPaymentPage',
           query: {
             initPoint: response.data.init_point,
+            preferenceId: response.data.preference_id,
             total: total.value,
           },
         });

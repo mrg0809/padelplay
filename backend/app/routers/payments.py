@@ -56,6 +56,11 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), 
         preference_data = {
             "items": [item.model_dump() for item in request_data.items],
             "total_amount": request_data.total_amount,
+            "payment_methods": {
+                "excluded_payment_methods": [],
+                "excluded_payment_types": [],
+                "installments": 1,  # Número máximo de cuotas permitidas
+            },
             "marketplace": "true",
             "marketplace_fee": 0.00, # Puedes calcular tu comisión aquí o en split_config
             "split_config": [split.model_dump() for split in request_data.split_config],
@@ -67,7 +72,10 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), 
 
         preference_response = sdk.preference().create(preference_data)
         if preference_response["status"] == 201:
-            return {"init_point": preference_response["response"]["init_point"]}
+            return {
+                "init_point": preference_response["response"]["init_point"],
+                "preference_id": preference_response["response"]["id"]
+                }
         else:
             raise HTTPException(status_code=500, detail=f"Error al crear la preferencia de Mercado Pago: {preference_response}")
 
