@@ -102,6 +102,24 @@
             initialization: {
               amount: totalAmount.value,
               preferenceId: preferenceId.value,
+              payer: {
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'prueba@test.com'
+              }
+            },
+            customization: {
+              visual: {
+                style: {
+                  theme: "dark",
+                },
+              },
+              paymentMethods: {
+                creditCard: "all",
+                debitCard: "all",
+                atm: "all",
+                maxInstallments: 1
+              },
             },
             callbacks: {
               onReady: () => {
