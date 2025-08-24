@@ -57,11 +57,33 @@
       />
     </q-card-section>
 
+    <!-- Loading state for payment methods -->
+    <q-card-section v-if="!loading && loadingPaymentMethods">
+      <div class="text-center">
+        <q-spinner color="primary" size="2rem" />
+        <p class="q-mt-md text-white">Cargando métodos de pago...</p>
+      </div>
+    </q-card-section>
+
+    <!-- No payment methods available -->
+    <q-card-section v-if="!loading && !loadingPaymentMethods && cardPaymentMethods.length === 0 && (savedMethods.length === 0 || showNewCard)">
+      <div class="text-center text-white">
+        <q-icon name="error" size="3rem" color="negative" />
+        <p class="q-mt-md">No se pudieron cargar los métodos de pago disponibles.</p>
+        <q-btn 
+          color="primary" 
+          label="Reintentar" 
+          @click="loadPaymentMethods" 
+          class="q-mt-md" 
+        />
+      </div>
+    </q-card-section>
+
     <!-- New Card Form -->
-    <q-card-section v-if="!loading && (savedMethods.length === 0 || showNewCard)">
+    <q-card-section v-if="!loading && !loadingPaymentMethods && cardPaymentMethods.length > 0 && (savedMethods.length === 0 || showNewCard)">
       <q-form @submit.prevent="processPayment">
         <!-- Payment Method Selection -->
-        <div class="q-mb-md">
+        <div class="q-mb-md" v-if="cardPaymentMethods.length > 0">
           <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta</div>
           <q-select
             v-model="selectedPaymentMethod"
@@ -72,7 +94,6 @@
             map-options
             filled
             dark
-            :loading="loadingPaymentMethods"
           >
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps">
@@ -87,7 +108,7 @@
             
             <template v-slot:selected="scope">
               <q-chip
-                v-if="scope.opt"
+                v-if="scope.opt && scope.opt.id"
                 :icon="getCardIcon(scope.opt.id)"
                 :label="scope.opt.name"
                 color="primary"
@@ -110,7 +131,7 @@
           class="q-mb-md"
         >
           <template v-slot:prepend>
-            <q-icon :name="getCardIcon(selectedPaymentMethod)" />
+            <q-icon :name="getCardIcon(selectedPaymentMethod)" v-if="selectedPaymentMethod" />
           </template>
         </q-input>
 
@@ -192,7 +213,7 @@
     </q-card-section>
 
     <!-- Selected Saved Method Payment -->
-    <q-card-section v-if="selectedSavedMethod && !showNewCard">
+    <q-card-section v-if="!loading && !loadingPaymentMethods && selectedSavedMethod && !showNewCard">
       <div class="text-center">
         <p class="q-mb-md">
           Pagar con: **** **** **** {{ selectedSavedMethod.last_four_digits }}
@@ -269,7 +290,7 @@ const showNewCard = ref(false)
 
 // Payment methods
 const cardPaymentMethods = ref([])
-const selectedPaymentMethod = ref(null)
+const selectedPaymentMethod = ref('')
 
 // Saved methods
 const savedMethods = ref([])
@@ -302,6 +323,7 @@ const isFormValid = computed(() => {
   
   return (
     selectedPaymentMethod.value &&
+    selectedPaymentMethod.value !== '' &&
     validateCardNumber(cardForm.value.number) &&
     cardForm.value.holderName &&
     validateExpiry(cardForm.value.expiry) &&
@@ -367,17 +389,24 @@ const loadPaymentMethods = async () => {
   try {
     loadingPaymentMethods.value = true
     const response = await api.get('/payments/payment_methods')
-    cardPaymentMethods.value = response.data.payment_methods
     
-    // Set default to visa if available
-    const visa = cardPaymentMethods.value.find(method => method.id === 'visa')
-    if (visa) {
-      selectedPaymentMethod.value = visa.id
-    } else if (cardPaymentMethods.value.length > 0) {
-      selectedPaymentMethod.value = cardPaymentMethods.value[0].id
+    if (response.data && response.data.payment_methods) {
+      cardPaymentMethods.value = response.data.payment_methods
+      
+      // Set default to visa if available
+      const visa = cardPaymentMethods.value.find(method => method.id === 'visa')
+      if (visa) {
+        selectedPaymentMethod.value = visa.id
+      } else if (cardPaymentMethods.value.length > 0) {
+        selectedPaymentMethod.value = cardPaymentMethods.value[0].id
+      }
+    } else {
+      throw new Error('Invalid response format')
     }
   } catch (error) {
     console.error('Error loading payment methods:', error)
+    cardPaymentMethods.value = []
+    selectedPaymentMethod.value = ''
     $q.notify({
       type: 'negative',
       message: 'Error al cargar métodos de pago'
@@ -390,7 +419,12 @@ const loadPaymentMethods = async () => {
 const loadSavedMethods = async () => {
   try {
     const response = await api.get('/payments/saved_payment_methods')
-    savedMethods.value = response.data.saved_payment_methods
+    
+    if (response.data && response.data.saved_payment_methods) {
+      savedMethods.value = response.data.saved_payment_methods
+    } else {
+      savedMethods.value = []
+    }
   } catch (error) {
     console.error('Error loading saved payment methods:', error)
     // Don't show error to user, saved methods are optional
@@ -571,6 +605,13 @@ onMounted(async () => {
       showNewCard.value = true
     }
     
+  } catch (error) {
+    console.error('Error during component initialization:', error)
+    // Show error state
+    $q.notify({
+      type: 'negative',
+      message: 'Error al inicializar el formulario de pago'
+    })
   } finally {
     loading.value = false
   }
