@@ -80,6 +80,40 @@
         </q-page>
       </q-page-container>
   
+      <!-- Payment Method Selection Dialog -->
+      <q-dialog v-model="paymentMethodDialog">
+        <q-card style="min-width: 300px; max-width: 400px">
+          <q-card-section class="row items-center q-pb-none bg-primary text-white">
+            <div class="text-h6">Selecciona Método de Pago</div>
+            <q-space />
+            <q-btn icon="close" flat round dense v-close-popup />
+          </q-card-section>
+
+          <q-card-section>
+            <div class="q-gutter-sm">
+              <q-btn
+                class="full-width q-mb-md"
+                color="green"
+                icon="credit_card"
+                label="Pagar con Tarjeta (Stripe)"
+                @click="processPayment('stripe')"
+                :loading="isProcessingPayment"
+                push
+              />
+              <q-btn
+                class="full-width"
+                color="blue"
+                icon="payment"
+                label="Pagar con MercadoPago"
+                @click="processPayment('mercadopago')"
+                :loading="isProcessingPayment"
+                push
+              />
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
       <q-dialog v-model="productDialog">
          <q-card style="min-width: 300px; max-width: 400px" class="bg-grey-2 text-black">
             <q-card-section class="row items-center q-pb-none bg-primary text-white"> <div class="text-h6">Añadir Productos</div>
@@ -148,6 +182,7 @@
   import { useRouter } from "vue-router";
   import { useQuasar, QSpinnerCube } from "quasar";
   import { getProductsByClub } from "src/services/supabase/products";
+  import { useUserStore } from "src/stores/userStore";
   import api from "../services/api";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
@@ -164,10 +199,12 @@
   // --- Inicialización ---
   const router = useRouter();
   const $q = useQuasar();
+  const userStore = useUserStore();
   const products = ref([]);
   const productQuantities = reactive({}); 
   const selectedProducts = ref([]);
   const productDialog = ref(false);
+  const paymentMethodDialog = ref(false);
   const isLoadingProducts = ref(false);
   const isPublicMatch = ref(false);
   const isProcessingPayment = ref(false);
@@ -279,9 +316,16 @@
     productDialog.value = false;
   };
   
-  const goToPayment = async () => {
-    isProcessingPayment.value = true; // Iniciar indicador de carga
+  const goToPayment = () => {
+    // Show payment method selection dialog
+    paymentMethodDialog.value = true;
+  };
+  
+  const processPayment = async (paymentMethod) => {
+    paymentMethodDialog.value = false; // Close dialog
+    isProcessingPayment.value = true; // Start loading indicator
     $q.loading.show({ spinner: QSpinnerCube, message: 'Generando orden de pago...' });
+    
     try {
       const participants = props.baseData?.participants || 1;
       let amountToPay = total.value;
@@ -300,11 +344,11 @@
           club_id: props.baseData?.clubId,
           recipient_id: props.baseData?.recipient_user_id,
           participants: participants,
-          // Incluir productos seleccionados si el backend los necesita para la orden
+          // Include selected products if backend needs them for the order
           products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),
-          // Incluir isPublicMatch si aplica y el backend lo necesita
+          // Include isPublicMatch if applicable and backend needs it
           is_public: props.showPublicToggle ? isPublicMatch.value : undefined,
-           // Incluir extraData si es relevante para el backend
+          // Include extraData if relevant for the backend
           // ...props.extraData
       };
   
@@ -312,34 +356,72 @@
   
       const responsePaymentOrder = await api.post("payments/payment_order_and_split_payment", apiPayload);
   
-      const payment_order_id = responsePaymentOrder.data?.payment_order_id; // Usar optional chaining
+      const payment_order_id = responsePaymentOrder.data?.payment_order_id; // Use optional chaining
       if (!payment_order_id) {
         throw new Error("Respuesta inválida del servidor: No se recibió payment_order_id.");
       }
   
-      // Navegar a StripePayment
-      router.push({
-        name: "StripePayment",
-        query: {
-          paymentOrderId: payment_order_id,
-          amountToPay: amountToPay.toFixed(2),
-          totalAmount: total.value.toFixed(2),
-          description: props.summaryTitle,
-          clubId: props.baseData?.clubId,
-          baseData: JSON.stringify(props.baseData || {}),         
-          extraData: JSON.stringify(props.extraData || {}),    
-          selectedProducts: JSON.stringify(selectedProducts.value || []),
-          itemDetails: JSON.stringify(props.itemDetails || []),
-          paymentOption: paymentOption.value,
-        },
-      });
+      // Navigate based on payment method selection
+      if (paymentMethod === 'stripe') {
+        // Navigate to StripePayment
+        router.push({
+          name: "StripePayment",
+          query: {
+            paymentOrderId: payment_order_id,
+            amountToPay: amountToPay.toFixed(2),
+            totalAmount: total.value.toFixed(2),
+            description: props.summaryTitle,
+            clubId: props.baseData?.clubId,
+            baseData: JSON.stringify(props.baseData || {}),         
+            extraData: JSON.stringify(props.extraData || {}),    
+            selectedProducts: JSON.stringify(selectedProducts.value || []),
+            itemDetails: JSON.stringify(props.itemDetails || []),
+            paymentOption: paymentOption.value,
+          },
+        });
+      } else if (paymentMethod === 'mercadopago') {
+        // Navigate to MercadoPago payment flow
+        const cartItems = [
+          {
+            id: props.baseData?.id || 'item_1',
+            title: props.summaryTitle,
+            quantity: 1,
+            unit_price: amountToPay
+          }
+        ];
+
+        // Get current user info from store
+        const userInfo = {
+          email: userStore.user?.email || 'user@example.com',
+          name: userStore.user?.full_name || userStore.user?.name || 'Usuario'
+        };
+
+        const paymentData = {
+          cartItems: cartItems,
+          userInfo: userInfo,
+          externalReference: payment_order_id,
+          metadata: {
+            payment_order_id: payment_order_id,
+            club_id: props.baseData?.clubId,
+            item_type: props.baseData?.type,
+            amount_to_pay: amountToPay,
+            payment_option: paymentOption.value
+          }
+        };
+
+        // Store payment data for MercadoPago page
+        localStorage.setItem('mercadoPaymentData', JSON.stringify(paymentData));
+
+        // Navigate to MercadoPago payment page
+        router.push({ name: 'MercadoPayment' });
+      }
     } catch (error) {
-      console.error("Error en goToPayment:", error);
+      console.error("Error en processPayment:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Error al procesar el pago. Por favor intente de nuevo.';
       $q.notify({ type: "negative", message: errorMessage });
     } finally {
-      isProcessingPayment.value = false; // Detener indicador de carga
-       $q.loading.hide();
+      isProcessingPayment.value = false; // Stop loading indicator
+      $q.loading.hide();
     }
   };
   
