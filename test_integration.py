@@ -22,9 +22,16 @@ def test_endpoints_availability():
         
         required_endpoints = [
             ('POST', '/payments/payment_order_and_split_payment'),
-            ('POST', '/payments/create_preference'),  
+            ('POST', '/payments/create_preference'),  # Legacy (deprecated)
             ('POST', '/payments/mercadopago-webhook'),
-            ('POST', '/payments/process-stripe-payment')
+            ('POST', '/payments/process-stripe-payment'),
+            # New Checkout API endpoints
+            ('GET', '/payments/payment_methods'),
+            ('POST', '/payments/tokenize_card'),
+            ('POST', '/payments/process_payment'),
+            ('GET', '/payments/saved_payment_methods'),
+            ('POST', '/payments/save_payment_method'),
+            ('DELETE', '/payments/saved_payment_methods/{payment_method_id}')
         ]
         
         available_routes = {}
@@ -47,15 +54,24 @@ def test_endpoints_availability():
             print("🎉 All required endpoints are available!")
             print("\n📋 Integration Status:")
             print("✅ 404 error fixed - payment_order_and_split_payment endpoint available")
-            print("✅ MercadoPago preference creation endpoint available")  
+            print("✅ MercadoPago preference creation endpoint available (deprecated)")  
             print("✅ MercadoPago webhook endpoint available")
             print("✅ Stripe payment processing endpoint available")
-            print("\n🔄 Expected Flow:")
-            print("1. OrderComponent → Select payment method")
-            print("2. If MercadoPago → Create payment order → MercadoPayment page")
-            print("3. MercadoPayment → Create preference → Redirect to MercadoPago")
-            print("4. User pays → Returns to success/failure page")
-            print("5. Webhook updates payment status automatically")
+            print("✅ New Checkout API endpoints available:")
+            print("  - GET /payments/payment_methods")
+            print("  - POST /payments/tokenize_card")
+            print("  - POST /payments/process_payment")
+            print("  - GET /payments/saved_payment_methods")
+            print("  - POST /payments/save_payment_method")
+            print("  - DELETE /payments/saved_payment_methods/{id}")
+            print("\n🔄 New In-App Payment Flow:")
+            print("1. OrderComponent → Directly process MercadoPago payment")
+            print("2. MercadoPayment page → Custom checkout form with CheckoutAPI component")
+            print("3. User enters card details → Tokenized securely")
+            print("4. Payment processed in-app → No external redirects")
+            print("5. Success/error handled with dialogs → User stays in app")
+            print("6. Optional: Save payment method for future use")
+            print("7. Webhook updates payment status automatically")
             return True
         else:
             print("❌ Some endpoints are missing!")
@@ -75,17 +91,29 @@ def test_mercadopago_integration_components():
     if os.path.exists(order_component_path):
         with open(order_component_path, 'r') as f:
             content = f.read()
-            if 'paymentMethodDialog' in content and 'MercadoPayment' in content:
-                print("✅ OrderComponent updated with payment method selection")
+            if 'processPayment' in content and 'MercadoPayment' in content:
+                print("✅ OrderComponent updated with direct MercadoPago payment flow")
             else:
                 print("❌ OrderComponent missing MercadoPago integration")
     else:
         print("❌ OrderComponent not found")
     
+    # Check CheckoutAPI component exists  
+    checkout_api_path = "frontend/src/components/CheckoutAPI.vue"
+    if os.path.exists(checkout_api_path):
+        print("✅ CheckoutAPI component available for in-app payments")
+    else:
+        print("❌ CheckoutAPI component not found")
+    
     # Check MercadoPayment page exists
     mercado_payment_path = "frontend/src/pages/MercadoPayment.vue"
     if os.path.exists(mercado_payment_path):
-        print("✅ MercadoPayment page available")
+        with open(mercado_payment_path, 'r') as f:
+            content = f.read()
+            if 'CheckoutAPI' in content:
+                print("✅ MercadoPayment page updated with new in-app checkout")
+            else:
+                print("❌ MercadoPayment page not updated for in-app payments")
     else:
         print("❌ MercadoPayment page not found")
     
@@ -118,8 +146,8 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     if success:
         print("🎉 Integration test completed successfully!")
-        print("💡 The 404 error issue has been resolved.")
-        print("🚀 MercadoPago integration is ready to use.")
+        print("💡 MercadoPago integration upgraded to Checkout API.")
+        print("🚀 In-app payments with custom UI and saved methods ready!")
     else:
         print("❌ Integration test failed. Check the errors above.")
         sys.exit(1)

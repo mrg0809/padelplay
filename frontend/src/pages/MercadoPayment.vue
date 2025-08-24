@@ -10,35 +10,15 @@
 
     <q-page-container>
       <q-page class="q-pa-md">
-        <q-card class="text-white">
-          <q-card-section>
-            <h3 class="text-white">Pago con Mercado Pago</h3>
-          </q-card-section>
-          
-          <q-card-section v-if="loading">
-            <div class="text-center">
-              <q-spinner color="primary" size="3rem" />
-              <p class="q-mt-md">Procesando pago...</p>
-            </div>
-          </q-card-section>
-
-          <q-card-section v-else-if="error">
-            <div class="text-center text-negative">
-              <q-icon name="error" size="3rem" />
-              <p class="q-mt-md">{{ error }}</p>
-              <q-btn 
-                color="primary" 
-                label="Reintentar" 
-                @click="initPayment" 
-                class="q-mt-md" 
-              />
-            </div>
-          </q-card-section>
-
-          <q-card-section v-else>
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-6">
-                <h5>Resumen de la compra:</h5>
+        <div class="row q-col-gutter-md">
+          <!-- Order Summary -->
+          <div class="col-12 col-md-6">
+            <q-card class="text-white">
+              <q-card-section>
+                <h4 class="text-white q-my-none">Resumen de la compra</h4>
+              </q-card-section>
+              
+              <q-card-section>
                 <div v-for="item in cartItems" :key="item.id" class="q-mb-sm">
                   <div class="row justify-between">
                     <span>{{ item.title }} (x{{ item.quantity }})</span>
@@ -49,28 +29,84 @@
                 <div class="row justify-between text-h6">
                   <strong>Total: ${{ totalAmount }}</strong>
                 </div>
-              </div>
-            </div>
+              </q-card-section>
+            </q-card>
+          </div>
+          
+          <!-- Payment Form -->
+          <div class="col-12 col-md-6">
+            <q-card class="text-white" v-if="loading">
+              <q-card-section>
+                <div class="text-center">
+                  <q-spinner color="primary" size="3rem" />
+                  <p class="q-mt-md">Cargando formulario de pago...</p>
+                </div>
+              </q-card-section>
+            </q-card>
 
-            <div class="q-mt-lg text-center">
+            <q-card class="text-white" v-else-if="error">
+              <q-card-section>
+                <div class="text-center text-negative">
+                  <q-icon name="error" size="3rem" />
+                  <p class="q-mt-md">{{ error }}</p>
+                  <q-btn 
+                    color="primary" 
+                    label="Reintentar" 
+                    @click="initPayment" 
+                    class="q-mt-md" 
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+
+            <CheckoutAPI 
+              v-else
+              :cart-items="cartItems"
+              :user-info="userInfo"
+              :total-amount="parseFloat(totalAmount)"
+              :external-reference="externalReference"
+              :metadata="metadata"
+              @payment-success="handlePaymentSuccess"
+              @payment-error="handlePaymentError"
+            />
+          </div>
+        </div>
+
+        <!-- Success Dialog -->
+        <q-dialog v-model="showSuccessDialog" persistent>
+          <q-card class="text-center">
+            <q-card-section>
+              <q-icon name="check_circle" color="positive" size="4rem" />
+              <h4 class="q-my-md">¡Pago exitoso!</h4>
+              <p>Tu pago ha sido procesado correctamente.</p>
+            </q-card-section>
+            <q-card-actions align="center">
               <q-btn 
                 color="primary" 
-                size="lg"
-                label="Pagar con Mercado Pago" 
-                @click="processPayment"
-                :loading="processing"
+                label="Continuar" 
+                @click="navigateToSuccess"
               />
-            </div>
-            
-            <!-- Development mode notice -->
-            <div class="q-mt-md text-center text-caption">
-              <p class="text-grey-5">
-                Después de completar el pago en Mercado Pago, 
-                <br>vuelve manualmente a la aplicación.
-              </p>
-            </div>
-          </q-card-section>
-        </q-card>
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
+        <!-- Error Dialog -->
+        <q-dialog v-model="showErrorDialog">
+          <q-card class="text-center">
+            <q-card-section>
+              <q-icon name="error" color="negative" size="4rem" />
+              <h4 class="q-my-md">Error en el pago</h4>
+              <p>{{ paymentErrorMessage }}</p>
+            </q-card-section>
+            <q-card-actions align="center">
+              <q-btn 
+                color="primary" 
+                label="Intentar nuevamente" 
+                @click="showErrorDialog = false"
+              />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
       </q-page>
     </q-page-container>
   </q-layout>
@@ -80,22 +116,28 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
-import api from 'src/services/api';
+import CheckoutAPI from 'src/components/CheckoutAPI.vue';
 
 export default {
   name: 'MercadoPayment',
+  components: {
+    CheckoutAPI
+  },
   setup() {
     const router = useRouter();
     const route = useRoute();
     const $q = useQuasar();
     
     const loading = ref(true);
-    const processing = ref(false);
     const error = ref(null);
     const cartItems = ref([]);
     const userInfo = ref({});
     const externalReference = ref(null);
     const metadata = ref(null);
+    
+    const showSuccessDialog = ref(false);
+    const showErrorDialog = ref(false);
+    const paymentErrorMessage = ref('');
 
     const totalAmount = computed(() => {
       return cartItems.value.reduce((total, item) => {
@@ -127,36 +169,44 @@ export default {
       }
     };
 
-    const processPayment = async () => {
-      processing.value = true;
+    const handlePaymentSuccess = (paymentResult) => {
+      console.log('Payment successful:', paymentResult);
       
-      try {
-        // Call the backend API to create preference
-        const response = await api.post('/payments/create_preference', {
-          cart_items: cartItems.value,
-          user_info: userInfo.value,
-          external_reference: externalReference.value,
-          metadata: metadata.value
-        });
-
-        if (response.data && response.data.init_point) {
-          // Redirect to MercadoPago checkout using the init_point
-          window.location.href = response.data.init_point;
-        } else {
-          throw new Error('No se recibió la URL de pago de Mercado Pago');
-        }
-        
-      } catch (err) {
-        console.error('Error al procesar el pago:', err);
-        error.value = err.response?.data?.detail || 'Error al procesar el pago. Por favor, inténtalo nuevamente.';
-        
+      // Clear payment data from localStorage
+      localStorage.removeItem('mercadoPaymentData');
+      
+      if (paymentResult.status === 'approved') {
+        showSuccessDialog.value = true;
+      } else if (paymentResult.status === 'pending') {
         $q.notify({
-          type: 'negative',
-          message: error.value
+          type: 'info',
+          message: 'Tu pago está siendo procesado. Te notificaremos cuando se complete.',
+          timeout: 5000
         });
-      } finally {
-        processing.value = false;
+        
+        // Navigate to dashboard after pending payment
+        setTimeout(() => {
+          router.push('/player/dashboard');
+        }, 2000);
+      } else {
+        handlePaymentError('El pago no fue aprobado. Por favor, intenta con otro método de pago.');
       }
+    };
+
+    const handlePaymentError = (errorMessage) => {
+      console.error('Payment error:', errorMessage);
+      paymentErrorMessage.value = errorMessage;
+      showErrorDialog.value = true;
+    };
+
+    const navigateToSuccess = () => {
+      showSuccessDialog.value = false;
+      
+      // Navigate back to dashboard or success page
+      router.push('/player/dashboard').catch(() => {
+        // Fallback if dashboard route doesn't exist
+        router.push('/');
+      });
     };
 
     onMounted(() => {
@@ -165,12 +215,19 @@ export default {
 
     return {
       loading,
-      processing,
       error,
       cartItems,
+      userInfo,
+      externalReference,
+      metadata,
       totalAmount,
+      showSuccessDialog,
+      showErrorDialog,
+      paymentErrorMessage,
       initPayment,
-      processPayment
+      handlePaymentSuccess,
+      handlePaymentError,
+      navigateToSuccess
     };
   }
 };
