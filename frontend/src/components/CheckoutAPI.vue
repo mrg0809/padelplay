@@ -183,20 +183,6 @@
           </div>
         </div>
 
-        <!-- Installments -->
-        <q-select
-          v-model="selectedInstallments"
-          :options="installmentOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          filled
-          dark
-          label="Cuotas"
-          class="q-mt-md q-mb-md"
-        />
-
         <!-- Save Payment Method -->
         <q-checkbox
           v-model="savePaymentMethod"
@@ -225,20 +211,6 @@
         <p class="q-mb-md">
           Pagar con: **** **** **** {{ selectedSavedMethod.last_four_digits }}
         </p>
-        
-        <!-- Installments for saved method -->
-        <q-select
-          v-model="selectedInstallments"
-          :options="installmentOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          filled
-          dark
-          label="Cuotas"
-          class="q-mb-md"
-        />
         
         <q-btn
           color="primary"
@@ -317,10 +289,7 @@ const savePaymentMethod = ref(false)
 
 // Computed
 const installmentOptions = computed(() => [
-  { label: '1 cuota sin interés', value: 1 },
-  { label: '3 cuotas', value: 3 },
-  { label: '6 cuotas', value: 6 },
-  { label: '12 cuotas', value: 12 }
+  { label: '1 pago', value: 1 }
 ])
 
 const isFormValid = computed(() => {
@@ -399,7 +368,13 @@ const loadPaymentMethods = async () => {
     const response = await api.get('/payments/payment_methods')
     
     if (response.data && response.data.payment_methods) {
-      cardPaymentMethods.value = response.data.payment_methods
+      // Filter to only allow visa, mastercard, amex, and transferencia
+      const allowedMethods = ['visa', 'master', 'amex', 'pse', 'efecty', 'bancolombia', 'banco_agrario', 'banco_av_villas', 'banco_bogota', 'banco_davivienda', 'banco_falabella', 'banco_gnb_sudameris', 'banco_itau', 'banco_occidente', 'banco_popular', 'banco_santander_colombia', 'bbva_colombia']
+      cardPaymentMethods.value = response.data.payment_methods.filter(method => 
+        allowedMethods.includes(method.id) || 
+        method.payment_type_id === 'credit_card' && ['visa', 'master', 'amex'].includes(method.id) ||
+        method.payment_type_id === 'bank_transfer'
+      )
       
       // Set default to visa if available, otherwise first available method
       const visa = cardPaymentMethods.value.find(method => method.id === 'visa')
@@ -630,11 +605,32 @@ onMounted(async () => {
 
 <style scoped>
 .q-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background-image: url(../assets/texturafondo.png);
+  background-size: cover;
+  background-position: center center;
+  background-color: rgba(0, 0, 0, 0.6); 
+  background-blend-mode: overlay;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .text-white {
   color: white !important;
+}
+
+h3, h5 { 
+  color: #FFF; 
+  margin-bottom: 1rem; 
+  font-weight: 500; 
+}
+
+p { 
+  margin-bottom: 0.5rem; 
+  line-height: 1.5; 
+}
+
+.q-separator { 
+  background: rgba(255, 255, 255, 0.3); 
 }
 </style>

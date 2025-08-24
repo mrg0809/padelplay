@@ -5,10 +5,12 @@
         <div class="greeting">
           <img src="/src/assets/padelplay.png" alt="Logo" class="logo-icon" />
         </div>
+        <div class="header-icons">
+        </div>
       </div>
     </q-header>
 
-    <q-page-container>
+    <q-page-container class="home">
       <q-page class="q-pa-md">
         <div class="row q-col-gutter-md">
           <!-- Order Summary -->
@@ -109,6 +111,8 @@
         </q-dialog>
       </q-page>
     </q-page-container>
+    
+    <PlayerNavigationMenu />
   </q-layout>
 </template>
 
@@ -117,11 +121,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import CheckoutAPI from 'src/components/CheckoutAPI.vue';
+import PlayerNavigationMenu from 'src/components/PlayerNavigationMenu.vue';
 
 export default {
   name: 'MercadoPayment',
   components: {
-    CheckoutAPI
+    CheckoutAPI,
+    PlayerNavigationMenu
   },
   setup() {
     const router = useRouter();
@@ -234,23 +240,68 @@ export default {
 </script>
 
 <style scoped>
+.home {
+  min-height: calc(100vh - 50px);
+}
+
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 8px 16px;
+  background-color: #000000;
 }
 
-.logo-icon {
-  height: 40px;
+.greeting { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+}
+
+.header-icons { 
+  display: flex; 
+  gap: 2px; 
+  align-items: center; 
+}
+
+.logo-icon { 
+  width: 60px; 
+  height: 60px; 
 }
 
 .q-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background-image: url(../assets/texturafondo.png);
+  background-size: cover;
+  background-position: center center;
+  background-color: rgba(0, 0, 0, 0.6); 
+  background-blend-mode: overlay;
+  max-width: 450px; 
+  margin: 16px auto;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .text-white {
   color: white !important;
+}
+
+h3, h4 { 
+  color: #FFF; 
+  margin-bottom: 1rem; 
+  font-weight: 500; 
+}
+
+p { 
+  margin-bottom: 0.5rem; 
+  line-height: 1.5; 
+}
+
+p strong { 
+  color: #b3e5fc;
+}
+
+.q-separator--dark { 
+  background: rgba(255, 255, 255, 0.3); 
 }
 </style>
