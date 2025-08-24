@@ -50,6 +50,23 @@ class PaymentIntentRequest(BaseModel):
     payer: Optional[PreferencePayer] = None
     metadata: Optional[dict] = None
 
+# New models for the simplified /api/create_preference endpoint
+class CartItem(BaseModel):
+    id: str
+    title: str
+    quantity: int
+    unit_price: float
+
+class UserInfo(BaseModel):
+    email: str
+    name: Optional[str] = None
+    
+class CreatePreferenceRequest(BaseModel):
+    cart_items: List[CartItem]
+    user_info: UserInfo
+    external_reference: Optional[str] = None
+    metadata: Optional[dict] = None
+
 @router.post("/create-payment-intent")
 async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), current_user: dict = Depends(get_current_user)):
     try:
@@ -73,6 +90,58 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear el intento de pago: {str(e)}")
+
+
+@router.post("/create_preference")
+async def create_preference(request_data: CreatePreferenceRequest = Body(...), current_user: dict = Depends(get_current_user)):
+    """
+    Create a MercadoPago payment preference using cart items and user info.
+    Returns init_point and preference_id for frontend redirection.
+    """
+    try:
+        # Convert cart items to MercadoPago items format
+        items = []
+        for item in request_data.cart_items:
+            items.append({
+                "id": item.id,
+                "title": item.title,
+                "quantity": item.quantity,
+                "unit_price": float(item.unit_price),
+                "currency_id": "ARS"  # Default currency, can be made configurable
+            })
+
+        # Create preference data
+        preference_data = {
+            "items": items,
+            "payer": {
+                "email": request_data.user_info.email,
+                "name": request_data.user_info.name or current_user.get('full_name', '')
+            },
+            "external_reference": request_data.external_reference,
+            "metadata": request_data.metadata or {},
+            "notification_url": f"{settings.BACKEND_URL}/payments/mercadopago-webhook",
+            "back_urls": {
+                "success": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-success",
+                "failure": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-failure", 
+                "pending": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-pending"
+            },
+            "auto_return": "approved"
+        }
+
+        # Create preference using MercadoPago SDK
+        preference_response = sdk.preference().create(preference_data)
+        
+        if preference_response["status"] == 201:
+            preference = preference_response["response"]
+            return {
+                "init_point": preference["init_point"],
+                "preference_id": preference["id"]
+            }
+        else:
+            raise HTTPException(status_code=500, detail=f"Error al crear la preferencia de Mercado Pago: {preference_response}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear la preferencia: {str(e)}")
 
 
 

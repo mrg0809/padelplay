@@ -22,6 +22,29 @@ const routes = [
     name: "StripePayment",
     component: () => import("src/pages/StripePayment.vue"),
   },
+  {
+    path: "/mercado-payment",
+    name: "MercadoPayment",
+    component: () => import("src/pages/MercadoPayment.vue"),
+  },
+  {
+    path: "/payment-success",
+    name: "PaymentSuccess", 
+    component: () => import("src/pages/PaymentResult.vue"),
+    props: { status: 'success' }
+  },
+  {
+    path: "/payment-failure",
+    name: "PaymentFailure",
+    component: () => import("src/pages/PaymentResult.vue"),
+    props: { status: 'failure' }
+  },
+  {
+    path: "/payment-pending",
+    name: "PaymentPending",
+    component: () => import("src/pages/PaymentResult.vue"),
+    props: { status: 'pending' }
+  },
   { path: "/forgot-password", component: () => import("pages/RecoveryPassword.vue")},
   { path: "/reset-password", component: () => import("pages/ResetPassword.vue")},
   { path: "/signup", component: () => import("pages/RegisterPage.vue")},
@@ -197,7 +220,7 @@ const routes = [
   },
   { 
     path: "/player/clases", 
-    component: () => import("src/pages/player/ListLessonsClubs.vue"),
+    component: () => import("src/pages/player/ListClubs.vue"),
     meta: { requiresAuth: true },
   },
   {
@@ -284,10 +307,10 @@ const routes = [
     meta: { requiresAuth: true },
     name: "TournamentDetails"
   },
-  { path: "/inicio", component: () => import("pages/Home.vue") },
-  { path: "/torneos", component: () => import("pages/Torneos.vue") },
-  { path: "/asociaciones", component: () => import("pages/Asociaciones.vue") },
-  { path: "/perfil", component: () => import("pages/Perfil.vue") },
+  { path: "/inicio", component: () => import("pages/IndexPage.vue") },
+  { path: "/torneos", component: () => import("pages/ErrorNotFound.vue") },
+  { path: "/asociaciones", component: () => import("pages/ErrorNotFound.vue") },
+  { path: "/perfil", component: () => import("pages/ErrorNotFound.vue") },
   // Otras rutas...
   { path: "/:catchAll(.*)", name: "NotFound", component: () => import("pages/ErrorNotFound.vue") },
 ];
