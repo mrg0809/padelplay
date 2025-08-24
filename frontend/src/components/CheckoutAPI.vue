@@ -62,7 +62,7 @@
       <q-form @submit.prevent="processPayment">
         <!-- Payment Method Selection -->
         <div class="q-mb-md">
-          <q-label class="q-mb-sm">Tipo de tarjeta</q-label>
+          <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta</div>
           <q-select
             v-model="selectedPaymentMethod"
             :options="cardPaymentMethods"
