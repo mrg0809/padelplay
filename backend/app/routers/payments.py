@@ -92,6 +92,34 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...), 
         raise HTTPException(status_code=500, detail=f"Error al crear el intento de pago: {str(e)}")
 
 
+def detect_currency_from_token(access_token: str) -> str:
+    """
+    Detect the appropriate currency based on MercadoPago access token.
+    MercadoPago tokens often contain country codes that indicate the currency.
+    """
+    if not access_token:
+        return "ARS"  # Default fallback
+    
+    # Common currency mappings based on token patterns and countries
+    currency_mapping = {
+        "AR": "ARS",  # Argentina
+        "BR": "BRL",  # Brazil  
+        "CL": "CLP",  # Chile
+        "CO": "COP",  # Colombia
+        "MX": "MXN",  # Mexico
+        "PE": "PEN",  # Peru
+        "UY": "UYU",  # Uruguay
+    }
+    
+    # Check if token contains country indicators
+    token_upper = access_token.upper()
+    for country_code, currency in currency_mapping.items():
+        if country_code in token_upper:
+            return currency
+    
+    # Default to ARS if no specific country detected
+    return "ARS"
+
 @router.post("/create_preference")
 async def create_preference(request_data: CreatePreferenceRequest = Body(...), current_user: dict = Depends(get_current_user)):
     """
@@ -99,6 +127,15 @@ async def create_preference(request_data: CreatePreferenceRequest = Body(...), c
     Returns init_point and preference_id for frontend redirection.
     """
     try:
+        # Detect appropriate currency
+        primary_currency = settings.MERCADOPAGO_CURRENCY
+        detected_currency = detect_currency_from_token(settings.MERCADOPAGO_ACCESS_TOKEN)
+        
+        # Use configured currency, but fallback to detected if needed
+        currency_to_use = primary_currency if primary_currency else detected_currency
+        
+        print(f"Using currency: {currency_to_use} (configured: {primary_currency}, detected: {detected_currency})")
+        
         # Convert cart items to MercadoPago items format
         items = []
         for item in request_data.cart_items:
@@ -107,7 +144,7 @@ async def create_preference(request_data: CreatePreferenceRequest = Body(...), c
                 "title": item.title,
                 "quantity": item.quantity,
                 "unit_price": float(item.unit_price),
-                "currency_id": "ARS"  # Default currency, can be made configurable
+                "currency_id": currency_to_use
             })
 
         # Create preference data
@@ -135,22 +172,59 @@ async def create_preference(request_data: CreatePreferenceRequest = Body(...), c
 
         print(f"Creating MercadoPago preference with data: {preference_data}")
         
-        # Create preference using MercadoPago SDK
-        preference_response = sdk.preference().create(preference_data)
+        # Create preference using MercadoPago SDK with currency fallback
+        preference_response = None
+        currencies_to_try = [currency_to_use, "ARS", "BRL", "MXN", "CLP", "COP", "PEN", "UYU"]
+        
+        # Remove duplicates while preserving order
+        currencies_to_try = list(dict.fromkeys(currencies_to_try))
+        
+        for attempt_currency in currencies_to_try:
+            try:
+                # Update currency in items for this attempt
+                preference_data_attempt = preference_data.copy()
+                items_with_currency = []
+                for item in preference_data_attempt["items"]:
+                    item_copy = item.copy()
+                    item_copy["currency_id"] = attempt_currency
+                    items_with_currency.append(item_copy)
+                preference_data_attempt["items"] = items_with_currency
+                
+                print(f"Attempting MercadoPago preference creation with currency: {attempt_currency}")
+                preference_response = sdk.preference().create(preference_data_attempt)
+                
+                if preference_response["status"] == 201:
+                    print(f"Successfully created preference with currency: {attempt_currency}")
+                    break
+                else:
+                    print(f"Failed with currency {attempt_currency}: {preference_response}")
+                    
+            except Exception as currency_error:
+                print(f"Currency {attempt_currency} failed: {str(currency_error)}")
+                if attempt_currency == currencies_to_try[-1]:  # Last attempt
+                    raise currency_error
+                continue
         
         print(f"MercadoPago response: {preference_response}")
         
-        if preference_response["status"] == 201:
+        if preference_response and preference_response["status"] == 201:
             preference = preference_response["response"]
             return {
                 "init_point": preference["init_point"],
                 "preference_id": preference["id"]
             }
         else:
-            raise HTTPException(status_code=500, detail=f"Error al crear la preferencia de Mercado Pago: {preference_response}")
+            error_detail = preference_response if preference_response else "No response received"
+            raise HTTPException(status_code=500, detail=f"Error al crear la preferencia de Mercado Pago: {error_detail}")
 
     except Exception as e:
         print(f"Error creating MercadoPago preference: {str(e)}")
+        # Provide more detailed error information
+        if "currency_id invalid" in str(e):
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Currency error: {str(e)}. Try configuring MERCADOPAGO_CURRENCY environment variable with a supported currency (ARS, BRL, MXN, CLP, COP, PEN, UYU)"
+            )
         raise HTTPException(status_code=500, detail=f"Error al crear la preferencia: {str(e)}")
 
 
