@@ -207,6 +207,23 @@ async def process_payment(request_data: CreatePaymentRequest = Body(...), curren
         # Detect appropriate currency
         currency_to_use = settings.MERCADOPAGO_CURRENCY or detect_currency_from_token(settings.MERCADOPAGO_ACCESS_TOKEN)
         
+        # Get user email from JWT token or database
+        user_email = current_user.get("email")
+        if not user_email:
+            # Fallback: get email from players table  
+            try:
+                user_id = current_user.get("id") or current_user.get("sub")
+                if user_id:
+                    player_response = supabase.from_("players").select("email").eq("user_id", user_id).single().execute()
+                    if player_response.data and player_response.data.get("email"):
+                        user_email = player_response.data["email"]
+            except Exception as e:
+                print(f"Could not retrieve email from players table: {e}")
+        
+        # Final fallback to request payer email
+        if not user_email:
+            user_email = request_data.payer.email
+        
         # Create payment using MercadoPago SDK
         payment_data = {
             "transaction_amount": float(request_data.transaction_amount),
@@ -214,12 +231,16 @@ async def process_payment(request_data: CreatePaymentRequest = Body(...), curren
             "description": request_data.description,
             "payment_method_id": request_data.payment_method_id,
             "payer": {
-                "email": request_data.payer.email
+                "email": user_email
             },
             "external_reference": request_data.external_reference,
-            "metadata": request_data.metadata or {},
-            "notification_url": f"{settings.BACKEND_URL}/payments/mercadopago-webhook"
+            "metadata": request_data.metadata or {}
         }
+        
+        # Only add notification_url for production (non-localhost URLs)
+        backend_url = settings.BACKEND_URL or 'http://localhost:8000'
+        if not backend_url.startswith('http://localhost') and not backend_url.startswith('http://127.0.0.1'):
+            payment_data["notification_url"] = f"{backend_url}/payments/mercadopago-webhook"
         
         # Add installments if specified
         if request_data.payment_method.installments and request_data.payment_method.installments > 1:

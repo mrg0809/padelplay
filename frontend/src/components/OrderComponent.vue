@@ -358,8 +358,8 @@
 
         // Get current user info from store
         const userInfo = {
-          email: userStore.user?.email || 'user@example.com',
-          name: userStore.user?.full_name || userStore.user?.name || 'Usuario'
+          email: userStore.email || 'user@example.com',
+          name: userStore.fullName || 'Usuario'
         };
 
         const paymentData = {
