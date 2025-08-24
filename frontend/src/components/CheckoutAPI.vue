@@ -96,18 +96,18 @@
             dark
           >
             <template v-slot:option="scope">
-              <q-item v-bind="scope.itemProps" v-if="scope.opt">
-                <q-item-section avatar v-if="scope.opt && scope.opt.thumbnail">
+              <q-item v-bind="scope.itemProps" v-if="scope && scope.opt">
+                <q-item-section avatar v-if="scope && scope.opt && scope.opt.thumbnail">
                   <q-img :src="scope.opt.thumbnail" width="24px" height="16px" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>{{ (scope.opt && scope.opt.name) || 'Sin nombre' }}</q-item-label>
+                  <q-item-label>{{ (scope && scope.opt && scope.opt.name) || 'Sin nombre' }}</q-item-label>
                 </q-item-section>
               </q-item>
             </template>
             
             <template v-slot:selected="scope">
-              <template v-if="scope.opt && scope.opt.id && scope.opt.name">
+              <template v-if="scope && scope.opt && scope.opt.id && scope.opt.name">
                 <q-chip
                   :icon="getCardIcon(scope.opt.id)"
                   :label="scope.opt.name"
@@ -115,7 +115,7 @@
                   text-color="white"
                 />
               </template>
-              <template v-else-if="scope.opt && scope.opt.name">
+              <template v-else-if="scope && scope.opt && scope.opt.name">
                 <span class="text-white">{{ scope.opt.name }}</span>
               </template>
               <template v-else>
