@@ -97,26 +97,30 @@
           >
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps" v-if="scope.opt">
-                <q-item-section avatar v-if="scope.opt.thumbnail">
+                <q-item-section avatar v-if="scope.opt && scope.opt.thumbnail">
                   <q-img :src="scope.opt.thumbnail" width="24px" height="16px" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label>{{ scope.opt.name || 'Sin nombre' }}</q-item-label>
+                  <q-item-label>{{ (scope.opt && scope.opt.name) || 'Sin nombre' }}</q-item-label>
                 </q-item-section>
               </q-item>
             </template>
             
             <template v-slot:selected="scope">
-              <q-chip
-                v-if="scope.opt && scope.opt.id && scope.opt.name"
-                :icon="getCardIcon(scope.opt.id)"
-                :label="scope.opt.name"
-                color="primary"
-                text-color="white"
-              />
-              <span v-else-if="scope.opt && scope.opt.name" class="text-white">
-                {{ scope.opt.name }}
-              </span>
+              <template v-if="scope.opt && scope.opt.id && scope.opt.name">
+                <q-chip
+                  :icon="getCardIcon(scope.opt.id)"
+                  :label="scope.opt.name"
+                  color="primary"
+                  text-color="white"
+                />
+              </template>
+              <template v-else-if="scope.opt && scope.opt.name">
+                <span class="text-white">{{ scope.opt.name }}</span>
+              </template>
+              <template v-else>
+                <span class="text-white">Seleccionar tarjeta</span>
+              </template>
             </template>
           </q-select>
         </div>
@@ -293,7 +297,7 @@ const showNewCard = ref(false)
 
 // Payment methods
 const cardPaymentMethods = ref([])
-const selectedPaymentMethod = ref('')
+const selectedPaymentMethod = ref(null)
 
 // Saved methods
 const savedMethods = ref([])
@@ -326,6 +330,7 @@ const isFormValid = computed(() => {
   
   return (
     selectedPaymentMethod.value &&
+    selectedPaymentMethod.value !== null &&
     selectedPaymentMethod.value !== '' &&
     validateCardNumber(cardForm.value.number) &&
     cardForm.value.holderName &&
@@ -396,12 +401,14 @@ const loadPaymentMethods = async () => {
     if (response.data && response.data.payment_methods) {
       cardPaymentMethods.value = response.data.payment_methods
       
-      // Set default to visa if available
+      // Set default to visa if available, otherwise first available method
       const visa = cardPaymentMethods.value.find(method => method.id === 'visa')
       if (visa) {
         selectedPaymentMethod.value = visa.id
       } else if (cardPaymentMethods.value.length > 0) {
         selectedPaymentMethod.value = cardPaymentMethods.value[0].id
+      } else {
+        selectedPaymentMethod.value = null
       }
     } else {
       throw new Error('Invalid response format')
@@ -409,7 +416,7 @@ const loadPaymentMethods = async () => {
   } catch (error) {
     console.error('Error loading payment methods:', error)
     cardPaymentMethods.value = []
-    selectedPaymentMethod.value = ''
+    selectedPaymentMethod.value = null
     $q.notify({
       type: 'negative',
       message: 'Error al cargar métodos de pago'
