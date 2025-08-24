@@ -7,6 +7,7 @@ from app.core.security import get_current_user
 
 import mercadopago
 import json
+import requests
 
 router = APIRouter()
 
@@ -259,11 +260,21 @@ async def get_payment_methods():
     Get available payment methods from MercadoPago.
     """
     try:
-        payment_methods_response = sdk.payment_method().list_all()
+        import requests
         
-        if payment_methods_response["status"] == 200:
+        # Make direct API call to get payment methods
+        url = "https://api.mercadopago.com/v1/payment_methods"
+        headers = {
+            "Authorization": f"Bearer {settings.MERCADOPAGO_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            payment_methods = response.json()
+            
             # Filter only credit and debit cards
-            payment_methods = payment_methods_response["response"]
             card_methods = [
                 {
                     "id": method["id"],
@@ -278,6 +289,7 @@ async def get_payment_methods():
             
             return {"payment_methods": card_methods}
         else:
+            print(f"MercadoPago API error: {response.status_code} - {response.text}")
             raise HTTPException(status_code=500, detail="Error al obtener métodos de pago")
             
     except Exception as e:
