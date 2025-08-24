@@ -80,39 +80,7 @@
         </q-page>
       </q-page-container>
   
-      <!-- Payment Method Selection Dialog -->
-      <q-dialog v-model="paymentMethodDialog">
-        <q-card style="min-width: 300px; max-width: 400px">
-          <q-card-section class="row items-center q-pb-none bg-primary text-white">
-            <div class="text-h6">Selecciona Método de Pago</div>
-            <q-space />
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
 
-          <q-card-section>
-            <div class="q-gutter-sm">
-              <q-btn
-                class="full-width q-mb-md"
-                color="green"
-                icon="credit_card"
-                label="Pagar con Tarjeta (Stripe)"
-                @click="processPayment('stripe')"
-                :loading="isProcessingPayment"
-                push
-              />
-              <q-btn
-                class="full-width"
-                color="blue"
-                icon="payment"
-                label="Pagar con MercadoPago"
-                @click="processPayment('mercadopago')"
-                :loading="isProcessingPayment"
-                push
-              />
-            </div>
-          </q-card-section>
-        </q-card>
-      </q-dialog>
 
       <q-dialog v-model="productDialog">
          <q-card style="min-width: 300px; max-width: 400px" class="bg-grey-2 text-black">
@@ -204,7 +172,6 @@
   const productQuantities = reactive({}); 
   const selectedProducts = ref([]);
   const productDialog = ref(false);
-  const paymentMethodDialog = ref(false);
   const isLoadingProducts = ref(false);
   const isPublicMatch = ref(false);
   const isProcessingPayment = ref(false);
@@ -317,12 +284,11 @@
   };
   
   const goToPayment = () => {
-    // Show payment method selection dialog
-    paymentMethodDialog.value = true;
+    // Go directly to MercadoPago payment processing
+    processPayment('mercadopago');
   };
   
   const processPayment = async (paymentMethod) => {
-    paymentMethodDialog.value = false; // Close dialog
     isProcessingPayment.value = true; // Start loading indicator
     $q.loading.show({ spinner: QSpinnerCube, message: 'Generando orden de pago...' });
     
