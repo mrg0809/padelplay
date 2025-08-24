@@ -119,17 +119,26 @@ async def create_preference(request_data: CreatePreferenceRequest = Body(...), c
             },
             "external_reference": request_data.external_reference,
             "metadata": request_data.metadata or {},
-            "notification_url": f"{settings.BACKEND_URL}/payments/mercadopago-webhook",
-            "back_urls": {
-                "success": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-success",
-                "failure": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-failure", 
-                "pending": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/payment-pending"
-            },
-            "auto_return": "approved"
+            "notification_url": f"{settings.BACKEND_URL}/payments/mercadopago-webhook"
         }
 
+        # Only add back_urls and auto_return for production (public URLs)
+        frontend_url = settings.FRONTEND_URL or 'http://localhost:3000'
+        if not frontend_url.startswith('http://localhost') and not frontend_url.startswith('http://127.0.0.1'):
+            # Production environment with public URLs
+            preference_data["back_urls"] = {
+                "success": f"{frontend_url}/payment-success",
+                "failure": f"{frontend_url}/payment-failure", 
+                "pending": f"{frontend_url}/payment-pending"
+            }
+            preference_data["auto_return"] = "approved"
+
+        print(f"Creating MercadoPago preference with data: {preference_data}")
+        
         # Create preference using MercadoPago SDK
         preference_response = sdk.preference().create(preference_data)
+        
+        print(f"MercadoPago response: {preference_response}")
         
         if preference_response["status"] == 201:
             preference = preference_response["response"]
@@ -141,6 +150,7 @@ async def create_preference(request_data: CreatePreferenceRequest = Body(...), c
             raise HTTPException(status_code=500, detail=f"Error al crear la preferencia de Mercado Pago: {preference_response}")
 
     except Exception as e:
+        print(f"Error creating MercadoPago preference: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al crear la preferencia: {str(e)}")
 
 

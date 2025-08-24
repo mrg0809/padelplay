@@ -61,6 +61,14 @@
                 :loading="processing"
               />
             </div>
+            
+            <!-- Development mode notice -->
+            <div class="q-mt-md text-center text-caption">
+              <p class="text-grey-5">
+                Después de completar el pago en Mercado Pago, 
+                <br>vuelve manualmente a la aplicación.
+              </p>
+            </div>
           </q-card-section>
         </q-card>
       </q-page>
