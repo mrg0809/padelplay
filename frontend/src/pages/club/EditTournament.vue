@@ -109,7 +109,7 @@
   
       const categories = ref(["primera", "segunda", "tercera", "cuarta", "quinta", "libre"]);
       const genders = ref(["mixto", "varonil", "femenil"]);
-      const systems = ref(["eliminacion directa", "round robin", "combinado"]);
+      const systems = ref(["eliminacion directa", "round-robin", "combinado", "liga", "retas"]);
       const courts = ref([]);
       const tournamentId = route.params.tournamentId;
       const confirmDialogVisible = ref(false);

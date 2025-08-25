@@ -121,7 +121,7 @@ export default {
       },
       categories: ["primera", "segunda", "tercera", "cuarta", "quinta", "libre"],
       genders: ["mixto", "varonil", "femenil"],
-      systems: ["combinado", "eliminacion directa", "liga", "round-robin"],
+      systems: ["combinado", "eliminacion directa", "liga", "round-robin", "retas"],
       courts: [],
       selectAllCourts: false,
     };

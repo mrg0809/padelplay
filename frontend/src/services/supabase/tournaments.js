@@ -94,7 +94,7 @@ export const fetchTournaments = async (filters) => {
 export const fetchTournamentDetails = async (tournamentId) => {
   const { data, error } = await supabase
     .from("tournaments")
-    .select("id, name, start_date, end_date, start_time, end_time, category, gender, price_per_pair, prize, clubs(name, city)")
+    .select("id, name, start_date, end_date, start_time, end_time, category, gender, system, price_per_pair, prize, clubs(name, city)")
     .eq("id", tournamentId);
 
   if (error) throw Error(error.message);

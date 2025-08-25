@@ -39,6 +39,14 @@
                 {{ tournament.gender }}
               </p>
               <p>
+                <strong><q-icon name="mdi-cogs" class="q-mr-xs" />Sistema:</strong>
+                {{ getSystemDisplayName(tournament.system) }}
+              </p>
+              <p v-if="tournament.system === 'retas'">
+                <strong><q-icon name="mdi-cash-multiple" class="q-mr-xs" />Precio por Jugador:</strong>
+                ${{ (tournament.price_per_pair / 2)?.toFixed(2) || 'N/A' }}
+              </p>
+              <p v-else>
                 <strong><q-icon name="mdi-cash-multiple" class="q-mr-xs" />Precio por Pareja:</strong>
                 ${{ tournament.price_per_pair?.toFixed(2) || 'N/A' }}
               </p>
@@ -48,10 +56,31 @@
               </p>
 
               <div v-if="enrolledPlayers.length > 0" class="q-mt-md">
-                <p>
+                <p v-if="tournament.system === 'retas'">
+                  <strong><q-icon name="mdi-account-multiple" class="q-mr-xs" />Jugadores Inscritos ({{ getRetasPlayerCount() }}):</strong>
+                </p>
+                <p v-else>
                   <strong><q-icon name="account-group-outline" class="q-mr-xs" />Jugadores Inscritos:</strong>
                 </p>
-                <div class="q-gutter-xs row items-center">
+                
+                <!-- Retas individual players display -->
+                <div v-if="tournament.system === 'retas'" class="q-gutter-xs row items-center">
+                  <template v-for="team in enrolledPlayers" :key="team.player1?.user_id">
+                    <q-avatar
+                      v-if="team.player1"
+                      size="48px"
+                      color="orange"
+                      text-color="white"
+                    >
+                      <img v-if="team.player1.photo_url" :src="team.player1.photo_url" :alt="team.player1.user_id" />
+                      <span v-else>{{ getInitials(team.player1.user_id) }}</span>
+                    </q-avatar>
+                    <!-- For retas, we only show player1 since player2 is null -->
+                  </template>
+                </div>
+                
+                <!-- Regular tournament teams display -->
+                <div v-else class="q-gutter-xs row items-center">
                   <template v-for="team in enrolledPlayers" :key="team.player1?.user_id + '-' + team.player2?.user_id">
                     <q-avatar
                       v-if="team.player1"
@@ -78,24 +107,46 @@
               </div>
 
               <div v-if="!isUserEnrolled" class="q-mt-md">
-                <q-btn
-                  color="primary"
-                  label="Elige tu Pareja"
-                  icon-right="mdi-account-search"
-                  @click="showPlayerSearchDialog = true"
-                  class="full-width"
-                  size="md"
-                  push
-                />
-                <p v-if="selectedPartner" class="q-mt-sm">
-                  Pareja Seleccionada: {{ selectedPartner.first_name }} {{ selectedPartner.last_name }}
-                </p>
+                <!-- Regular tournament enrollment with partner selection -->
+                <div v-if="tournament.system !== 'retas'">
+                  <q-btn
+                    color="primary"
+                    label="Elige tu Pareja"
+                    icon-right="mdi-account-search"
+                    @click="showPlayerSearchDialog = true"
+                    class="full-width"
+                    size="md"
+                    push
+                  />
+                  <p v-if="selectedPartner" class="q-mt-sm">
+                    Pareja Seleccionada: {{ selectedPartner.first_name }} {{ selectedPartner.last_name }}
+                  </p>
+                </div>
+                <!-- Retas enrollment - individual registration -->
+                <div v-else>
+                  <p class="text-center q-mb-md text-body2">
+                    <q-icon name="mdi-rotate-3d-variant" class="q-mr-xs" />
+                    En las retas juegas con diferentes parejas en cada ronda
+                  </p>
+                  <q-btn
+                    label="Inscribirme a las Retas"
+                    color="orange"
+                    icon-right="mdi-account-plus"
+                    class="full-width"
+                    size="lg"
+                    push
+                    @click="handleRetasEnrollment"
+                    :disable="!tournament"
+                    title="Inscribirse individualmente a las retas"
+                  />
+                </div>
               </div>
             </q-card-section>
 
             <q-card-actions align="center" class="q-pa-md">
+              <!-- Regular tournament enrollment button -->
               <q-btn
-                v-if="!isUserEnrolled && selectedPartner"
+                v-if="!isUserEnrolled && selectedPartner && tournament.system !== 'retas'"
                 label="Inscribir Pareja"
                 color="green"
                 icon-right="mdi-pencil-plus-outline"
@@ -106,6 +157,7 @@
                 :disable="!tournament"
                 title="Inscribirse al torneo pagando la mitad del costo de pareja"
               />
+              <!-- Retas individual enrollment is handled in the previous section -->
             </q-card-actions>
           </q-card>
         </div>
@@ -278,6 +330,63 @@
       return parts[0].substring(0, 2).toUpperCase();
     }
     return userId.substring(0, 2).toUpperCase();
+  };
+
+  const getSystemDisplayName = (system) => {
+    const systems = {
+      'round-robin': 'Round Robin',
+      'eliminacion directa': 'Eliminación Directa',
+      'combinado': 'Combinado (Grupos + Playoffs)',
+      'liga': 'Liga (Todos vs Todos)',
+      'retas': 'Retas (Rotación de Parejas)'
+    };
+    return systems[system] || system;
+  };
+
+  const getRetasPlayerCount = () => {
+    if (!tournament.value || tournament.value.system !== 'retas') return 0;
+    // For retas, count individual players (only player1, since player2 is null)
+    return enrolledPlayers.value.filter(team => team.player1).length;
+  };
+
+  const handleRetasEnrollment = async () => {
+    if (!tournament.value) {
+      $q.notify({ type: 'negative', message: 'No se pudo encontrar la información del torneo.' });
+      return;
+    }
+
+    const tournamentData = tournament.value;
+    const individualPrice = (tournamentData.price_per_pair || 0) / 2;
+
+    const summaryProps = {
+      summaryTitle: 'Resumen de Inscripción a Retas',
+      itemDetails: [
+        { label: 'Evento', value: tournamentData.name || 'No especificado' },
+        { label: 'Club', value: tournamentData.clubName || 'No especificado' },
+        { label: 'Fecha Inicio', value: tournamentData.start_date || 'No especificada' },
+        { label: 'Categoría', value: tournamentData.category || 'No especificada' },
+        { label: 'Género', value: tournamentData.gender || 'No especificado' },
+        { label: 'Sistema', value: 'Retas (Rotación de Parejas)' },
+        { label: 'Precio Individual', value: `$${individualPrice.toFixed(2)}` },
+      ],
+      baseData: {
+        clubId: tournamentData.clubId,
+        price: individualPrice,
+        participants: 1,
+        type: 'tournament',
+        id: tournamentData.id,
+        recipient_user_id: tournamentData.club_user_id || null,
+      },
+      extraData: {
+        partnerId: null, // No partner for retas
+        isRetas: true
+      },
+      successRedirect: `/dashboard/player`,
+      errorRedirect: `/tournament/${tournamentData.id}`
+    };
+
+    summaryStore.setSummaryProps(summaryProps);
+    router.push('/tournament-checkout');
   };
 
   onMounted(() => {

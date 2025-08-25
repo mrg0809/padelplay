@@ -37,6 +37,8 @@ def generate_tournament_preview(tournament_id: str):
         return _generate_combined_preview(tournament, teams, courts_used)
     elif system == "liga":
         return _generate_league_preview(tournament, teams, courts_used)
+    elif system == "retas":
+        return _generate_retas_preview(tournament, teams, courts_used)
     else:
         return {"error": f"Sistema de torneo '{system}' no soportado"}
 
@@ -468,3 +470,105 @@ def _get_playoff_round_names(num_rounds):
             names.append(f"Ronda {i + 1}")
         names.extend(["Semifinal", "Final"])
         return names
+
+
+def _generate_retas_preview(tournament, teams, courts_used):
+    """Genera preview para sistema de retas con rotación de parejas."""
+    tournament_id = tournament["id"]
+    num_players = len(teams) * 2  # Cada "team" en retas representa parejas iniciales, pero tratamos jugadores individualmente
+    
+    if num_players < 4:
+        return {"error": "Se necesitan al menos 4 jugadores para organizar retas"}
+    
+    # En retas, extraemos todos los jugadores individuales
+    all_players = []
+    for team in teams:
+        player1 = {
+            "id": team["player1_id"],
+            "name": f"{team['player1']['first_name']} {team['player1']['last_name']}"
+        }
+        player2 = {
+            "id": team["player2_id"], 
+            "name": f"{team['player2']['first_name']} {team['player2']['last_name']}"
+        }
+        all_players.extend([player1, player2])
+    
+    # Mezclar jugadores para distribución aleatoria
+    random.shuffle(all_players)
+    
+    start_date = datetime.strptime(tournament["start_date"], "%Y-%m-%d").date()
+    start_time = datetime.strptime(tournament["start_time"], "%H:%M:%S").time()
+    current_datetime = datetime.combine(start_date, start_time)
+    
+    # Calcular número de rondas de retas (cada jugador juega con diferentes parejas)
+    # Para retas, generamos múltiples rondas donde cada jugador rota parejas
+    num_rounds = min(4, max(2, num_players // 2))  # Entre 2-4 rondas dependiendo del número de jugadores
+    
+    all_matches = []
+    retas_structure = {}
+    court_index = 0
+    
+    for round_num in range(1, num_rounds + 1):
+        round_name = f"Ronda {round_num}"
+        round_matches = []
+        
+        # Crear nuevas parejas para esta ronda rotando jugadores
+        players_copy = all_players.copy()
+        round_pairs = []
+        
+        # Algoritmo simple de rotación: tomar jugadores en orden diferente cada ronda
+        offset = (round_num - 1) % len(players_copy)
+        rotated_players = players_copy[offset:] + players_copy[:offset]
+        
+        # Crear parejas de a 4 jugadores (2 vs 2)
+        for i in range(0, len(rotated_players), 4):
+            if i + 3 < len(rotated_players):
+                team1 = [rotated_players[i], rotated_players[i + 1]]
+                team2 = [rotated_players[i + 2], rotated_players[i + 3]]
+                round_pairs.append((team1, team2))
+        
+        # Crear partidos para esta ronda
+        for match_index, (team1, team2) in enumerate(round_pairs):
+            court = courts_used[court_index % len(courts_used)] if courts_used else None
+            
+            match = {
+                "id": f"retas_r{round_num}_m{match_index + 1}",
+                "tournament_id": tournament_id,
+                "phase": round_name,
+                "round": round_num,
+                "match_number": match_index + 1,
+                "team1": {
+                    "id": f"team1_r{round_num}_m{match_index + 1}",
+                    "players": team1
+                },
+                "team2": {
+                    "id": f"team2_r{round_num}_m{match_index + 1}",
+                    "players": team2
+                },
+                "court_id": court,
+                "date": current_datetime.date().isoformat(),
+                "time": current_datetime.time().isoformat(),
+                "status": "pending"
+            }
+            
+            round_matches.append(match)
+            all_matches.append(match)
+            
+            # Siguiente horario (partidos de retas suelen ser más cortos, 30-45 min)
+            current_datetime += timedelta(minutes=45)
+            court_index += 1
+        
+        retas_structure[round_name] = round_matches
+    
+    return {
+        "tournament_id": tournament_id,
+        "system": "retas",
+        "structure": {
+            "rounds": retas_structure,
+            "num_rounds": num_rounds,
+            "total_players": num_players
+        },
+        "matches": all_matches,
+        "editable": True,
+        "court_assignments": True
+    }
