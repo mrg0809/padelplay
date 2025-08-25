@@ -87,7 +87,7 @@
           <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta detectado</div>
           <div class="row items-center q-py-md">
             <img 
-              :src="`/icons/${detectedCardType}.svg`" 
+              :src="`/icons/${getCardIconFile(detectedCardType)}.svg`" 
               :alt="getCardName(detectedCardType)"
               style="height: 32px; width: auto; filter: brightness(1.2);"
               class="q-mr-md"
@@ -110,7 +110,7 @@
         >
           <template v-slot:prepend v-if="detectedCardType">
             <img 
-              :src="`/icons/${detectedCardType}.svg`" 
+              :src="`/icons/${getCardIconFile(detectedCardType)}.svg`" 
               :alt="getCardName(detectedCardType)"
               style="height: 24px; width: auto;"
             />
@@ -314,6 +314,15 @@ const getCardName = (paymentMethodId) => {
   return names[paymentMethodId] || paymentMethodId?.toUpperCase()
 }
 
+const getCardIconFile = (paymentMethodId) => {
+  const iconFiles = {
+    'visa': 'visa',
+    'master': 'mastercard',
+    'amex': 'amex'
+  }
+  return iconFiles[paymentMethodId] || paymentMethodId
+}
+
 const validateCardNumber = (value) => {
   if (!value) return false
   const cleanNumber = value.replace(/\s/g, '')
@@ -347,7 +356,8 @@ const formatCardNumber = () => {
   cardForm.value.number = value
   
   // Auto-detect card type
-  autoDetectCardType(value.replace(/\s/g, ''))
+  const cleanNumber = value.replace(/\s/g, '')
+  autoDetectCardType(cleanNumber)
 }
 
 const formatExpiry = () => {
@@ -376,12 +386,10 @@ const autoDetectCardType = (cardNumber) => {
   
   for (const [type, pattern] of Object.entries(patterns)) {
     if (pattern.test(cardNumber)) {
-      const method = cardPaymentMethods.value.find(m => m.id === type)
-      if (method) {
-        selectedPaymentMethod.value = method.id
-        detectedCardType.value = type
-        return
-      }
+      // Set detected card type immediately, independent of payment methods
+      detectedCardType.value = type
+      selectedPaymentMethod.value = type
+      return
     }
   }
   
