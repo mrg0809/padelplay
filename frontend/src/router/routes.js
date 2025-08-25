@@ -177,9 +177,10 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/club/preview-tournament",
+    path: "/club/preview-tournament/:tournamentId",
     name: "PreviewTournament",
     component: () => import("src/pages/club/PreviewTournament.vue"),
+    meta: { requiresAuth: true },
   },
   { 
     path: "/club/reportes", 
