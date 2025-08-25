@@ -217,15 +217,19 @@
         participants: 2,
         type: 'tournament',
         id: tournamentData.id,
+        recipient_user_id: tournamentData.club_user_id || null,
+        player2_email: selectedPartner.value.email,
       },
       allowPaymentSplit: true,
       showPublicToggle: false,
       commissionRate: 4,
       extraData: {
         tournamentName: tournamentData.name,
+        tournament_name: tournamentData.name,
         prize: tournamentData.prize,
         pricePerPair: tournamentData.price_per_pair,
-        partnerId: selectedPartner.value.user_id, // Agregamos el ID de la pareja
+        partnerId: selectedPartner.value.user_id,
+        player2_email: selectedPartner.value.email,
       }
     };
 
