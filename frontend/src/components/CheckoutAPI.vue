@@ -82,12 +82,22 @@
     <!-- New Card Form -->
     <q-card-section v-if="!loading && !loadingPaymentMethods && cardPaymentMethods.length > 0 && (savedMethods.length === 0 || showNewCard)">
       <q-form @submit.prevent="processPayment">
+        <!-- DEBUG INFO (remove in production) -->
+        <div class="debug-info q-mb-md" style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 4px;">
+          <div class="text-caption text-white">DEBUG:</div>
+          <div class="text-caption text-white">Card Number: "{{ cardForm.number }}"</div>
+          <div class="text-caption text-white">Detected Type: "{{ detectedCardType }}"</div>
+          <div class="text-caption text-white">Selected Payment Method: "{{ selectedPaymentMethod }}"</div>
+          <div class="text-caption text-white">Is Form Valid: {{ isFormValid ? 'YES' : 'NO' }}</div>
+          <div class="text-caption text-white">Icon Path: {{ detectedCardType ? getCardIconPath(detectedCardType) : 'None' }}</div>
+        </div>
+
         <!-- Card Type Display (Auto-detected) -->
         <div class="q-mb-md" v-if="detectedCardType">
           <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta detectado</div>
           <div class="row items-center q-py-md">
             <img 
-              :src="`/icons/${getCardIconFile(detectedCardType)}.svg`" 
+              :src="getCardIconPath(detectedCardType)" 
               :alt="getCardName(detectedCardType)"
               style="height: 32px; width: auto; filter: brightness(1.2);"
               class="q-mr-md"
@@ -112,7 +122,7 @@
         >
           <template v-slot:prepend v-if="detectedCardType">
             <img 
-              :src="`/icons/${getCardIconFile(detectedCardType)}.svg`" 
+              :src="getCardIconPath(detectedCardType)" 
               :alt="getCardName(detectedCardType)"
               style="height: 24px; width: auto;"
               @error="onCardIconError"
@@ -209,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
 import api from 'src/services/api'
 
@@ -325,6 +335,21 @@ const getCardIconFile = (paymentMethodId) => {
     'amex': 'amex'
   }
   return iconFiles[paymentMethodId] || paymentMethodId
+}
+
+const getCardIconPath = (paymentMethodId) => {
+  const iconFile = getCardIconFile(paymentMethodId)
+  // Try multiple possible paths for Quasar/Vue apps
+  const possiblePaths = [
+    `/icons/${iconFile}.svg`,
+    `./icons/${iconFile}.svg`,
+    `icons/${iconFile}.svg`,
+    `/public/icons/${iconFile}.svg`
+  ]
+  
+  // For now, use the standard public path
+  // In production, you might want to import the SVGs as modules
+  return `/icons/${iconFile}.svg`
 }
 
 const validateCardNumber = (value) => {
