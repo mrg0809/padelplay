@@ -43,7 +43,7 @@ export const debugPaymentOrders = async () => {
     .from("payment_orders")
     .select(`
       user_id,
-      profiles(id, full_name, email)
+      profiles!payment_orders_user_id_fkey(id, full_name, email)
     `)
     .limit(5);
     
@@ -73,18 +73,52 @@ export const debugClubPaymentApproaches = async (clubId) => {
     
   console.log('Approach 1 - recipient_id filter:', { approach1, error1 });
   
-  // Approach 2: Join with reservations and courts
-  const { data: approach2, error: error2 } = await supabase
-    .from("payment_orders")
-    .select(`
-      *,
-      reservations!inner(id, court_id, courts!inner(id, club_id))
-    `)
-    .eq("reservations.courts.club_id", clubId)
-    .eq("event_type", "reservation")
-    .limit(5);
+  // Approach 2: Step-by-step manual join (like new implementation)
+  try {
+    // Step 2a: Get reservation payments
+    const { data: reservationPayments, error: reservationError } = await supabase
+      .from("payment_orders")
+      .select("*")
+      .eq("event_type", "reservation")
+      .limit(10);
+      
+    console.log('Approach 2a - reservation payments:', { reservationPayments, reservationError });
     
-  console.log('Approach 2 - reservations/courts join:', { approach2, error2 });
+    if (reservationPayments && reservationPayments.length > 0) {
+      // Step 2b: Get reservations for those payment event_ids
+      const eventIds = reservationPayments.map(p => p.event_id).filter(Boolean);
+      console.log('Approach 2b - event_ids to lookup:', eventIds);
+      
+      if (eventIds.length > 0) {
+        const { data: reservations, error: reservationsError } = await supabase
+          .from("reservations")
+          .select(`
+            id, court_id,
+            courts(id, club_id)
+          `)
+          .in("id", eventIds);
+          
+        console.log('Approach 2c - reservations found:', { reservations, reservationsError });
+        
+        // Step 2d: Filter for this club's reservations
+        const clubReservations = reservations ? reservations.filter(r => 
+          r.courts && r.courts.club_id === clubId
+        ) : [];
+        
+        console.log('Approach 2d - club reservations:', clubReservations);
+        
+        // Step 2e: Filter payments to club reservations
+        const clubReservationIds = new Set(clubReservations.map(r => r.id));
+        const approach2Result = reservationPayments.filter(payment => 
+          clubReservationIds.has(payment.event_id)
+        );
+        
+        console.log('Approach 2e - final filtered payments:', approach2Result);
+      }
+    }
+  } catch (approach2Error) {
+    console.log('Approach 2 - error in step-by-step approach:', approach2Error);
+  }
   
   // Approach 3: Check if there are any payments at all
   const { data: anyPayments, error: anyError } = await supabase
@@ -125,7 +159,6 @@ export const debugClubPaymentApproaches = async (clubId) => {
   
   return {
     approach1,
-    approach2,
     anyPayments,
     clubCheck,
     courtsCheck,
