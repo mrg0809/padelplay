@@ -86,10 +86,15 @@
         <div class="debug-info q-mb-md" style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 4px;">
           <div class="text-caption text-white">DEBUG:</div>
           <div class="text-caption text-white">Card Number: "{{ cardForm.number }}"</div>
+          <div class="text-caption text-white">Clean Number: "{{ cardForm.number.replace(/\s/g, '') }}"</div>
+          <div class="text-caption text-white">Number Length: {{ cardForm.number.replace(/\s/g, '').length }}</div>
           <div class="text-caption text-white">Detected Type: "{{ detectedCardType }}"</div>
           <div class="text-caption text-white">Selected Payment Method: "{{ selectedPaymentMethod }}"</div>
           <div class="text-caption text-white">Is Form Valid: {{ isFormValid ? 'YES' : 'NO' }}</div>
           <div class="text-caption text-white">Icon Path: {{ detectedCardType ? getCardIconPath(detectedCardType) : 'None' }}</div>
+          <div class="text-caption text-white">Visa Pattern Test: {{ cardForm.number.replace(/\s/g, '').match(/^4/) ? 'YES' : 'NO' }}</div>
+          <div class="text-caption text-white">Master Pattern Test: {{ cardForm.number.replace(/\s/g, '').match(/^5[1-5]/) ? 'YES' : 'NO' }}</div>
+          <div class="text-caption text-white">Amex Pattern Test: {{ cardForm.number.replace(/\s/g, '').match(/^3[47]/) ? 'YES' : 'NO' }}</div>
         </div>
 
         <!-- Card Type Display (Auto-detected) -->
@@ -380,12 +385,16 @@ const validateCVV = (value) => {
 }
 
 const formatCardNumber = () => {
+  console.log('formatCardNumber called with:', cardForm.value.number)
   let value = cardForm.value.number.replace(/\s/g, '')
+  console.log('After removing spaces:', value)
   value = value.replace(/(.{4})/g, '$1 ').trim()
+  console.log('After formatting with spaces:', value)
   cardForm.value.number = value
   
   // Auto-detect card type
   const cleanNumber = value.replace(/\s/g, '')
+  console.log('Clean number for detection:', cleanNumber)
   autoDetectCardType(cleanNumber)
 }
 
@@ -401,7 +410,10 @@ const formatExpiry = () => {
 }
 
 const autoDetectCardType = (cardNumber) => {
+  console.log('autoDetectCardType called with:', cardNumber, 'length:', cardNumber?.length)
+  
   if (!cardNumber) {
+    console.log('No card number provided, resetting')
     detectedCardType.value = ''
     selectedPaymentMethod.value = null
     return
@@ -413,16 +425,24 @@ const autoDetectCardType = (cardNumber) => {
     amex: /^3[47]/
   }
   
+  console.log('Testing patterns against:', cardNumber)
+  
   for (const [type, pattern] of Object.entries(patterns)) {
-    if (pattern.test(cardNumber)) {
+    const matches = pattern.test(cardNumber)
+    console.log(`Pattern ${type} (${pattern}):`, matches)
+    
+    if (matches) {
+      console.log(`Card type detected: ${type}`)
       // Set detected card type immediately, independent of payment methods
       detectedCardType.value = type
       selectedPaymentMethod.value = type
+      console.log('detectedCardType.value set to:', detectedCardType.value)
       return
     }
   }
   
   // Reset if no match found
+  console.log('No pattern matched, resetting card type')
   detectedCardType.value = ''
   selectedPaymentMethod.value = null
 }
