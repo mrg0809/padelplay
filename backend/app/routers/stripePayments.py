@@ -63,11 +63,36 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
                 print(f"Missing required field: {field}")
                 raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
         
-        total_price = data["total_price"]
-        is_full_payment = data["pay_total"]
-        event_type = data["item_type"]
-        num_players = data["participants"]
+        # Validate data types
+        try:
+            total_price = float(data["total_price"])
+        except (ValueError, TypeError):
+            print(f"Invalid total_price: {data.get('total_price')}")
+            raise HTTPException(status_code=400, detail="Invalid total_price: must be a number")
+            
+        try:
+            is_full_payment = bool(data["pay_total"])
+        except (ValueError, TypeError):
+            print(f"Invalid pay_total: {data.get('pay_total')}")
+            raise HTTPException(status_code=400, detail="Invalid pay_total: must be boolean")
+            
+        try:
+            num_players = int(data["participants"])
+        except (ValueError, TypeError):
+            print(f"Invalid participants: {data.get('participants')}")
+            raise HTTPException(status_code=400, detail="Invalid participants: must be a number")
+        
+        event_type = str(data["item_type"])
         recipient_id = data.get("recipient_id")  # Use .get() since this can be None
+        
+        # Additional validation for tournament-specific fields
+        if event_type == "tournament":
+            if not data.get("item_id"):
+                print("Missing tournament ID for tournament registration")
+                raise HTTPException(status_code=400, detail="Tournament ID is required for tournament registrations")
+            if not data.get("player2_email"):
+                print("Missing player2_email for tournament registration")
+                raise HTTPException(status_code=400, detail="Player 2 email is required for tournament registrations")
 
         # Prepare additional metadata for tournament registrations
         metadata = {}
@@ -94,7 +119,26 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
             payment_order_data["metadata"] = json.dumps(metadata)
         
         print(f"Inserting payment_order_data: {payment_order_data}")
-        payment_order_response = supabase.from_("payment_orders").insert(payment_order_data).execute()
+        
+        # Check if Supabase client is available
+        if supabase is None:
+            print("Supabase client is not available - check database configuration")
+            raise HTTPException(
+                status_code=503, 
+                detail="Database service unavailable. Please check Supabase configuration (SUPABASE_URL and SUPABASE_KEY environment variables)."
+            )
+        
+        # Add try-catch for database operations specifically
+        try:
+            payment_order_response = supabase.from_("payment_orders").insert(payment_order_data).execute()
+        except Exception as db_error:
+            print(f"Database error during payment order insertion: {str(db_error)}")
+            print(f"Database error type: {type(db_error)}")
+            # Check if it's a Supabase connection issue
+            if "supabase" in str(db_error).lower() or "connection" in str(db_error).lower():
+                raise HTTPException(status_code=503, detail="Database connection error. Please check Supabase configuration.")
+            else:
+                raise HTTPException(status_code=500, detail=f"Database error: {str(db_error)}")
         
         print(f"Supabase response: {payment_order_response}")
 
@@ -119,7 +163,15 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
             }
             print(f"Inserting split_payment_data: {split_payment_data}")
             
-            split_payment_response = supabase.from_("split_payments").insert(split_payment_data).execute()
+            try:
+                split_payment_response = supabase.from_("split_payments").insert(split_payment_data).execute()
+            except Exception as db_error:
+                print(f"Database error during split payment insertion: {str(db_error)}")
+                print(f"Database error type: {type(db_error)}")
+                if "supabase" in str(db_error).lower() or "connection" in str(db_error).lower():
+                    raise HTTPException(status_code=503, detail="Database connection error during split payment creation.")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Database error during split payment: {str(db_error)}")
             
             print(f"Split payment response: {split_payment_response}")
 
