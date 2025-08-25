@@ -168,6 +168,14 @@
   const router = useRouter();
   const $q = useQuasar();
   const userStore = useUserStore();
+  
+  // Debug logging for props
+  console.log('OrderComponent - Props received:');
+  console.log('baseData:', props.baseData);
+  console.log('extraData:', props.extraData);
+  console.log('baseData.player2_email:', props.baseData?.player2_email);
+  console.log('extraData.player2_email:', props.extraData?.player2_email);
+  
   const products = ref([]);
   const productQuantities = reactive({}); 
   const selectedProducts = ref([]);

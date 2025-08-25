@@ -189,6 +189,10 @@
   };
 
   const handleEnrollment = () => {
+    console.log('handleEnrollment called');
+    console.log('selectedPartner.value:', selectedPartner.value);
+    console.log('selectedPartner.value.email:', selectedPartner.value?.email);
+    
     if (!tournament.value || !tournament.value.price_per_pair || !selectedPartner.value) {
       console.error("Datos del torneo incompletos o precio/pareja no disponible o pareja no seleccionada", tournament.value, selectedPartner.value);
       $q.notify({ type: 'negative', message: 'No se puede procesar la inscripción, falta información del torneo o la pareja.' });
@@ -233,6 +237,10 @@
       }
     };
 
+    console.log('summaryProps before storing:', summaryProps);
+    console.log('baseData.player2_email:', summaryProps.baseData.player2_email);
+    console.log('extraData.player2_email:', summaryProps.extraData.player2_email);
+
     summaryStore.setSummaryDetails(summaryProps);
     console.log('Datos del resumen de TORNEO guardados en Pinia:', summaryProps);
 
@@ -244,6 +252,8 @@
   };
 
   const onPartnerSelected = (player) => {
+    console.log('Partner selected:', player);
+    console.log('Partner email:', player?.email);
     selectedPartner.value = player;
     showPlayerSearchDialog.value = false;
   };
