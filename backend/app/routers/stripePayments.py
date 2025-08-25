@@ -45,12 +45,29 @@ async def create_payment_intent(request_data: PaymentIntentRequest = Body(...)):
 @router.post("/payment_order_and_split_payment")
 def create_payment_order_and_split_payment(data: dict, current_user: dict = Depends(get_current_user)):
     try:
+        # Debug: Log received data and current user
+        print(f"Received data: {data}")
+        print(f"Current user: {current_user}")
+        
+        # Check if current_user has required fields
+        if not current_user or not current_user.get("id"):
+            print(f"Invalid current_user: {current_user}")
+            raise HTTPException(status_code=401, detail="Invalid user authentication")
+        
         player_id = current_user["id"]
+        
+        # Validate required fields in data
+        required_fields = ["total_price", "pay_total", "item_type", "participants"]
+        for field in required_fields:
+            if field not in data:
+                print(f"Missing required field: {field}")
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
         total_price = data["total_price"]
         is_full_payment = data["pay_total"]
         event_type = data["item_type"]
         num_players = data["participants"]
-        recipient_id = data["recipient_id"]
+        recipient_id = data.get("recipient_id")  # Use .get() since this can be None
 
         # Prepare additional metadata for tournament registrations
         metadata = {}
@@ -75,27 +92,39 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
         # Add metadata if available
         if metadata:
             payment_order_data["metadata"] = json.dumps(metadata)
-            
+        
+        print(f"Inserting payment_order_data: {payment_order_data}")
         payment_order_response = supabase.from_("payment_orders").insert(payment_order_data).execute()
+        
+        print(f"Supabase response: {payment_order_response}")
 
         if not payment_order_response or not payment_order_response.data:
+            print(f"Failed to create payment order. Response: {payment_order_response}")
             raise HTTPException(status_code=500, detail="Error al crear la orden de pago.")
 
         payment_order_id = payment_order_response.data[0]["id"]
+        print(f"Created payment order with ID: {payment_order_id}")
 
         # Crear split_payments si es necesario
         if not is_full_payment:
             amount = total_price / num_players
+            print(f"Creating split payment: amount={amount}, player_id={player_id}")
 
-            split_payment_response = supabase.from_("split_payments").insert({
+            split_payment_data = {
                 "payment_order_id": payment_order_id,
                 "user_id": player_id,
                 "amount": amount,
                 "payment_status": "pending",
                 "is_paid": False
-            }).execute()
+            }
+            print(f"Inserting split_payment_data: {split_payment_data}")
+            
+            split_payment_response = supabase.from_("split_payments").insert(split_payment_data).execute()
+            
+            print(f"Split payment response: {split_payment_response}")
 
             if not split_payment_response or not split_payment_response.data:
+                print(f"Failed to create split payment. Response: {split_payment_response}")
                 raise HTTPException(status_code=500, detail="Error al crear el pago dividido.")
 
         return {
@@ -103,7 +132,14 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
             "payment_order_id": payment_order_id,
         }
 
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions with their original status codes
+        raise http_exc
     except Exception as e:
+        print(f"Unexpected error in create_payment_order_and_split_payment: {str(e)}")
+        print(f"Exception type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
 
