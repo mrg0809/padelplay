@@ -43,7 +43,7 @@ export const debugPaymentOrders = async () => {
     .from("payment_orders")
     .select(`
       user_id,
-      profiles!payment_orders_user_id_fkey(id, full_name, email)
+      profiles(id, full_name, email)
     `)
     .limit(5);
     

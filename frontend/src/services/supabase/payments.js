@@ -32,100 +32,118 @@ export const getClubPaymentOrdersWithFilters = async (club_id, startDate = null,
   const { data: recipientDebugData, error: recipientDebugError } = await recipientDebugQuery;
   console.log('DEBUG: Payment orders with recipient_id matching club_id:', { recipientDebugData, recipientDebugError });
   
-  // Check if we should try filtering by event_id and joining with reservations/courts to find club-related payments
-  if (!recipientDebugData || recipientDebugData.length === 0) {
-    console.log('DEBUG: No payments found with recipient_id, trying alternative approach via reservations...');
-    
-    // Alternative approach: Find payments for reservations at this club's courts
-    const reservationPaymentsQuery = supabase
+  // New approach: Query payments by linking through event_id for reservations
+  // The event_id should contain the reservation.id when event_type is 'reservation'
+  try {
+    let baseQuery = supabase
       .from("payment_orders")
       .select(`
         id, order_date, total_amount, payment_method, payment_status, 
         transaction_id, event_type, event_id, club_commission, player_commission, 
         is_full_payment, recipient_id, user_id,
-        profiles!payment_orders_user_id_fkey(full_name),
-        reservations!inner(id, court_id, courts!inner(club_id))
+        profiles(full_name),
+        reservations(id, court_id, reservation_date, start_time, end_time, courts(id, name, club_id))
       `)
-      .eq("reservations.courts.club_id", club_id)
       .eq("event_type", "reservation");
-      
+
+    // Apply date filters
     if (startDate && endDate) {
-      reservationPaymentsQuery = reservationPaymentsQuery.gte("order_date", startDate).lte("order_date", endDate);
+      baseQuery = baseQuery.gte("order_date", startDate).lte("order_date", endDate);
     } else if (startDate) {
-      reservationPaymentsQuery = reservationPaymentsQuery.gte("order_date", startDate);
+      baseQuery = baseQuery.gte("order_date", startDate);
+    }
+
+    const { data: allReservationPayments, error: reservationError } = await baseQuery.order("order_date", { ascending: false });
+    
+    if (reservationError) {
+      console.log('ERROR in reservation payments query:', reservationError);
     }
     
-    if (eventType === 'reservation') {
-      // Already filtered above
-    } else if (eventType) {
-      // For non-reservation event types, still try recipient_id approach
-      const { data, error } = await supabase
+    console.log('DEBUG: All reservation payments before filtering:', allReservationPayments);
+    
+    // Filter the results to only include payments for reservations at this club's courts
+    const clubPayments = allReservationPayments ? allReservationPayments.filter(payment => 
+      payment.reservations && payment.reservations.courts && payment.reservations.courts.club_id === club_id
+    ) : [];
+    
+    console.log('DEBUG: Filtered club payments:', clubPayments);
+    
+    // If we want specific event types, filter further
+    if (eventType && eventType !== 'reservation') {
+      // For non-reservation event types, try the original approach
+      let query = supabase
         .from("payment_orders")
         .select(`
           id, order_date, total_amount, payment_method, payment_status, 
           transaction_id, event_type, event_id, club_commission, player_commission, 
           is_full_payment, recipient_id, user_id,
-          profiles!payment_orders_user_id_fkey(full_name)
+          profiles(full_name)
         `)
         .eq("recipient_id", club_id)
-        .eq("event_type", eventType)
-        .order("order_date", { ascending: false });
+        .eq("event_type", eventType);
         
-      console.log('DEBUG: Alternative query for non-reservation events:', { data, error });
-      return data || [];
+      // Apply date filters
+      if (startDate && endDate) {
+        query = query.gte("order_date", startDate).lte("order_date", endDate);
+      } else if (startDate) {
+        query = query.gte("order_date", startDate);
+      }
+      
+      const { data: nonReservationData, error: nonReservationError } = await query.order("order_date", { ascending: false });
+      
+      if (nonReservationError) {
+        console.log('ERROR in non-reservation query:', nonReservationError);
+        return clubPayments; // Return reservation payments as fallback
+      }
+      
+      return nonReservationData || [];
     }
-
-    const { data: altData, error: altError } = await reservationPaymentsQuery.order("order_date", { ascending: false });
-    console.log('DEBUG: Alternative query via reservations join:', { altData, altError });
     
-    if (altError) throw new Error(altError.message);
-    return altData || [];
+    return clubPayments;
+    
+  } catch (error) {
+    console.error('ERROR in getClubPaymentOrdersWithFilters:', error);
+    return [];
   }
-  
-  // Original approach if recipient_id data exists
-  let query = supabase
-    .from("payment_orders")
-    .select(`
-      id, order_date, total_amount, payment_method, payment_status, 
-      transaction_id, event_type, event_id, club_commission, player_commission, 
-      is_full_payment, recipient_id, user_id,
-      profiles!payment_orders_user_id_fkey(full_name)
-    `)
-    .eq("recipient_id", club_id);
-
-  if (startDate && endDate) {
-    query = query.gte("order_date", startDate).lte("order_date", endDate);
-  } else if (startDate) {
-    query = query.gte("order_date", startDate);
-  }
-
-  if (eventType) {
-    query = query.eq("event_type", eventType);
-  }
-
-  const { data, error } = await query.order("order_date", { ascending: false });
-  
-  console.log('DEBUG: Final query result:', { data, error, queryParams: { club_id, startDate, endDate, eventType } });
-
-  if (error) throw new Error(error.message);
-  return data;
 };
 
 export const getClubPaymentSummary = async (club_id, startDate = null, endDate = null) => {
-  let query = supabase
-    .from("payment_orders")
-    .select("total_amount, club_commission, player_commission, order_date")
-    .eq("recipient_id", club_id)
-    .eq("payment_status", "approved");
+  try {
+    // Use the same approach as the filtered function
+    let baseQuery = supabase
+      .from("payment_orders")
+      .select(`
+        total_amount, club_commission, player_commission, order_date, payment_status,
+        reservations(id, courts(club_id))
+      `)
+      .eq("event_type", "reservation")
+      .eq("payment_status", "approved");
 
-  if (startDate && endDate) {
-    query = query.gte("order_date", startDate).lte("order_date", endDate);
-  } else if (startDate) {
-    query = query.gte("order_date", startDate);
+    // Apply date filters
+    if (startDate && endDate) {
+      baseQuery = baseQuery.gte("order_date", startDate).lte("order_date", endDate);
+    } else if (startDate) {
+      baseQuery = baseQuery.gte("order_date", startDate);
+    }
+
+    const { data: allReservationPayments, error } = await baseQuery;
+    
+    if (error) {
+      console.log('ERROR in payment summary query:', error);
+      return [];
+    }
+    
+    // Filter to only include payments for this club's courts
+    const clubPayments = allReservationPayments ? allReservationPayments.filter(payment => 
+      payment.reservations && payment.reservations.courts && payment.reservations.courts.club_id === club_id
+    ) : [];
+    
+    console.log('DEBUG: Payment summary - filtered club payments:', clubPayments);
+    
+    return clubPayments;
+    
+  } catch (error) {
+    console.error('ERROR in getClubPaymentSummary:', error);
+    return [];
   }
-
-  const { data, error } = await query;
-
-  if (error) throw new Error(error.message);
-  return data;
 };
