@@ -12,7 +12,8 @@ export function getTournamentSystemName(system) {
     'round-robin': 'Round Robin',
     'eliminacion directa': 'Eliminación Directa',
     'combinado': 'Combinado (Grupos + Playoffs)',
-    'liga': 'Liga (Todos vs Todos)'
+    'liga': 'Liga (Todos vs Todos)',
+    'retas': 'Retas (Rotación de Parejas)'
   };
   return systems[system] || system;
 }
@@ -48,7 +49,8 @@ export function getTournamentSystemColor(system) {
     'round-robin': 'blue',
     'eliminacion directa': 'red',
     'combinado': 'purple',
-    'liga': 'green'
+    'liga': 'green',
+    'retas': 'orange'
   };
   return colors[system] || 'grey';
 }

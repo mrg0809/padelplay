@@ -44,7 +44,8 @@
                   <q-chip 
                     :color="tournamentData.system === 'eliminacion directa' ? 'red' : 
                            tournamentData.system === 'round-robin' ? 'blue' :
-                           tournamentData.system === 'combinado' ? 'purple' : 'green'"
+                           tournamentData.system === 'combinado' ? 'purple' : 
+                           tournamentData.system === 'retas' ? 'orange' : 'green'"
                     text-color="white"
                     :label="getSystemName(tournamentData.system)"
                     icon="emoji_events"
@@ -424,6 +425,98 @@
             </div>
           </div>
 
+          <!-- Retas System Structure -->
+          <div v-else-if="tournamentData.system === 'retas'" class="tournament-structure">
+            <q-card class="q-mb-lg">
+              <q-card-section class="bg-orange-8 text-white">
+                <h5 class="q-my-none">Retas - Rotación de Parejas</h5>
+                <p class="q-mb-none">{{ tournamentData.structure.num_rounds }} rondas con {{ tournamentData.structure.total_players }} jugadores</p>
+              </q-card-section>
+            </q-card>
+            
+            <div class="retas-rounds">
+              <div
+                v-for="(round, roundName) in tournamentData.structure.rounds"
+                :key="roundName"
+                class="round-section q-mb-lg"
+              >
+                <q-card flat bordered class="round-card">
+                  <q-card-section class="bg-orange-6 text-white round-header">
+                    <h6 class="q-my-none">{{ roundName }}</h6>
+                  </q-card-section>
+                  
+                  <q-card-section class="q-pa-none">
+                    <div class="retas-matches">
+                      <q-card
+                        v-for="match in round"
+                        :key="match.id"
+                        class="match-card q-mb-sm q-ma-sm"
+                        flat
+                        bordered
+                      >
+                        <q-card-section class="q-pa-sm">
+                          <div class="match-details">
+                            <div class="match-teams-retas">
+                              <div class="team-players">
+                                <div class="team-label">Pareja 1:</div>
+                                <div class="players">
+                                  <span v-for="player in match.team1.players" :key="player.id" class="player-name">
+                                    {{ player.name }}
+                                  </span>
+                                </div>
+                              </div>
+                              <q-icon name="sports" class="vs-icon" />
+                              <div class="team-players">
+                                <div class="team-label">Pareja 2:</div>
+                                <div class="players">
+                                  <span v-for="player in match.team2.players" :key="player.id" class="player-name">
+                                    {{ player.name }}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="match-schedule q-mt-sm">
+                              <div class="schedule-inputs row q-gutter-sm">
+                                <q-input
+                                  v-model="match.date"
+                                  type="date"
+                                  dense
+                                  outlined
+                                  label="Fecha"
+                                  class="col"
+                                />
+                                <q-input
+                                  v-model="match.time"
+                                  type="time"
+                                  dense
+                                  outlined
+                                  label="Hora"
+                                  class="col"
+                                />
+                                <q-select
+                                  v-model="match.court_id"
+                                  :options="courtOptions"
+                                  option-value="value"
+                                  option-label="label"
+                                  dense
+                                  outlined
+                                  label="Cancha"
+                                  class="col"
+                                  emit-value
+                                  map-options
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </q-card-section>
+                      </q-card>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+          </div>
+
           <!-- Action Buttons -->
           <div class="actions-section q-mt-xl">
             <div class="row q-gutter-md justify-center">
@@ -744,6 +837,55 @@ export default {
   
   .team-name {
     text-align: center;
+  }
+}
+
+/* Retas-specific styles */
+.retas-rounds {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.match-teams-retas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.team-players {
+  flex: 1;
+  text-align: center;
+}
+
+.team-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.player-name {
+  font-weight: 500;
+  color: #1976d2;
+  font-size: 0.9rem;
+  padding: 2px 8px;
+  background: rgba(25, 118, 210, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .match-teams-retas {
+    flex-direction: column;
+    gap: 12px;
   }
 }
 </style>
