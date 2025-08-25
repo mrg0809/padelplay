@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 from uuid import UUID
 from app.db.connection import supabase
 from app.core.security import get_current_user
@@ -13,7 +13,7 @@ router = APIRouter()
 
 class TournamentRegisterTeamData(BaseModel):
     tournament_id: UUID
-    partner_id: UUID
+    partner_id: Optional[UUID] = None
 
 @router.post("/")
 async def create_tournament(data: dict, current_user: dict = Depends(get_current_user)):
@@ -88,39 +88,80 @@ async def register_team(
 ):
     try:
         player1_id: UUID = UUID(current_user["id"])  # Obtenemos player1_id del usuario autenticado
-        player2_id: UUID = register_data.partner_id  
-
-        # 1. Verificar que el equipo no esté ya registrado
-        existing_team = supabase.from_("tournament_teams").select("*").eq("tournament_id", register_data.tournament_id).eq("player1_id", player1_id).eq("player2_id", player2_id).execute().data
-
-        if existing_team:
-            raise HTTPException(status_code=400, detail="Este equipo ya está registrado en el torneo.")
-
-        # 2. Registrar el equipo
-        insert_result = supabase.from_("tournament_teams").insert({
-            "tournament_id": str(register_data.tournament_id),
-            "player1_id": str(player1_id),
-            "player2_id": str(player2_id),
-        }).execute()
-
-        if insert_result.count == 0:
-            raise HTTPException(status_code=500, detail="Error al registrar el equipo en el torneo.")
-
-        create_notification(
-            player1_id,
-            "Inscripción a Torneo",
-            f"Te inscribiste exitosamente al Torneo.",
-            f"/tournament/{register_data.tournament_id}",
-        )
+        player2_id: Optional[UUID] = register_data.partner_id
         
-        create_notification(
-            player2_id,
-            "invitación Torneo",
-            "Te han escogido como pareja para el torneo",
-            f"/tournament/{register_data.tournament_id}",
-        )
+        # Get tournament info to check if it's retas
+        tournament = supabase.from_("tournaments").select("id, system").eq("id", register_data.tournament_id).single().execute()
+        if not tournament or not tournament.data:
+            raise HTTPException(status_code=404, detail="Torneo no encontrado.")
+        
+        tournament_system = tournament.data.get("system")
+        is_retas = tournament_system == "retas"
+        
+        # For retas, partner_id can be None (individual registration)
+        if is_retas and player2_id is None:
+            # Check if player is already registered individually
+            existing_registration = supabase.from_("tournament_teams").select("*").eq("tournament_id", register_data.tournament_id).eq("player1_id", player1_id).execute().data
+            
+            if existing_registration:
+                raise HTTPException(status_code=400, detail="Ya estás registrado en estas retas.")
+            
+            # Register player individually for retas
+            insert_result = supabase.from_("tournament_teams").insert({
+                "tournament_id": str(register_data.tournament_id),
+                "player1_id": str(player1_id),
+                "player2_id": None,  # No partner for retas
+            }).execute()
+            
+            if insert_result.count == 0:
+                raise HTTPException(status_code=500, detail="Error al registrarte en las retas.")
 
-        return {"message": "Equipo registrado exitosamente."}
+            create_notification(
+                player1_id,
+                "Inscripción a Retas",
+                f"Te inscribiste exitosamente a las retas.",
+                f"/tournament/{register_data.tournament_id}",
+            )
+
+            return {"message": "Te registraste exitosamente en las retas."}
+        
+        # For regular tournaments, partner_id is required
+        elif not is_retas and player2_id is None:
+            raise HTTPException(status_code=400, detail="Se requiere seleccionar una pareja para torneos regulares.")
+        
+        # Regular tournament registration with partner
+        else:
+            # Verificar que el equipo no esté ya registrado
+            existing_team = supabase.from_("tournament_teams").select("*").eq("tournament_id", register_data.tournament_id).eq("player1_id", player1_id).eq("player2_id", player2_id).execute().data
+
+            if existing_team:
+                raise HTTPException(status_code=400, detail="Este equipo ya está registrado en el torneo.")
+
+            # Registrar el equipo
+            insert_result = supabase.from_("tournament_teams").insert({
+                "tournament_id": str(register_data.tournament_id),
+                "player1_id": str(player1_id),
+                "player2_id": str(player2_id),
+            }).execute()
+
+            if insert_result.count == 0:
+                raise HTTPException(status_code=500, detail="Error al registrar el equipo en el torneo.")
+
+            create_notification(
+                player1_id,
+                "Inscripción a Torneo",
+                f"Te inscribiste exitosamente al Torneo.",
+                f"/tournament/{register_data.tournament_id}",
+            )
+            
+            create_notification(
+                player2_id,
+                "Invitación Torneo",
+                "Te han escogido como pareja para el torneo",
+                f"/tournament/{register_data.tournament_id}",
+            )
+
+            return {"message": "Equipo registrado exitosamente."}
 
     except HTTPException as e:
         raise e

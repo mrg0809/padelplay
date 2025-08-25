@@ -241,18 +241,22 @@ export const finalizeTournamentEnrollment = async (paymentIntent, context, api, 
         // 3. Llamar al endpoint /tournaments/register-team
         const registerData = {
             tournament_id: tournamentId,
-            partner_id: partnerId,
+            partner_id: partnerId, // Can be null for retas
         };
         const response = await api.post("/tournaments/register-team", registerData);
 
         // 4. Validar la respuesta
-        if (response.data && response.data.message === "Equipo registrado exitosamente.") {
-            console.log("Inscripción a torneo exitosa:", response.data);
-            if ($q) $q.notify({ type: 'positive', message: 'Te has inscrito al torneo con éxito.' });
+        const isRetas = extraData && extraData.isRetas;
+        const expectedMessage = isRetas ? "Te registraste exitosamente en las retas." : "Equipo registrado exitosamente.";
+        const successMessage = isRetas ? 'Te has inscrito a las retas con éxito.' : 'Te has inscrito al torneo con éxito.';
+        
+        if (response.data && (response.data.message === expectedMessage || response.data.message.includes("exitosamente"))) {
+            console.log("Inscripción exitosa:", response.data);
+            if ($q) $q.notify({ type: 'positive', message: successMessage });
             return { success: true };
         } else {
-            console.error("Error al inscribirse al torneo:", response);
-            const errorMessage = response.data?.detail || response.data?.message || "No se pudo completar la inscripción al torneo.";
+            console.error("Error al inscribirse:", response);
+            const errorMessage = response.data?.detail || response.data?.message || "No se pudo completar la inscripción.";
             if ($q) $q.notify({ type: 'negative', message: errorMessage });
             return { success: false };
         }
