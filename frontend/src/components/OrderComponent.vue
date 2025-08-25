@@ -80,6 +80,8 @@
         </q-page>
       </q-page-container>
   
+
+
       <q-dialog v-model="productDialog">
          <q-card style="min-width: 300px; max-width: 400px" class="bg-grey-2 text-black">
             <q-card-section class="row items-center q-pb-none bg-primary text-white"> <div class="text-h6">Añadir Productos</div>
@@ -148,6 +150,7 @@
   import { useRouter } from "vue-router";
   import { useQuasar, QSpinnerCube } from "quasar";
   import { getProductsByClub } from "src/services/supabase/products";
+  import { useUserStore } from "src/stores/userStore";
   import api from "../services/api";
   import PlayerNavigationMenu from "src/components/PlayerNavigationMenu.vue";
   
@@ -164,6 +167,7 @@
   // --- Inicialización ---
   const router = useRouter();
   const $q = useQuasar();
+  const userStore = useUserStore();
   const products = ref([]);
   const productQuantities = reactive({}); 
   const selectedProducts = ref([]);
@@ -279,9 +283,15 @@
     productDialog.value = false;
   };
   
-  const goToPayment = async () => {
-    isProcessingPayment.value = true; // Iniciar indicador de carga
+  const goToPayment = () => {
+    // Go directly to MercadoPago payment processing
+    processPayment('mercadopago');
+  };
+  
+  const processPayment = async (paymentMethod) => {
+    isProcessingPayment.value = true; // Start loading indicator
     $q.loading.show({ spinner: QSpinnerCube, message: 'Generando orden de pago...' });
+    
     try {
       const participants = props.baseData?.participants || 1;
       let amountToPay = total.value;
@@ -300,11 +310,11 @@
           club_id: props.baseData?.clubId,
           recipient_id: props.baseData?.recipient_user_id,
           participants: participants,
-          // Incluir productos seleccionados si el backend los necesita para la orden
+          // Include selected products if backend needs them for the order
           products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),
-          // Incluir isPublicMatch si aplica y el backend lo necesita
+          // Include isPublicMatch if applicable and backend needs it
           is_public: props.showPublicToggle ? isPublicMatch.value : undefined,
-           // Incluir extraData si es relevante para el backend
+          // Include extraData if relevant for the backend
           // ...props.extraData
       };
   
@@ -312,34 +322,72 @@
   
       const responsePaymentOrder = await api.post("payments/payment_order_and_split_payment", apiPayload);
   
-      const payment_order_id = responsePaymentOrder.data?.payment_order_id; // Usar optional chaining
+      const payment_order_id = responsePaymentOrder.data?.payment_order_id; // Use optional chaining
       if (!payment_order_id) {
         throw new Error("Respuesta inválida del servidor: No se recibió payment_order_id.");
       }
   
-      // Navegar a StripePayment
-      router.push({
-        name: "StripePayment",
-        query: {
-          paymentOrderId: payment_order_id,
-          amountToPay: amountToPay.toFixed(2),
-          totalAmount: total.value.toFixed(2),
-          description: props.summaryTitle,
-          clubId: props.baseData?.clubId,
-          baseData: JSON.stringify(props.baseData || {}),         
-          extraData: JSON.stringify(props.extraData || {}),    
-          selectedProducts: JSON.stringify(selectedProducts.value || []),
-          itemDetails: JSON.stringify(props.itemDetails || []),
-          paymentOption: paymentOption.value,
-        },
-      });
+      // Navigate based on payment method selection
+      if (paymentMethod === 'stripe') {
+        // Navigate to StripePayment
+        router.push({
+          name: "StripePayment",
+          query: {
+            paymentOrderId: payment_order_id,
+            amountToPay: amountToPay.toFixed(2),
+            totalAmount: total.value.toFixed(2),
+            description: props.summaryTitle,
+            clubId: props.baseData?.clubId,
+            baseData: JSON.stringify(props.baseData || {}),         
+            extraData: JSON.stringify(props.extraData || {}),    
+            selectedProducts: JSON.stringify(selectedProducts.value || []),
+            itemDetails: JSON.stringify(props.itemDetails || []),
+            paymentOption: paymentOption.value,
+          },
+        });
+      } else if (paymentMethod === 'mercadopago') {
+        // Navigate to MercadoPago payment flow
+        const cartItems = [
+          {
+            id: props.baseData?.id || 'item_1',
+            title: props.summaryTitle,
+            quantity: 1,
+            unit_price: amountToPay
+          }
+        ];
+
+        // Get current user info from store
+        const userInfo = {
+          email: userStore.email || 'user@example.com',
+          name: userStore.fullName || 'Usuario'
+        };
+
+        const paymentData = {
+          cartItems: cartItems,
+          userInfo: userInfo,
+          externalReference: payment_order_id,
+          metadata: {
+            payment_order_id: payment_order_id,
+            club_id: props.baseData?.clubId,
+            item_type: props.baseData?.type,
+            amount_to_pay: amountToPay,
+            payment_option: paymentOption.value
+          }
+        };
+
+        // Store payment data for MercadoPago page
+        localStorage.setItem('mercadoPaymentData', JSON.stringify(paymentData));
+
+        // Navigate to MercadoPago payment page
+        router.push({ name: 'MercadoPayment' });
+      }
     } catch (error) {
-      console.error("Error en goToPayment:", error);
+      console.error("Error en processPayment:", error);
       const errorMessage = error.response?.data?.message || error.message || 'Error al procesar el pago. Por favor intente de nuevo.';
       $q.notify({ type: "negative", message: errorMessage });
     } finally {
-      isProcessingPayment.value = false; // Detener indicador de carga
-       $q.loading.hide();
+      isProcessingPayment.value = false; // Stop loading indicator
+      $q.loading.hide();
     }
   };
   
