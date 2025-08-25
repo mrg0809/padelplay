@@ -82,49 +82,18 @@
     <!-- New Card Form -->
     <q-card-section v-if="!loading && !loadingPaymentMethods && cardPaymentMethods.length > 0 && (savedMethods.length === 0 || showNewCard)">
       <q-form @submit.prevent="processPayment">
-        <!-- Payment Method Selection (Optional - Auto-detected) -->
-        <div class="q-mb-md" v-if="cardPaymentMethods.length > 0">
-          <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta (auto-detectado)</div>
-          <q-select
-            v-model="selectedPaymentMethod"
-            :options="cardPaymentMethods"
-            option-label="name"
-            option-value="id"
-            emit-value
-            map-options
-            filled
-            dark
-            :readonly="!!detectedCardType"
-            :hint="detectedCardType ? 'Detectado automáticamente' : 'Selecciona o introduce el número de tarjeta'"
-          >
-            <template v-slot:option="scope">
-              <q-item v-bind="scope.itemProps" v-if="scope && scope.opt">
-                <q-item-section avatar v-if="scope && scope.opt && scope.opt.thumbnail">
-                  <q-img :src="scope.opt.thumbnail" width="24px" height="16px" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ (scope && scope.opt && scope.opt.name) || 'Sin nombre' }}</q-item-label>
-                </q-item-section>
-              </q-item>
-            </template>
-            
-            <template v-slot:selected="scope">
-              <template v-if="scope && scope.opt && scope.opt.id && scope.opt.name">
-                <q-chip
-                  :icon="getCardIcon(scope.opt.id)"
-                  :label="scope.opt.name"
-                  color="primary"
-                  text-color="white"
-                />
-              </template>
-              <template v-else-if="scope && scope.opt && scope.opt.name">
-                <span class="text-white">{{ scope.opt.name }}</span>
-              </template>
-              <template v-else>
-                <span class="text-white">Introduce número de tarjeta</span>
-              </template>
-            </template>
-          </q-select>
+        <!-- Card Type Display (Auto-detected) -->
+        <div class="q-mb-md" v-if="detectedCardType">
+          <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta detectado</div>
+          <div class="row items-center q-py-md">
+            <img 
+              :src="`/icons/${detectedCardType}.svg`" 
+              :alt="getCardName(detectedCardType)"
+              style="height: 32px; width: auto; filter: brightness(1.2);"
+              class="q-mr-md"
+            />
+            <span class="text-white text-h6">{{ getCardName(detectedCardType) }}</span>
+          </div>
         </div>
 
         <!-- Card Number -->
@@ -139,21 +108,15 @@
           @input="formatCardNumber"
           class="q-mb-md"
         >
-          <template v-slot:prepend>
-            <q-icon 
-              :name="getCardIcon(detectedCardType || selectedPaymentMethod)" 
-              :color="detectedCardType ? 'positive' : 'white'"
-              v-if="selectedPaymentMethod || detectedCardType"
+          <template v-slot:prepend v-if="detectedCardType">
+            <img 
+              :src="`/icons/${detectedCardType}.svg`" 
+              :alt="getCardName(detectedCardType)"
+              style="height: 24px; width: auto;"
             />
           </template>
-          <template v-slot:append v-if="detectedCardType">
-            <q-chip 
-              size="sm" 
-              :label="getCardName(detectedCardType)" 
-              color="positive" 
-              text-color="white" 
-              dense
-            />
+          <template v-slot:prepend v-else>
+            <q-icon name="credit_card" color="grey" />
           </template>
         </q-input>
 
@@ -315,10 +278,10 @@ const isFormValid = computed(() => {
   }
   
   return (
-    // Card type is valid if either manually selected or auto-detected
-    (selectedPaymentMethod.value && 
-     selectedPaymentMethod.value !== null && 
-     selectedPaymentMethod.value !== '') &&
+    // Card type is valid if auto-detected
+    (detectedCardType.value && 
+     detectedCardType.value !== null && 
+     detectedCardType.value !== '') &&
     validateCardNumber(cardForm.value.number) &&
     cardForm.value.holderName &&
     cardForm.value.holderName.trim() !== '' &&
@@ -401,6 +364,7 @@ const formatExpiry = () => {
 const autoDetectCardType = (cardNumber) => {
   if (!cardNumber) {
     detectedCardType.value = ''
+    selectedPaymentMethod.value = null
     return
   }
   
@@ -423,6 +387,7 @@ const autoDetectCardType = (cardNumber) => {
   
   // Reset if no match found
   detectedCardType.value = ''
+  selectedPaymentMethod.value = null
 }
 
 const loadPaymentMethods = async () => {
@@ -439,15 +404,8 @@ const loadPaymentMethods = async () => {
         method.payment_type_id === 'bank_transfer'
       )
       
-      // Set default to visa if available, otherwise first available method
-      const visa = cardPaymentMethods.value.find(method => method.id === 'visa')
-      if (visa) {
-        selectedPaymentMethod.value = visa.id
-      } else if (cardPaymentMethods.value.length > 0) {
-        selectedPaymentMethod.value = cardPaymentMethods.value[0].id
-      } else {
-        selectedPaymentMethod.value = null
-      }
+      // No need to set default payment method - will be set by auto-detection
+      selectedPaymentMethod.value = null
     } else {
       throw new Error('Invalid response format')
     }
