@@ -197,33 +197,23 @@ async def handle_tournament_registration(payment_order_id: str, user_id: str):
     Handle tournament team registration after successful payment.
     """
     try:
-        # Get the payment order to extract tournament metadata
-        payment_order_response = supabase.from_("payment_orders").select("*").eq("id", payment_order_id).single().execute()
+        # Try to get tournament info from the cache first
+        from app.routers.stripePayments import tournament_registration_cache
         
-        if not payment_order_response.data:
-            print(f"Payment order not found: {payment_order_id}")
+        tournament_metadata = tournament_registration_cache.get(payment_order_id)
+        if tournament_metadata:
+            tournament_id = tournament_metadata.get("tournament_id")
+            player2_email = tournament_metadata.get("player2_email")
+            print(f"Retrieved tournament data from cache: tournament_id={tournament_id}, player2_email={player2_email}")
+            
+            # Clean up cache after use
+            del tournament_registration_cache[payment_order_id]
+        else:
+            print(f"No tournament registration data found in cache for payment order {payment_order_id}")
             return
             
-        payment_order = payment_order_response.data
-        metadata_str = payment_order.get("metadata")
-        
-        if not metadata_str:
-            print(f"No metadata found for tournament payment order {payment_order_id}")
-            return
-            
-        # Parse the metadata
-        try:
-            metadata = json.loads(metadata_str)
-        except json.JSONDecodeError:
-            print(f"Invalid metadata JSON for payment order {payment_order_id}: {metadata_str}")
-            return
-            
-        tournament_id = metadata.get("tournament_id")
-        player1_id = metadata.get("player1_id") 
-        player2_email = metadata.get("player2_email")
-        
-        if not tournament_id or not player1_id or not player2_email:
-            print(f"Missing required tournament data in metadata for payment order {payment_order_id}")
+        if not tournament_id or not player2_email:
+            print(f"Missing required tournament data for payment order {payment_order_id}")
             return
             
         # Find player2 by email
@@ -236,7 +226,7 @@ async def handle_tournament_registration(payment_order_id: str, user_id: str):
         player2_id = player2_response.data["user_id"]
         
         # Check if team is already registered (to avoid duplicates)
-        existing_team = supabase.from_("tournament_teams").select("*").eq("tournament_id", tournament_id).eq("player1_id", player1_id).eq("player2_id", player2_id).execute()
+        existing_team = supabase.from_("tournament_teams").select("*").eq("tournament_id", tournament_id).eq("player1_id", user_id).eq("player2_id", player2_id).execute()
         
         if existing_team.data:
             print(f"Team already registered for tournament {tournament_id}")
@@ -245,7 +235,7 @@ async def handle_tournament_registration(payment_order_id: str, user_id: str):
         # Register the tournament team
         team_data = {
             "tournament_id": tournament_id,
-            "player1_id": player1_id,
+            "player1_id": user_id,
             "player2_id": player2_id,
             "payment_order_id": payment_order_id  # Link to payment
         }
@@ -259,7 +249,7 @@ async def handle_tournament_registration(payment_order_id: str, user_id: str):
             from app.utils.notification_utils import create_notification
             
             create_notification(
-                player1_id,
+                user_id,
                 "Inscripción a Torneo Confirmada",
                 f"Tu pago fue procesado exitosamente. Ya estás inscrito en el torneo.",
                 f"/tournament/{tournament_id}",

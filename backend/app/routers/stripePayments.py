@@ -8,6 +8,10 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.utils.stripe_utils import get_or_create_stripe_customer, get_stripe_customer_id
 
+# Simple in-memory cache for tournament registration data
+# This is a temporary solution to store tournament info until payment is processed
+tournament_registration_cache = {}
+
 
 router = APIRouter()
 
@@ -114,9 +118,9 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
             "recipient_id": recipient_id,
         }
         
-        # Add metadata if available
-        if metadata:
-            payment_order_data["metadata"] = json.dumps(metadata)
+        # For tournaments, store tournament_id in event_id field for linking
+        if event_type == "tournament" and data.get("item_id"):
+            payment_order_data["event_id"] = data.get("item_id")
         
         print(f"Inserting payment_order_data: {payment_order_data}")
         
@@ -148,6 +152,11 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
 
         payment_order_id = payment_order_response.data[0]["id"]
         print(f"Created payment order with ID: {payment_order_id}")
+
+        # For tournament registrations, store tournament metadata in cache for webhook processing
+        if event_type == "tournament" and metadata:
+            tournament_registration_cache[payment_order_id] = metadata
+            print(f"Stored tournament registration data in cache for payment {payment_order_id}")
 
         # Crear split_payments si es necesario
         if not is_full_payment:
