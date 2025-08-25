@@ -165,6 +165,7 @@
   import { useUserStore } from "src/stores/userStore";
   import ClubNavigationMenu from "src/components/ClubNavigationMenu.vue";
   import { getClubPaymentOrdersWithFilters } from "src/services/supabase/payments.js";
+import { debugPaymentOrders, debugClubPaymentApproaches } from "src/services/supabase/paymentsDebug.js";
   
   const router = useRouter();
   const $q = useQuasar();
@@ -267,6 +268,13 @@
 
     loading.value = true;
     try {
+      // Run debugging analysis on first load only
+      if (paymentOrders.value.length === 0) {
+        console.log('=== RUNNING CLUB INVOICES DEBUG ANALYSIS ===');
+        await debugClubPaymentApproaches(userStore.clubId);
+        console.log('=== CLUB INVOICES DEBUG ANALYSIS COMPLETE ===');
+      }
+      
       const data = await getClubPaymentOrdersWithFilters(
         userStore.clubId,
         startDate.value || null,
