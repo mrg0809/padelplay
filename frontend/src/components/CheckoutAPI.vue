@@ -224,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import api from 'src/services/api'
 
@@ -687,6 +687,19 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+// Watch for changes in card number and auto-detect type
+watch(() => cardForm.value.number, (newValue) => {
+  console.log('Watcher: Card number changed to:', newValue)
+  if (newValue) {
+    const cleanNumber = newValue.replace(/\s/g, '')
+    console.log('Watcher: Clean number:', cleanNumber)
+    autoDetectCardType(cleanNumber)
+  } else {
+    detectedCardType.value = ''
+    selectedPaymentMethod.value = null
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
