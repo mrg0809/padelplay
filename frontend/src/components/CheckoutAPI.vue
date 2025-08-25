@@ -91,6 +91,8 @@
               :alt="getCardName(detectedCardType)"
               style="height: 32px; width: auto; filter: brightness(1.2);"
               class="q-mr-md"
+              @error="onCardIconError"
+              @load="onCardIconLoad"
             />
             <span class="text-white text-h6">{{ getCardName(detectedCardType) }}</span>
           </div>
@@ -113,6 +115,8 @@
               :src="`/icons/${getCardIconFile(detectedCardType)}.svg`" 
               :alt="getCardName(detectedCardType)"
               style="height: 24px; width: auto;"
+              @error="onCardIconError"
+              @load="onCardIconLoad"
             />
           </template>
           <template v-slot:prepend v-else>
@@ -396,6 +400,14 @@ const autoDetectCardType = (cardNumber) => {
   // Reset if no match found
   detectedCardType.value = ''
   selectedPaymentMethod.value = null
+}
+
+const onCardIconError = (event) => {
+  console.error('Card icon failed to load:', event.target.src)
+}
+
+const onCardIconLoad = (event) => {
+  console.log('Card icon loaded successfully:', event.target.src)
 }
 
 const loadPaymentMethods = async () => {
