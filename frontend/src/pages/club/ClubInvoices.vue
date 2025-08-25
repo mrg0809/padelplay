@@ -251,6 +251,12 @@
   };
 
   const fetchPaymentOrders = async () => {
+    console.log('DEBUG ClubInvoices: userStore data:', { 
+      userId: userStore.userId, 
+      clubId: userStore.clubId, 
+      userType: userStore.userType 
+    });
+    
     if (!userStore.clubId) {
       $q.notify({
         type: 'negative',

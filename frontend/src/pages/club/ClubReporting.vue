@@ -86,13 +86,15 @@
             </div>
 
             <!-- Chart Visualization -->
-            <div v-if="chartDataComputed && chartDataComputed.labels.length > 0" class="bg-black">
+            <div v-if="chartDataComputed && chartDataComputed.labels.length > 0" class="bg-black chart-container">
               <h3 class="q-mb-md">Tendencia de Reservas por Día y Hora</h3>
-              <line-chart
-                :key="chartDataComputed.labels.length"
-                :data="chartDataComputed"
-                :options="chartOptions"
-              ></line-chart>
+              <div class="chart-wrapper">
+                <line-chart
+                  :key="chartDataComputed.labels.length"
+                  :data="chartDataComputed"
+                  :options="chartOptions"
+                ></line-chart>
+              </div>
             </div>
             <div v-else>
               <p>No hay datos para mostrar el gráfico.</p>
@@ -136,19 +138,52 @@
   const chartOptions = ref({
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: 'white'
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white'
+      }
+    },
     scales: {
       x: {
         type: 'category',
         title: {
           display: true,
-          text: 'Día y Hora'
+          text: 'Día y Hora',
+          color: 'white'
+        },
+        ticks: {
+          color: 'white',
+          maxRotation: 45,
+          minRotation: 0
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
         }
       },
       y: {
         type: 'linear',
         title: {
           display: true,
-          text: 'Reservas'
+          text: 'Reservas',
+          color: 'white'
+        },
+        ticks: {
+          color: 'white',
+          beginAtZero: true
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
         }
       }
     }
@@ -346,4 +381,28 @@
     background-size: cover;
   }
   
+  /* Fix chart height for mobile display */
+  .chart-container {
+    border-radius: 8px;
+    padding: 16px;
+  }
+  
+  .chart-wrapper {
+    position: relative;
+    height: 400px; /* Fixed height to prevent stretching */
+    width: 100%;
+  }
+  
+  /* Mobile responsive heights */
+  @media (max-width: 768px) {
+    .chart-wrapper {
+      height: 300px; /* Smaller height for mobile */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .chart-wrapper {
+      height: 250px; /* Even smaller for very small screens */
+    }
+  }
   </style>

@@ -269,6 +269,13 @@
   };
 
   const fetchPaymentSummary = async () => {
+    console.log('DEBUG: userStore data:', { 
+      userId: userStore.userId, 
+      clubId: userStore.clubId, 
+      userType: userStore.userType,
+      email: userStore.email
+    });
+    
     if (!userStore.clubId) {
       $q.notify({
         type: 'negative',
