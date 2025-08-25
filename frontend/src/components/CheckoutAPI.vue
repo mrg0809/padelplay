@@ -82,9 +82,9 @@
     <!-- New Card Form -->
     <q-card-section v-if="!loading && !loadingPaymentMethods && cardPaymentMethods.length > 0 && (savedMethods.length === 0 || showNewCard)">
       <q-form @submit.prevent="processPayment">
-        <!-- Payment Method Selection -->
+        <!-- Payment Method Selection (Optional - Auto-detected) -->
         <div class="q-mb-md" v-if="cardPaymentMethods.length > 0">
-          <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta</div>
+          <div class="text-body2 q-mb-sm text-white">Tipo de tarjeta (auto-detectado)</div>
           <q-select
             v-model="selectedPaymentMethod"
             :options="cardPaymentMethods"
@@ -94,6 +94,8 @@
             map-options
             filled
             dark
+            :readonly="!!detectedCardType"
+            :hint="detectedCardType ? 'Detectado automáticamente' : 'Selecciona o introduce el número de tarjeta'"
           >
             <template v-slot:option="scope">
               <q-item v-bind="scope.itemProps" v-if="scope && scope.opt">
@@ -119,7 +121,7 @@
                 <span class="text-white">{{ scope.opt.name }}</span>
               </template>
               <template v-else>
-                <span class="text-white">Seleccionar tarjeta</span>
+                <span class="text-white">Introduce número de tarjeta</span>
               </template>
             </template>
           </q-select>
@@ -138,7 +140,20 @@
           class="q-mb-md"
         >
           <template v-slot:prepend>
-            <q-icon :name="getCardIcon(selectedPaymentMethod)" v-if="selectedPaymentMethod" />
+            <q-icon 
+              :name="getCardIcon(detectedCardType || selectedPaymentMethod)" 
+              :color="detectedCardType ? 'positive' : 'white'"
+              v-if="selectedPaymentMethod || detectedCardType"
+            />
+          </template>
+          <template v-slot:append v-if="detectedCardType">
+            <q-chip 
+              size="sm" 
+              :label="getCardName(detectedCardType)" 
+              color="positive" 
+              text-color="white" 
+              dense
+            />
           </template>
         </q-input>
 
@@ -163,8 +178,9 @@
               filled
               dark
               maxlength="5"
-              :rules="[val => validateExpiry(val) || 'Fecha inválida']"
+              :rules="[val => validateExpiry(val) || 'Fecha inválida (MM/AA)']"
               @input="formatExpiry"
+              @keyup="formatExpiry"
             />
           </div>
 
@@ -195,7 +211,7 @@
         <!-- Payment Button -->
         <q-btn
           type="submit"
-          color="primary"
+          :color="isFormValid ? 'positive' : 'primary'"
           size="lg"
           :label="`Pagar $${totalAmount}`"
           class="full-width"
@@ -213,7 +229,7 @@
         </p>
         
         <q-btn
-          color="primary"
+          color="positive"
           size="lg"
           :label="`Pagar $${totalAmount}`"
           class="full-width"
@@ -266,6 +282,7 @@ const processing = ref(false)
 const loadingPaymentMethods = ref(false)
 const deletingMethod = ref(null)
 const showNewCard = ref(false)
+const detectedCardType = ref('')
 
 // Payment methods
 const cardPaymentMethods = ref([])
@@ -298,11 +315,13 @@ const isFormValid = computed(() => {
   }
   
   return (
-    selectedPaymentMethod.value &&
-    selectedPaymentMethod.value !== null &&
-    selectedPaymentMethod.value !== '' &&
+    // Card type is valid if either manually selected or auto-detected
+    (selectedPaymentMethod.value && 
+     selectedPaymentMethod.value !== null && 
+     selectedPaymentMethod.value !== '') &&
     validateCardNumber(cardForm.value.number) &&
     cardForm.value.holderName &&
+    cardForm.value.holderName.trim() !== '' &&
     validateExpiry(cardForm.value.expiry) &&
     validateCVV(cardForm.value.cvv)
   )
@@ -319,6 +338,17 @@ const getCardIcon = (paymentMethodId) => {
     'default': 'credit_card'
   }
   return icons[paymentMethodId] || icons.default
+}
+
+const getCardName = (paymentMethodId) => {
+  const names = {
+    'visa': 'VISA',
+    'master': 'Mastercard',
+    'amex': 'American Express',
+    'naranja': 'Naranja',
+    'cabal': 'Cabal'
+  }
+  return names[paymentMethodId] || paymentMethodId?.toUpperCase()
 }
 
 const validateCardNumber = (value) => {
@@ -352,14 +382,47 @@ const formatCardNumber = () => {
   let value = cardForm.value.number.replace(/\s/g, '')
   value = value.replace(/(.{4})/g, '$1 ').trim()
   cardForm.value.number = value
+  
+  // Auto-detect card type
+  autoDetectCardType(value.replace(/\s/g, ''))
 }
 
 const formatExpiry = () => {
   let value = cardForm.value.expiry.replace(/\D/g, '')
+  
+  // Automatically insert "/" after 2 digits
   if (value.length >= 2) {
     value = value.substring(0, 2) + '/' + value.substring(2, 4)
   }
+  
   cardForm.value.expiry = value
+}
+
+const autoDetectCardType = (cardNumber) => {
+  if (!cardNumber) {
+    detectedCardType.value = ''
+    return
+  }
+  
+  const patterns = {
+    visa: /^4/,
+    master: /^5[1-5]/,
+    amex: /^3[47]/
+  }
+  
+  for (const [type, pattern] of Object.entries(patterns)) {
+    if (pattern.test(cardNumber)) {
+      const method = cardPaymentMethods.value.find(m => m.id === type)
+      if (method) {
+        selectedPaymentMethod.value = method.id
+        detectedCardType.value = type
+        return
+      }
+    }
+  }
+  
+  // Reset if no match found
+  detectedCardType.value = ''
 }
 
 const loadPaymentMethods = async () => {
