@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from app.db.connection import supabase
 import stripe
+import json
 from app.core.config import settings
 from app.core.security import get_current_user
 from app.utils.stripe_utils import get_or_create_stripe_customer, get_stripe_customer_id
@@ -51,15 +52,31 @@ def create_payment_order_and_split_payment(data: dict, current_user: dict = Depe
         num_players = data["participants"]
         recipient_id = data["recipient_id"]
 
+        # Prepare additional metadata for tournament registrations
+        metadata = {}
+        if event_type == "tournament" and data.get("item_id"):
+            metadata = {
+                "tournament_id": data.get("item_id"),
+                "player1_id": player_id,
+                "player2_email": data.get("player2_email"),  # This should be passed from frontend
+                "tournament_name": data.get("tournament_name")
+            }
+        
         # Crear payment_order
-        payment_order_response = supabase.from_("payment_orders").insert({
+        payment_order_data = {
             "user_id": player_id,
             "total_amount": total_price,
             "payment_status": "pending",
             "event_type": event_type,
             "is_full_payment": is_full_payment,
             "recipient_id": recipient_id,
-        }).execute()
+        }
+        
+        # Add metadata if available
+        if metadata:
+            payment_order_data["metadata"] = json.dumps(metadata)
+            
+        payment_order_response = supabase.from_("payment_orders").insert(payment_order_data).execute()
 
         if not payment_order_response or not payment_order_response.data:
             raise HTTPException(status_code=500, detail="Error al crear la orden de pago.")

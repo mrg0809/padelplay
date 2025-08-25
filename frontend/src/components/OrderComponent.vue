@@ -314,6 +314,11 @@
           products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),
           // Include isPublicMatch if applicable and backend needs it
           is_public: props.showPublicToggle ? isPublicMatch.value : undefined,
+          // Include tournament-specific data for tournament registrations
+          ...(props.baseData?.type === 'tournament' && {
+            player2_email: props.baseData?.player2_email,
+            tournament_name: props.extraData?.tournament_name
+          })
           // Include extraData if relevant for the backend
           // ...props.extraData
       };
