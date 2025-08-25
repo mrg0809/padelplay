@@ -207,30 +207,34 @@ export default {
 
     const closeTournament = async () => {
       try {
-          console.log('torneo:', selectedTournament.value.id)
-          // Generar el preview del rol de juegos
-          const response = await api.get(`/tournaments/${selectedTournament.value.id}/preview`);
-          const matches = response.data.matches;
-
-          // Navegar a la página de preview
-          console.log("Passing tournament:", selectedTournament.value);
-          console.log("Passing matches:", matches);
-
-          setTimeout(() => {
-          router.push({
-            route: "/preview-tournament",
-            name: "PreviewTournament",
-            state: { tournament: selectedTournament.value, matches: matches },
-          });
-        }, 1000);
-        } catch (error) {
-          console.error("Error generating preview:", error);
+        console.log('Cerrando torneo:', selectedTournament.value.id);
+        
+        // Check if tournament has sufficient teams
+        if (selectedTournament.value.registered_teams < selectedTournament.value.min_pairs) {
           $q.notify({
-          type: 'negative',
-          message: 'Error al generar la vista previa.'
-        });
+            type: 'negative',
+            message: 'El torneo no tiene suficientes parejas inscritas para cerrarlo.'
+          });
+          closeDialogVisible.value = false;
+          return;
         }
-      };
+
+        // Navigate directly to the preview page with tournament ID
+        router.push({
+          name: "PreviewTournament",
+          params: { tournamentId: selectedTournament.value.id }
+        });
+
+        closeDialogVisible.value = false;
+        
+      } catch (error) {
+        console.error("Error navigating to preview:", error);
+        $q.notify({
+          type: 'negative',
+          message: 'Error al navegar a la vista previa del torneo.'
+        });
+      }
+    };
 
     const openCreateTournament = (type) => {
       router.push("/club/creartorneos");

@@ -168,6 +168,14 @@
   const router = useRouter();
   const $q = useQuasar();
   const userStore = useUserStore();
+  
+  // Debug logging for props
+  console.log('OrderComponent - Props received:');
+  console.log('baseData:', props.baseData);
+  console.log('extraData:', props.extraData);
+  console.log('baseData.player2_email:', props.baseData?.player2_email);
+  console.log('extraData.player2_email:', props.extraData?.player2_email);
+  
   const products = ref([]);
   const productQuantities = reactive({}); 
   const selectedProducts = ref([]);
@@ -314,9 +322,21 @@
           products: selectedProducts.value.map(p => ({ id: p.product.id, quantity: p.quantity })),
           // Include isPublicMatch if applicable and backend needs it
           is_public: props.showPublicToggle ? isPublicMatch.value : undefined,
-          // Include extraData if relevant for the backend
-          // ...props.extraData
       };
+
+      // Include tournament-specific data for tournament registrations
+      if (props.baseData?.type === 'tournament') {
+        // Use nullish coalescing to handle null/undefined values properly
+        apiPayload.player2_email = props.baseData?.player2_email ?? props.extraData?.player2_email;
+        apiPayload.tournament_name = props.extraData?.tournament_name;
+        
+        // Debug logging for tournament data
+        console.log('Tournament registration - baseData:', props.baseData);
+        console.log('Tournament registration - extraData:', props.extraData);
+        console.log('Tournament registration - baseData.player2_email:', props.baseData?.player2_email);
+        console.log('Tournament registration - extraData.player2_email:', props.extraData?.player2_email);
+        console.log('Tournament registration - final player2_email:', apiPayload.player2_email);
+      }
   
       console.log("Enviando a API /payment_order_and_split_payment:", apiPayload);
   

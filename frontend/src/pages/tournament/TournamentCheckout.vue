@@ -70,6 +70,7 @@
   import { ref, onMounted } from "vue";
   import { useRoute, useRouter } from "vue-router";
   import { useQuasar } from "quasar";
+  import { useSummaryStore } from "../../stores/summaryStore";
   import api from "../../services/api";
   
   export default {
@@ -107,24 +108,51 @@
           $q.notify({ type: "negative", message: "Los emails del Jugador 2 no coinciden." });
           return;
         }
-  
-        try {
-          const response = await api.post(`/tournaments/${route.query.tournamentId}/register-team`, {
-            player1: player1Name.value,
-            player2: player2Email.value,
-            totalPrice: totalPrice.value,
-          });
-  
-          if (response.status === 200) {
-            $q.notify({ type: "positive", message: "Pareja registrada exitosamente." });
-            router.push("/dashboard/player");
-          } else {
-            throw new Error(response.data.message || "Error al registrar la pareja.");
+
+        // Proceed to payment flow via OrderComponent instead of direct registration
+        proceedToPayment();
+      };
+
+      const proceedToPayment = () => {
+        // Set summary data for OrderComponent
+        const summaryData = {
+          summaryTitle: 'Inscripción al Torneo',
+          itemDetails: [
+            { label: 'Torneo', value: tournament.value.name },
+            { label: 'Fecha', value: tournament.value.start_date },
+            { label: 'Hora', value: tournament.value.start_time },
+            { label: 'Club', value: tournament.value.club_name },
+            { label: 'Jugador 1', value: player1Name.value },
+            { label: 'Jugador 2', value: player2Email.value }
+          ],
+          baseData: {
+            id: route.query.tournamentId,
+            type: 'tournament',
+            price: Number(tournament.value.price),
+            participants: 1, // Tournament registration is per pair, so 1 payment
+            clubId: route.query.clubId,
+            recipient_user_id: route.query.clubUserId || null,
+            // Store tournament-specific data
+            tournament_id: route.query.tournamentId,
+            player1_name: player1Name.value,
+            player2_email: player2Email.value
+          },
+          commissionRate: 4,
+          showPublicToggle: false,
+          allowPaymentSplit: false, // Tournament registration doesn't support payment splitting
+          extraData: {
+            tournament_id: route.query.tournamentId,
+            player1_name: player1Name.value,
+            player2_email: player2Email.value,
+            tournament_name: tournament.value.name
           }
-        } catch (err) {
-          console.error("Error al registrar pareja:", err.message);
-          $q.notify({ type: "negative", message: `Error: ${err.message}` });
-        }
+        };
+
+        // Store in summary store and navigate to OrderSummary
+        const summaryStore = useSummaryStore();
+        summaryStore.setSummaryDetails(summaryData);
+        
+        router.push({ name: 'OrderSummary' });
       };
   
       const goBack = () => {
@@ -144,6 +172,7 @@
         totalPrice,
         registerTeam,
         goBack,
+        proceedToPayment,
       };
     },
   };

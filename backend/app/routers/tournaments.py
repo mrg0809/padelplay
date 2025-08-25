@@ -136,24 +136,97 @@ async def register_team(
 @router.get("/{tournament_id}/preview")
 async def get_tournament_preview(tournament_id: str):
     """
-    Genera un preview del rol de juegos para un torneo.
+    Genera un preview completo del cuadro de torneo con estructura y partidos.
     """
-    matches = generate_tournament_preview(tournament_id)
-    return {"matches": matches}
+    try:
+        tournament_structure = generate_tournament_preview(tournament_id)
+        
+        if "error" in tournament_structure:
+            raise HTTPException(status_code=400, detail=tournament_structure["error"])
+        
+        return tournament_structure
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar preview del torneo: {str(e)}")
 
 
 @router.post("/{tournament_id}/save-matches")
 async def save_matches(tournament_id: str, matches: List[Dict]):
     """
-    Guarda los partidos generados en la tabla matches.
+    Guarda los partidos generados en la tabla matches con validación de canchas.
     """
-    for match in matches:
-        supabase.from_("matches").insert({
-            "tournament_id": tournament_id,
-            "team1_players": [match["team1"]],
-            "team2_players": [match["team2"]],
-            "match_date": match["match_date"],
-            "match_time": match["match_time"],
-            "court_id": match.get("court_id"),  # Asignar cancha si es necesario
-        }).execute()
-    return {"message": "Partidos guardados exitosamente."}
+    try:
+        # Obtener detalles del torneo para validación
+        tournament = supabase.from_("tournaments").select("*").eq("id", tournament_id).single().execute()
+        tournament_data = tournament.data
+        
+        if not tournament_data:
+            raise HTTPException(status_code=404, detail="Torneo no encontrado")
+        
+        club_id = tournament_data["club_id"]
+        saved_matches = []
+        
+        for match in matches:
+            # Validar estructura de match
+            team1_data = match.get("team1", {})
+            team2_data = match.get("team2", {})
+            
+            if not team1_data.get("id") or not team2_data.get("id"):
+                continue  # Saltar matches placeholder o incompletos
+                
+            match_data = {
+                "tournament_id": tournament_id,
+                "club_id": club_id,
+                "team1_players": [team1_data["id"]],
+                "team2_players": [team2_data["id"]],
+                "match_date": match["match_date"],
+                "match_time": match["match_time"],
+                "court_id": match.get("court_id"),
+                "gender": tournament_data.get("gender", "open"),
+                "category": tournament_data.get("category", "open")
+            }
+            
+            # Insertar match
+            result = supabase.from_("matches").insert(match_data).execute()
+            
+            if result.data:
+                saved_matches.append(result.data[0])
+                
+                # Crear reserva para bloquear la cancha si hay court_id
+                if match.get("court_id"):
+                    try:
+                        from datetime import datetime, timedelta
+                        
+                        # Calcular end_time (1 hora después)
+                        start_datetime = datetime.strptime(f"{match['match_date']} {match['match_time']}", "%Y-%m-%d %H:%M:%S")
+                        end_time = (start_datetime + timedelta(hours=1)).time()
+                        
+                        reservation_data = {
+                            "club_id": club_id,
+                            "court_id": match["court_id"],
+                            "reservation_date": match["match_date"],
+                            "start_time": match["match_time"],
+                            "end_time": end_time.isoformat(),
+                            "total_price": 0,  # Torneo no tiene costo adicional
+                            "pay_total": 0,
+                            "club_commission": 0,
+                            "player_commission": 0,
+                            "is_tournament": True,
+                            "tournament_id": tournament_id
+                        }
+                        
+                        supabase.from_("reservations").insert(reservation_data).execute()
+                        
+                    except Exception as reservation_error:
+                        print(f"Warning: No se pudo crear reserva para match {match.get('id', 'unknown')}: {reservation_error}")
+        
+        # Actualizar estado del torneo a cerrado
+        supabase.from_("tournaments").update({"status": "closed"}).eq("id", tournament_id).execute()
+        
+        return {
+            "message": f"Se guardaron {len(saved_matches)} partidos exitosamente.",
+            "matches_saved": len(saved_matches),
+            "tournament_closed": True
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar los partidos: {str(e)}")

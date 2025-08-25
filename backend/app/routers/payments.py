@@ -157,6 +157,117 @@ def detect_currency_from_token(access_token: str) -> str:
     # Default to ARS if no specific country detected
     return "ARS"
 
+
+async def handle_payment_approval(payment_order_id: str):
+    """
+    Handle post-payment actions when a payment is approved.
+    This function checks the payment order type and performs the appropriate action.
+    """
+    try:
+        # Get the payment order details
+        payment_order_response = supabase.from_("payment_orders").select("*").eq("id", payment_order_id).single().execute()
+        
+        if not payment_order_response.data:
+            print(f"Payment order not found: {payment_order_id}")
+            return
+            
+        payment_order = payment_order_response.data
+        event_type = payment_order.get("event_type")
+        user_id = payment_order.get("user_id")
+        
+        print(f"Handling payment approval for order {payment_order_id}, event_type: {event_type}")
+        
+        if event_type == "tournament":
+            await handle_tournament_registration(payment_order_id, user_id)
+        elif event_type == "reservation":
+            # Handle reservation confirmation if needed
+            print(f"Reservation payment approved for order {payment_order_id}")
+        elif event_type == "lesson":
+            # Handle lesson booking confirmation if needed 
+            print(f"Lesson payment approved for order {payment_order_id}")
+        else:
+            print(f"Unknown event type: {event_type} for payment order {payment_order_id}")
+            
+    except Exception as e:
+        print(f"Error handling payment approval for order {payment_order_id}: {str(e)}")
+
+
+async def handle_tournament_registration(payment_order_id: str, user_id: str):
+    """
+    Handle tournament team registration after successful payment.
+    """
+    try:
+        # Try to get tournament info from the cache first
+        from app.routers.stripePayments import tournament_registration_cache
+        
+        tournament_metadata = tournament_registration_cache.get(payment_order_id)
+        if tournament_metadata:
+            tournament_id = tournament_metadata.get("tournament_id")
+            player2_email = tournament_metadata.get("player2_email")
+            print(f"Retrieved tournament data from cache: tournament_id={tournament_id}, player2_email={player2_email}")
+            
+            # Clean up cache after use
+            del tournament_registration_cache[payment_order_id]
+        else:
+            print(f"No tournament registration data found in cache for payment order {payment_order_id}")
+            return
+            
+        if not tournament_id or not player2_email:
+            print(f"Missing required tournament data for payment order {payment_order_id}")
+            return
+            
+        # Find player2 by email
+        player2_response = supabase.from_("players").select("user_id").eq("email", player2_email).single().execute()
+        
+        if not player2_response.data:
+            print(f"Player with email {player2_email} not found for tournament registration")
+            return
+            
+        player2_id = player2_response.data["user_id"]
+        
+        # Check if team is already registered (to avoid duplicates)
+        existing_team = supabase.from_("tournament_teams").select("*").eq("tournament_id", tournament_id).eq("player1_id", user_id).eq("player2_id", player2_id).execute()
+        
+        if existing_team.data:
+            print(f"Team already registered for tournament {tournament_id}")
+            return
+            
+        # Register the tournament team
+        team_data = {
+            "tournament_id": tournament_id,
+            "player1_id": user_id,
+            "player2_id": player2_id,
+            "payment_order_id": payment_order_id  # Link to payment
+        }
+        
+        insert_result = supabase.from_("tournament_teams").insert(team_data).execute()
+        
+        if insert_result.data:
+            print(f"Successfully registered tournament team for tournament {tournament_id}, payment {payment_order_id}")
+            
+            # Create notifications for both players
+            from app.utils.notification_utils import create_notification
+            
+            create_notification(
+                user_id,
+                "Inscripción a Torneo Confirmada",
+                f"Tu pago fue procesado exitosamente. Ya estás inscrito en el torneo.",
+                f"/tournament/{tournament_id}",
+            )
+            
+            create_notification(
+                player2_id,
+                "Invitación a Torneo",
+                f"Has sido invitado como pareja para un torneo. La inscripción fue pagada.",
+                f"/tournament/{tournament_id}",
+            )
+        else:
+            print(f"Failed to register tournament team for payment {payment_order_id}")
+        
+    except Exception as e:
+        print(f"Error handling tournament registration for payment order {payment_order_id}: {str(e)}")
+
+
 # New endpoints for Checkout API integration
 
 @router.post("/tokenize_card")
@@ -465,6 +576,10 @@ async def mercadopago_webhook(notification: MercadoPagoPaymentNotification = Bod
                     }
                     insert_sp_result = supabase.from_("split_payments").insert([split_payment_data]).execute()
                     print(f"Resultado de inserción en split_payments: {insert_sp_result}")
+
+                    # Handle post-payment actions when payment is approved
+                    if status == "approved":
+                        await handle_payment_approval(payment_order_id)
 
                     return {"message": "Webhook de Mercado Pago procesado exitosamente."}
                 else:
