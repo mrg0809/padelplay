@@ -326,13 +326,16 @@
 
       // Include tournament-specific data for tournament registrations
       if (props.baseData?.type === 'tournament') {
-        apiPayload.player2_email = props.baseData?.player2_email || props.extraData?.player2_email;
+        // Use nullish coalescing to handle null/undefined values properly
+        apiPayload.player2_email = props.baseData?.player2_email ?? props.extraData?.player2_email;
         apiPayload.tournament_name = props.extraData?.tournament_name;
         
         // Debug logging for tournament data
         console.log('Tournament registration - baseData:', props.baseData);
         console.log('Tournament registration - extraData:', props.extraData);
-        console.log('Tournament registration - player2_email:', apiPayload.player2_email);
+        console.log('Tournament registration - baseData.player2_email:', props.baseData?.player2_email);
+        console.log('Tournament registration - extraData.player2_email:', props.extraData?.player2_email);
+        console.log('Tournament registration - final player2_email:', apiPayload.player2_email);
       }
   
       console.log("Enviando a API /payment_order_and_split_payment:", apiPayload);

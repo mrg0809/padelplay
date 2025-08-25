@@ -57,13 +57,17 @@
       return;
     }
     try {
-      searchResults.value = await searchPlayersService(searchQuery.value);
+      const results = await searchPlayersService(searchQuery.value);
+      console.log('Search results from database:', results);
+      searchResults.value = results;
     } catch (error) {
       console.error('Error al buscar jugadores:', error);
     }
   };
   
   const selectPlayer = (player) => {
+    console.log('Player selected in PlayerSearch:', player);
+    console.log('Player email:', player?.email);
     emit('playerSelected', player);
     showDialog.value = false;
   };

@@ -199,6 +199,12 @@
       return;
     }
 
+    if (!selectedPartner.value.email) {
+      console.error("El jugador seleccionado no tiene un email válido:", selectedPartner.value);
+      $q.notify({ type: 'negative', message: 'El jugador seleccionado no tiene un email válido. Por favor, selecciona otro jugador.' });
+      return;
+    }
+
     const tournamentData = tournament.value;
 
     const enrollmentPrice = (tournamentData.price_per_pair || 0) / 2;
