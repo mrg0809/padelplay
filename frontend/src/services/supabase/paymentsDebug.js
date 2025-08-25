@@ -38,23 +38,32 @@ export const debugPaymentOrders = async () => {
     
   console.log('Payment statuses in payment_orders:', { statuses, statusError });
   
-  // 5. Try to understand user_id to profiles relationship
-  const { data: userProfiles, error: profileError } = await supabase
+  // 5. Try to understand user_id to players relationship
+  const { data: userPlayers, error: playersError } = await supabase
     .from("payment_orders")
-    .select(`
-      user_id,
-      profiles!payment_orders_user_id_fkey(id, full_name, email)
-    `)
+    .select("user_id")
+    .not("user_id", "is", null)
     .limit(5);
     
-  console.log('Payment orders with profile data:', { userProfiles, profileError });
+  let playersData = null;
+  if (userPlayers && userPlayers.length > 0) {
+    const userIds = [...new Set(userPlayers.map(p => p.user_id))];
+    const { data: playersLookup, error: playersLookupError } = await supabase
+      .from("players")
+      .select("user_id, first_name, last_name, email")
+      .in("user_id", userIds);
+    
+    playersData = { playersLookup, playersLookupError };
+  }
+    
+  console.log('Payment orders with player data:', { userPlayers, playersData });
   
   return {
     samplePayments,
     recipientIds,
     eventTypes,
     statuses,
-    userProfiles
+    userPlayers: playersData
   };
 };
 

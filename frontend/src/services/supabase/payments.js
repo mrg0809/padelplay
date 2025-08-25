@@ -107,28 +107,37 @@ export const getClubPaymentOrdersWithFilters = async (club_id, startDate = null,
     
     console.log('DEBUG: Filtered club payments:', clubPayments);
     
-    // Step 5: Get user profiles for the filtered payments
+    // Step 5: Get user data for the filtered payments from players table
     if (clubPayments.length > 0) {
       const userIds = [...new Set(clubPayments.map(p => p.user_id).filter(Boolean))];
       
       if (userIds.length > 0) {
-        const { data: profiles, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", userIds);
+        const { data: players, error: playersError } = await supabase
+          .from("players")
+          .select("user_id, first_name, last_name, email, phone, photo_url")
+          .in("user_id", userIds);
           
-        if (!profileError && profiles) {
-          // Add profile data to payments
-          const profileLookup = {};
-          profiles.forEach(profile => {
-            profileLookup[profile.id] = profile;
+        if (!playersError && players) {
+          // Add player data to payments
+          const playerLookup = {};
+          players.forEach(player => {
+            // Create a profile-like object for compatibility
+            playerLookup[player.user_id] = {
+              id: player.user_id,
+              full_name: `${player.first_name || ''} ${player.last_name || ''}`.trim(),
+              email: player.email,
+              phone: player.phone,
+              photo_url: player.photo_url
+            };
           });
           
           clubPayments.forEach(payment => {
-            if (payment.user_id && profileLookup[payment.user_id]) {
-              payment.profiles = profileLookup[payment.user_id];
+            if (payment.user_id && playerLookup[payment.user_id]) {
+              payment.profiles = playerLookup[payment.user_id];
             }
           });
+        } else if (playersError) {
+          console.log('ERROR fetching player data:', playersError);
         }
       }
       
